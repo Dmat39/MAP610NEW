@@ -2,7 +2,7 @@
  * Servicio para gestionar las cámaras vecinales (communal)
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const camarasVecinalesService = {
   /**
@@ -17,7 +17,7 @@ const camarasVecinalesService = {
         throw new Error('No hay token de autenticación. Por favor, inicia sesión.');
       }
 
-      const response = await fetch(`${API_URL}/communal`, {
+      const response = await fetch(`${API_URL}communal`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
