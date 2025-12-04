@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Marker, Popup, LayerGroup, Circle } from 'react-leaflet';
+import { Marker, Popup, LayerGroup, Circle, Polygon } from 'react-leaflet';
 import { useMap } from 'react-leaflet';
 import './CapaCamarasMunicipales.css';
 import './LocationCopyPopup.css';
 import { useMapLocationCopy } from '../../../hooks/useMapLocationCopy';
 import { getAngleFromCoords, isValidReferencia, parseReferencia } from '../../../utils';
 import { logger } from '../../../utils/logger.js';
+import camarasService from '../../../services/camarasService';
 
 import L from 'leaflet';
 
@@ -101,6 +102,8 @@ const CapaCamarasMunicipales = ({
   setCamaraConVision,
 }) => {
   const [camaras, setCamaras] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(null);
   const [seguimientoActivo, setSeguimientoActivo] = useState(false);
   const [circuloSeguimiento, setCirculoSeguimiento] = useState(null);
   const [circulosAnteriores, setCirculosAnteriores] = useState([]);
@@ -137,11 +140,74 @@ const CapaCamarasMunicipales = ({
     };
   }, [map]);
 
+  // Cargar cámaras desde el backend
   useEffect(() => {
-    fetch('/data/610_updated.geojson')
-      .then(res => res.json())
-      .then(data => setCamaras(data.features || []))
-      .catch(err => logger.error('Error cargando cámaras municipales:', err));
+    const cargarCamaras = async () => {
+      try {
+        setCargando(true);
+        setError(null);
+
+        const resultado = await camarasService.getCamarasMunicipales(0);
+        logger.log(`✅ ${resultado.count} cámaras municipales cargadas desde el backend`);
+
+        // Transformar los datos de la API al formato GeoJSON que espera el componente
+        const camarasTransformadas = resultado.camaras.map(camara => {
+          // Mapeo correcto de tipos de cámara
+          let tipo, anguloVision;
+          switch (camara.camera) {
+            case 'C180':
+              tipo = 'TIPO I';
+              anguloVision = '180';
+              break;
+            case 'C360':
+              tipo = 'TIPO II';
+              anguloVision = '360';
+              break;
+            case 'LPR':
+              tipo = 'TIPO III';
+              anguloVision = 'LPR';
+              break;
+            default:
+              tipo = 'TIPO I';
+              anguloVision = '180';
+          }
+
+          return {
+            geometry: {
+              coordinates: [camara.longitude, camara.latitude],
+            },
+            properties: {
+              name: camara.name,
+              direccion: camara.address,
+              tipo: tipo,
+              camara: anguloVision,
+              cameraModel: camara.camera, // Guardar el modelo original
+              megafono: camara.megaphone,
+              boton: camara.buttom,
+              jurisdiccion: 'Municipal',
+              // Campo referencia para cámaras C180 (coordenadas hacia donde apunta)
+              referencia: camara.referencia || '',
+              // El polígono de visión viene del backend (usado como fallback)
+              geometryVision: camara.geometry,
+            },
+          };
+        });
+
+        setCamaras(camarasTransformadas);
+        setCargando(false);
+      } catch (err) {
+        logger.error('Error cargando cámaras municipales:', err);
+        setError(err.message);
+        setCargando(false);
+
+        // Si hay error de autenticación, no intentar recargar
+        if (err.message.includes('Sesión expirada') || err.message.includes('autenticación')) {
+          logger.warn('⚠️ Error de autenticación. Por favor, inicia sesión nuevamente.');
+        }
+      }
+    };
+
+    cargarCamaras();
   }, []);
 
   // Efecto para navegar a la cámara seleccionada
@@ -327,6 +393,48 @@ const CapaCamarasMunicipales = ({
 
   if (!visible) return null;
 
+  // Mostrar mensajes de estado
+  if (cargando) {
+    return (
+      <LayerGroup>
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: 'white',
+          padding: '20px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+          zIndex: 1000
+        }}>
+          Cargando cámaras municipales...
+        </div>
+      </LayerGroup>
+    );
+  }
+
+  if (error) {
+    return (
+      <LayerGroup>
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: '#fee',
+          padding: '20px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+          zIndex: 1000,
+          color: '#c00'
+        }}>
+          Error: {error}
+        </div>
+      </LayerGroup>
+    );
+  }
+
   // Determinar qué cámaras mostrar (seguimiento, filtradas o todas)
   let camarasAMostrar;
 
@@ -413,19 +521,47 @@ const CapaCamarasMunicipales = ({
               '🎯 Mostrando campo de visión para:',
               props.name,
               'Tipo cámara:',
-              props.camara
+              props.camara,
+              'Referencia:',
+              props.referencia,
+              'Geometry:', props.geometryVision
             );
 
-            // Crear el campo de visión con gradiente
-            const visionField = createVisionField(feature, lat, lng);
-            if (visionField) {
+            // PRIORIDAD: Para C180 con referencia, usar método CSS (más preciso)
+            // Para C360 o sin referencia, usar polígono del backend
+            const usarMetodoCSS = props.camara === '180' && isValidReferencia(props.referencia);
+
+            if (usarMetodoCSS) {
+              // Método CSS con gradiente rotado (para C180 con referencia)
+              const visionField = createVisionField(feature, lat, lng);
+              if (visionField) {
+                elementos.push(
+                  <Marker
+                    key={`vision-${idx}`}
+                    position={[lat, lng]}
+                    icon={visionField.options.icon}
+                    interactive={false}
+                    zIndexOffset={-1000}
+                  />
+                );
+              }
+            } else if (props.geometryVision && props.geometryVision.coordinates) {
+              // Método polígono del backend (para C360 o fallback)
+              const coordinates = props.geometryVision.coordinates[0];
+              // Convertir de [lng, lat] a [lat, lng] para Leaflet
+              const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
+
               elementos.push(
-                <Marker
-                  key={`vision-${idx}`}
-                  position={[lat, lng]}
-                  icon={visionField.options.icon}
+                <Polygon
+                  key={`vision-polygon-${idx}`}
+                  positions={latLngs}
+                  pathOptions={{
+                    color: esSeleccionada ? '#667eea' : '#10b981',
+                    fillColor: esSeleccionada ? '#667eea' : '#10b981',
+                    fillOpacity: 0.2,
+                    weight: 2,
+                  }}
                   interactive={false}
-                  zIndexOffset={-1000}
                 />
               );
             }

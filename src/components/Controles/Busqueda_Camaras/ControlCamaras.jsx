@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronUp, ChevronDown, Search, Filter, MapPin, Zap, AlertTriangle } from 'lucide-react';
 import './ControlCamaras.css';
 import { logger } from '../../../utils/logger.js';
+import camarasService from '../../../services/camarasService';
 
 const ControlCamaras = ({
   visible,
@@ -130,32 +131,62 @@ const ControlCamaras = ({
     setError(null);
 
     try {
-      const response = await fetch('/data/610_updated.geojson');
-      if (!response.ok) {
-        throw new Error(`Error al cargar datos: ${response.status}`);
-      }
+      const resultado = await camarasService.getCamarasMunicipales(0);
+      logger.log(`✅ ${resultado.count} cámaras municipales cargadas desde el backend`);
 
-      const data = await response.json();
-      const camarasData = (data.features || [])
-        .map((feature, index) => ({
-          id: index,
-          name: feature.properties?.name || `Cámara ${index + 1}`,
-          direccion: feature.properties?.direccion || 'Sin dirección',
-          tipo: feature.properties?.tipo || 'Municipal',
-          jurisdiccion: feature.properties?.jurisdiccion || 'Sin jurisdicción',
-          megafono: Boolean(feature.properties?.megafono),
-          boton: Boolean(feature.properties?.boton),
-          lat: feature.geometry?.coordinates?.[1],
-          lng: feature.geometry?.coordinates?.[0],
-          properties: feature.properties,
-        }))
-        .filter(camara => camara.lat && camara.lng);
+      // Transformar datos de la API al formato esperado por el componente
+      const camarasData = resultado.camaras.map((camara, index) => {
+        // Mapeo correcto de tipos de cámara
+        let tipo, anguloVision;
+        switch (camara.camera) {
+          case 'C180':
+            tipo = 'TIPO I';
+            anguloVision = '180';
+            break;
+          case 'C360':
+            tipo = 'TIPO II';
+            anguloVision = '360';
+            break;
+          case 'LPR':
+            tipo = 'TIPO III';
+            anguloVision = 'LPR';
+            break;
+          default:
+            tipo = 'TIPO I';
+            anguloVision = '180';
+        }
+
+        return {
+          id: camara.id || index,
+          name: camara.name || `Cámara ${index + 1}`,
+          direccion: camara.address || 'Sin dirección',
+          tipo: tipo,
+          jurisdiccion: 'Municipal',
+          megafono: Boolean(camara.megaphone),
+          boton: Boolean(camara.buttom),
+          lat: camara.latitude,
+          lng: camara.longitude,
+          properties: {
+            name: camara.name,
+            direccion: camara.address,
+            camara: anguloVision,
+            cameraModel: camara.camera,
+            megafono: camara.megaphone,
+            boton: camara.buttom,
+          },
+        };
+      });
 
       setCamaras(camarasData);
       logger.log(`📷 Cargadas ${camarasData.length} cámaras municipales`);
     } catch (err) {
       logger.error('❌ Error cargando cámaras:', err);
       setError(`Error: ${err.message}`);
+
+      // Si hay error de autenticación, informar al usuario
+      if (err.message.includes('Sesión expirada') || err.message.includes('autenticación')) {
+        setError('⚠️ Sesión expirada. Por favor, inicia sesión nuevamente.');
+      }
     } finally {
       setCargando(false);
     }

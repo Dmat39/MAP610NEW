@@ -1,12 +1,22 @@
 import "./LayerTogglePanel.css";
-import { Layers } from "lucide-react";
+import { Layers, ChevronDown } from "lucide-react";
+import { useState } from "react";
 
 const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
-    <div className="layer-toggle-panel">
-      <div className="panel-header" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Layers size={18} />
-        <h4 style={{ margin: 0 }}>Capas</h4>
+    <div
+      className={`layer-toggle-panel ${isExpanded ? 'expanded' : ''}`}
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
+    >
+      <div className="panel-header">
+        <div className="header-content">
+          <Layers size={18} />
+          <h4>Capas del Mapa</h4>
+        </div>
+        <ChevronDown size={16} className={`chevron-icon ${isExpanded ? 'rotated' : ''}`} />
       </div>
 
       <div className="panel-controls">
@@ -17,7 +27,8 @@ const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange }) => {
               checked={capa.visible}
               onChange={() => onToggle(capa.name)}
             />
-            {capa.label}
+            <span className="checkbox-custom"></span>
+            <span className="layer-label">{capa.label}</span>
           </label>
         ))}
 

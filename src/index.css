@@ -2,6 +2,43 @@ html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
+  overflow: hidden;
+}
+
+/* App Container - Crea contextos de apilamiento separados */
+.app-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+}
+
+/* Sidebar - Contenedor independiente con z-index más alto */
+.app-container > aside {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 70px;
+  z-index: 9999 !important;
+}
+
+/* Main Content - Contenedor independiente del sidebar */
+.main-content {
+  position: fixed;
+  left: 70px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: calc(100% - 70px);
+  height: 100vh;
+  overflow: visible;
+  z-index: 1;
+}
+
+/* Asegurar que todos los elementos respeten el sidebar */
+.main-content > * {
+  max-width: calc(100vw - 70px);
 }
 
 /* Ocultar botones de cerrar predeterminados de mapas */
@@ -10,5 +47,23 @@ html, body, #root {
 }
 
 .gm-ui-hover-effect {
+  display: none !important;
+}
+
+/* Ajustar controles de Leaflet para el sidebar lateral */
+.leaflet-top {
+  top: 10px !important;
+}
+
+.leaflet-left {
+  left: 85px !important;
+}
+
+.leaflet-right {
+  right: 10px !important;
+}
+
+/* Ocultar controles de zoom */
+.leaflet-control-zoom {
   display: none !important;
 }

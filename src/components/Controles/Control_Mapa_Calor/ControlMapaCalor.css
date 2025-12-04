@@ -1,14 +1,14 @@
 .control-mapa-calor {
   position: fixed;
-  top: 90px;
-  left: 10px;
+  top: 10px;
+  left: 95px;
   width: 280px;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(6px);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  z-index: 1000;
+  z-index: 2000;
   overflow: hidden;
   transition: all 0.3s ease;
 }

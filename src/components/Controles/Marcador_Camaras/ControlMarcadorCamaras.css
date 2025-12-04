@@ -11,7 +11,7 @@
   max-height: 55vh;
   overflow: hidden;
   font-family: 'Segoe UI', sans-serif;
-  z-index: 10000;
+  z-index: 2000;
   border: 1px solid rgba(200, 200, 200, 0.6);
   transition: all 0.3s ease;
 }
@@ -27,7 +27,7 @@
 
 .control-marcador-header {
   padding: 8px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #37a4b7 0%, #232a32 100%);
   color: white;
   cursor: pointer;
   user-select: none;
@@ -89,9 +89,9 @@
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  border: 2px solid #667eea;
+  border: 2px solid #37a4b7;
   background: white;
-  color: #667eea;
+  color: #37a4b7;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
@@ -102,15 +102,15 @@
 
 
 .btn-toggle-marcador:hover {
-  background: #667eea;
+  background: #37a4b7;
   color: white;
   transform: translateY(-1px);
 }
 
 .btn-toggle-marcador.active {
-  background: #667eea;
+  background: #37a4b7;
   color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(55, 164, 183, 0.3);
 }
 
 .btn-exportar {

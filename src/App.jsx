@@ -1,5 +1,7 @@
 import { MapContainer, TileLayer } from 'react-leaflet';
 import { useState } from 'react';
+import ProtectedRoute from './components/ProtectedRoute';
+import Sidebar from './components/Sidebar/Sidebar';
 import CapaJurisdiccion from './components/capas/Jurisdiccion/CapaJurisdiccion';
 import CapaCamarasMunicipales from './components/capas/CamarasMunicipales/CapaCamarasMunicipales';
 import CapaCamarasVecinales from './components/capas/CamarasVecinales/CapaCamarasVecinales';
@@ -186,7 +188,7 @@ const App = () => {
       label: '🚫 Paraderos No Autorizados',
       visible: capasVisibles.paraderosNoAutorizados,
     },
-    { name: 'residuos', label: '🗑️ Puntos residuos sólidos', visible: capasVisibles.residuos },
+    { name: 'residuos', label: '🗑️ Puntos Residuos Sólidos', visible: capasVisibles.residuos },
   ];
 
   const handleToggle = nombre => {
@@ -212,16 +214,19 @@ const App = () => {
   const mapStyle = { height: '100vh', width: '100%' };
 
   return (
-    <>
-      <LayerTogglePanel
+    <ProtectedRoute>
+      <div className="app-container">
+        <Sidebar />
+        {(capasVisibles.robos || capasVisibles.extorsiones) && (
+          <FiltroIncidentes onFiltrar={handleFiltrar} onLimpiar={handleLimpiar} />
+        )}
+        <div className="main-content">
+          <LayerTogglePanel
         capas={capas}
         onToggle={handleToggle}
         mapType={mapType}
         onMapTypeChange={setMapType}
       />
-      {(capasVisibles.robos || capasVisibles.extorsiones) && (
-        <FiltroIncidentes onFiltrar={handleFiltrar} onLimpiar={handleLimpiar} />
-      )}
       <ControlClusters
         visible={capasVisibles.clusters}
         radioCluster={radioCluster}
@@ -352,12 +357,14 @@ const App = () => {
         </GoogleMapWrapper>
       )}
 
-      {/* Leyenda de Cámaras */}
-      <LeyendaCamaras
-        camarasVecinalesVisible={capasVisibles.camarasVecinales}
-        camarasMunicipalesVisible={capasVisibles.camaras}
-      />
-    </>
+          {/* Leyenda de Cámaras */}
+          <LeyendaCamaras
+            camarasVecinalesVisible={capasVisibles.camarasVecinales}
+            camarasMunicipalesVisible={capasVisibles.camaras}
+          />
+        </div>
+      </div>
+    </ProtectedRoute>
   );
 };
 

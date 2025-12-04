@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { getAngleFromCoords, isValidReferencia, parseReferencia } from "../../utils";
 import "../capas/CamarasMunicipales/CapaCamarasMunicipales.css"; // Importar estilos de campos de visión
+import camarasService from "../../services/camarasService";
 
 // Función para crear el campo de visión de una cámara en Google Maps
 const createVisionFieldOverlay = (google, map, feature, lat, lng) => {
@@ -127,6 +128,8 @@ const GoogleCapaCamarasMunicipales = ({
   setCamaraConVision
 }) => {
   const [camaras, setCamaras] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [errorCarga, setErrorCarga] = useState(null);
   const [markers, setMarkers] = useState([]);
   const [circles, setCircles] = useState([]);
   const [visionOverlays, setVisionOverlays] = useState([]);
@@ -137,13 +140,69 @@ const GoogleCapaCamarasMunicipales = ({
   const [historialSeguimiento, setHistorialSeguimiento] = useState([]);
   const markersRef = useRef({});
 
+  // Cargar cámaras desde el backend
   useEffect(() => {
-    fetch("/data/610_updated.geojson")
-      .then((res) => res.json())
-      .then((data) => setCamaras(data.features || []))
-      .catch((err) =>
-        console.error("Error cargando cámaras municipales:", err)
-      );
+    const cargarCamaras = async () => {
+      try {
+        setCargando(true);
+        setErrorCarga(null);
+
+        const resultado = await camarasService.getCamarasMunicipales(0);
+        console.log(`✅ ${resultado.count} cámaras municipales cargadas desde el backend`);
+
+        // Transformar los datos de la API al formato GeoJSON que espera el componente
+        const camarasTransformadas = resultado.camaras.map(camara => {
+          // Mapeo correcto de tipos de cámara
+          let tipo, anguloVision;
+          switch (camara.camera) {
+            case 'C180':
+              tipo = 'TIPO I';
+              anguloVision = '180';
+              break;
+            case 'C360':
+              tipo = 'TIPO II';
+              anguloVision = '360';
+              break;
+            case 'LPR':
+              tipo = 'TIPO III';
+              anguloVision = 'LPR';
+              break;
+            default:
+              tipo = 'TIPO I';
+              anguloVision = '180';
+          }
+
+          return {
+            geometry: {
+              coordinates: [camara.longitude, camara.latitude],
+            },
+            properties: {
+              name: camara.name,
+              direccion: camara.address,
+              tipo: tipo,
+              camara: anguloVision,
+              cameraModel: camara.camera, // Guardar el modelo original
+              megafono: camara.megaphone,
+              boton: camara.buttom,
+              jurisdiccion: 'Municipal',
+              // Campo referencia para cámaras C180 (coordenadas hacia donde apunta)
+              referencia: camara.referencia || '',
+              // El polígono de visión viene del backend (usado como fallback)
+              geometryVision: camara.geometry,
+            },
+          };
+        });
+
+        setCamaras(camarasTransformadas);
+        setCargando(false);
+      } catch (err) {
+        console.error('Error cargando cámaras municipales:', err);
+        setErrorCarga(err.message);
+        setCargando(false);
+      }
+    };
+
+    cargarCamaras();
   }, []);
 
   // Agregar listener para obtener coordenadas con Ctrl+Click (herramienta de ayuda)
@@ -555,13 +614,69 @@ const GoogleCapaCamarasMunicipales = ({
         tipoCamara: props.camara
       });
 
-      // Crear campo de visión (overlay con gradiente) SOLO si la cámara está seleccionada
+      // Crear campo de visión (polígono o overlay) SOLO si la cámara está seleccionada
       if (esSeleccionada) {
-        console.log('🎯 Mostrando campo de visión para:', props.name, 'Tipo:', props.camara);
+        console.log('🎯 Mostrando campo de visión para:', props.name, 'Tipo:', props.camara, 'Referencia:', props.referencia, 'Geometry:', props.geometryVision);
 
-        const visionOverlay = createVisionFieldOverlay(google, map, feature, lat, lng);
-        if (visionOverlay) {
-          newVisionOverlays.push(visionOverlay);
+        // PRIORIDAD: Para C180 con referencia, usar método CSS (más preciso)
+        // Para C360 o sin referencia, usar polígono del backend
+        const usarMetodoCSS = props.camara === '180' && isValidReferencia(props.referencia);
+
+        if (usarMetodoCSS) {
+          // Método CSS con overlay rotado (para C180 con referencia)
+          const visionOverlay = createVisionFieldOverlay(google, map, feature, lat, lng);
+          if (visionOverlay) {
+            newVisionOverlays.push(visionOverlay);
+          }
+        } else if (props.geometryVision && props.geometryVision.coordinates) {
+          // Método polígono del backend (para C360 o fallback)
+          const coordinates = props.geometryVision.coordinates[0];
+          // Convertir de [lng, lat] a {lat, lng} para Google Maps
+          const paths = coordinates.map(coord => ({ lat: coord[1], lng: coord[0] }));
+
+          const polygon = new google.maps.Polygon({
+            paths: paths,
+            strokeColor: esSeleccionada ? '#667eea' : '#10b981',
+            strokeOpacity: 1,
+            strokeWeight: 2,
+            fillColor: esSeleccionada ? '#667eea' : '#10b981',
+            fillOpacity: 0.2,
+            map: map,
+            zIndex: 500
+          });
+
+          newVisionOverlays.push(polygon);
+        }
+      }
+
+      // Mostrar polígono de visión también en modo seguimiento
+      if (enSeguimiento) {
+        // PRIORIDAD: Para C180 con referencia, usar método CSS
+        const usarMetodoCSS = props.camara === '180' && isValidReferencia(props.referencia);
+
+        if (usarMetodoCSS) {
+          // Método CSS con overlay rotado
+          const visionOverlay = createVisionFieldOverlay(google, map, feature, lat, lng);
+          if (visionOverlay) {
+            newVisionOverlays.push(visionOverlay);
+          }
+        } else if (props.geometryVision && props.geometryVision.coordinates) {
+          // Método polígono del backend
+          const coordinates = props.geometryVision.coordinates[0];
+          const paths = coordinates.map(coord => ({ lat: coord[1], lng: coord[0] }));
+
+          const polygon = new google.maps.Polygon({
+            paths: paths,
+            strokeColor: '#10b981',
+            strokeOpacity: 0.6,
+            strokeWeight: 1,
+            fillColor: '#10b981',
+            fillOpacity: 0.15,
+            map: map,
+            zIndex: 500
+          });
+
+          newVisionOverlays.push(polygon);
         }
       }
 

@@ -264,10 +264,10 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
     filtroPanel: {
       position: 'fixed',
       bottom: '10px',
-      left: '10px',
+      left: 'calc(70px + 15px)',
       width: '33%',
       maxWidth: '420px',
-      zIndex: dateRangeOpen ? 1400 : 1000,
+      zIndex: dateRangeOpen ? 1400 : 100,
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
       padding: '14px 16px',
       borderRadius: '12px',
