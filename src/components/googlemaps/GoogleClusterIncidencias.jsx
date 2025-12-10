@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useRobosQuery, useExtorsionesQuery } from '../../hooks/useIncidenciasQuery';
+import {
+  useRobosQuery,
+  useExtorsionesQuery,
+  useHomicidiosQuery,
+  useFeminicidiosQuery,
+  useSicariatosQuery,
+  useSecuestrosQuery,
+  useDrogasQuery,
+  useBarrasQuery
+} from '../../hooks/useIncidenciasQuery';
 import { logger } from '../../utils/logger';
 
 // Función para calcular distancia entre dos puntos en metros usando fórmula de Haversine
@@ -307,27 +316,36 @@ const GoogleClusterIncidencias = ({ visible, radioCluster = 50, map, google, fil
     };
   }, []);
 
-  // Usar los hooks para obtener datos de robos y extorsiones
+  // Usar los hooks para obtener datos de todas las tipologías
   const robosQuery = useRobosQuery(filtros, visible);
   const extorsionesQuery = useExtorsionesQuery(filtros, visible);
+  const homicidiosQuery = useHomicidiosQuery(filtros, visible);
+  const feminicidiosQuery = useFeminicidiosQuery(filtros, visible);
+  const sicariatosQuery = useSicariatosQuery(filtros, visible);
+  const secuestrosQuery = useSecuestrosQuery(filtros, visible);
+  const drogasQuery = useDrogasQuery(filtros, visible);
+  const barrasQuery = useBarrasQuery(filtros, visible);
 
   // Efecto para procesar los datos cuando cambien
   useEffect(() => {
     if (!visible || !map || !google || !infoWindow) return;
 
-    // Verificar si ambas consultas están cargadas
-    const robosLoading = robosQuery.isLoading;
-    const extorsionesLoading = extorsionesQuery.isLoading;
-    const hasErrors = robosQuery.isError || extorsionesQuery.isError;
+    // Verificar si alguna consulta está cargando
+    const isLoading = robosQuery.isLoading || extorsionesQuery.isLoading ||
+      homicidiosQuery.isLoading || feminicidiosQuery.isLoading ||
+      sicariatosQuery.isLoading || secuestrosQuery.isLoading ||
+      drogasQuery.isLoading || barrasQuery.isLoading;
 
-    setLoading(robosLoading || extorsionesLoading);
+    const hasErrors = robosQuery.isError || extorsionesQuery.isError ||
+      homicidiosQuery.isError || feminicidiosQuery.isError ||
+      sicariatosQuery.isError || secuestrosQuery.isError ||
+      drogasQuery.isError || barrasQuery.isError;
+
+    setLoading(isLoading);
 
     // Si hay errores, limpiar y salir
     if (hasErrors) {
-      logger.error('❌ Error cargando datos:', {
-        robosError: robosQuery.error,
-        extorsionesError: extorsionesQuery.error,
-      });
+      logger.error('❌ Error cargando datos de incidencias');
       limpiarCirculos();
       window.dispatchEvent(
         new CustomEvent('clustersGenerados', {
@@ -342,21 +360,39 @@ const GoogleClusterIncidencias = ({ visible, radioCluster = 50, map, google, fil
     }
 
     // Si aún está cargando, no procesar
-    if (robosLoading || extorsionesLoading) return;
+    if (isLoading) return;
 
-    // Obtener los datos de ambas consultas
+    // Obtener los datos de todas las consultas
     const datosRobos = robosQuery.data || [];
     const datosExtorsiones = extorsionesQuery.data || [];
+    const datosHomicidios = homicidiosQuery.data || [];
+    const datosFeminicidios = feminicidiosQuery.data || [];
+    const datosSicariatos = sicariatosQuery.data || [];
+    const datosSecuestros = secuestrosQuery.data || [];
+    const datosDrogas = drogasQuery.data || [];
+    const datosBarras = barrasQuery.data || [];
 
     logger.log('🎯 Datos obtenidos de la API:', {
       robos: datosRobos.length,
       extorsiones: datosExtorsiones.length,
+      homicidios: datosHomicidios.length,
+      feminicidios: datosFeminicidios.length,
+      sicariatos: datosSicariatos.length,
+      secuestros: datosSecuestros.length,
+      drogas: datosDrogas.length,
+      barras: datosBarras.length,
     });
 
-    // Combinar ambos tipos de datos
+    // Combinar todos los tipos de datos
     const todosLosDatos = [
       ...datosRobos.map(item => ({ ...item, Tipo: 'Robo' })),
-      ...datosExtorsiones.map(item => ({ ...item, Tipo: 'Extorsion' })),
+      ...datosExtorsiones.map(item => ({ ...item, Tipo: 'Extorsión' })),
+      ...datosHomicidios.map(item => ({ ...item, Tipo: 'Homicidio' })),
+      ...datosFeminicidios.map(item => ({ ...item, Tipo: 'Feminicidio' })),
+      ...datosSicariatos.map(item => ({ ...item, Tipo: 'Sicariato' })),
+      ...datosSecuestros.map(item => ({ ...item, Tipo: 'Secuestro' })),
+      ...datosDrogas.map(item => ({ ...item, Tipo: 'Drogas' })),
+      ...datosBarras.map(item => ({ ...item, Tipo: 'Barras' })),
     ];
 
     logger.log('📊 Total de datos combinados:', todosLosDatos.length, 'registros');
@@ -425,10 +461,28 @@ const GoogleClusterIncidencias = ({ visible, radioCluster = 50, map, google, fil
     infoWindow,
     robosQuery.data,
     extorsionesQuery.data,
+    homicidiosQuery.data,
+    feminicidiosQuery.data,
+    sicariatosQuery.data,
+    secuestrosQuery.data,
+    drogasQuery.data,
+    barrasQuery.data,
     robosQuery.isLoading,
     extorsionesQuery.isLoading,
+    homicidiosQuery.isLoading,
+    feminicidiosQuery.isLoading,
+    sicariatosQuery.isLoading,
+    secuestrosQuery.isLoading,
+    drogasQuery.isLoading,
+    barrasQuery.isLoading,
     robosQuery.isError,
     extorsionesQuery.isError,
+    homicidiosQuery.isError,
+    feminicidiosQuery.isError,
+    sicariatosQuery.isError,
+    secuestrosQuery.isError,
+    drogasQuery.isError,
+    barrasQuery.isError,
   ]);
 
   if (!visible) return null;

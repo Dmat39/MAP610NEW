@@ -1,7 +1,5 @@
 import { MapContainer, TileLayer } from 'react-leaflet';
-import { useState } from 'react';
-import ProtectedRoute from './components/ProtectedRoute';
-import Sidebar from './components/Sidebar/Sidebar';
+import { useState, useCallback, useMemo } from 'react';
 import CapaJurisdiccion from './components/capas/Jurisdiccion/CapaJurisdiccion';
 import CapaCamarasMunicipales from './components/capas/CamarasMunicipales/CapaCamarasMunicipales';
 import CapaCamarasVecinales from './components/capas/CamarasVecinales/CapaCamarasVecinales';
@@ -12,6 +10,12 @@ import CapaRobos from './components/capas/Incidencias/CapaRobos';
 import FiltroIncidentes from './components/filtros/FiltroIncidentes';
 import LayerTogglePanel from './components/Controles/LayerTogglePanel';
 import CapaExtorsion from './components/capas/Incidencias/CapaExtorsion';
+import CapaHomicidios from './components/capas/Incidencias/CapaHomicidios';
+import CapaFeminicidios from './components/capas/Incidencias/CapaFeminicidios';
+import CapaSicariatos from './components/capas/Incidencias/CapaSicariatos';
+import CapaSecuestros from './components/capas/Incidencias/CapaSecuestros';
+import CapaDrogas from './components/capas/Incidencias/CapaDrogas';
+import CapaBarras from './components/capas/Incidencias/CapaBarras';
 import CapaResiduos from './components/capas/Residuos/CapaResiduos';
 import CapaCoordenadasNuevas from './components/capas/CoordenadasNuevas/CapaCoordenadasNuevas';
 import ClusterIncidencias from './components/capas/ClusterIncidencias/ClusterIncidencias';
@@ -31,13 +35,19 @@ import GoogleCapaCamarasMunicipales from './components/googlemaps/GoogleCapaCama
 import GoogleCapaCamarasVecinales from './components/googlemaps/GoogleCapaCamarasVecinales';
 import GoogleCapaRobos from './components/googlemaps/GoogleCapaRobos';
 import GoogleCapaExtorsion from './components/googlemaps/GoogleCapaExtorsion';
+import GoogleCapaHomicidios from './components/googlemaps/GoogleCapaHomicidios';
+import GoogleCapaFeminicidios from './components/googlemaps/GoogleCapaFeminicidios';
+import GoogleCapaSicariatos from './components/googlemaps/GoogleCapaSicariatos';
+import GoogleCapaSecuestros from './components/googlemaps/GoogleCapaSecuestros';
+import GoogleCapaDrogas from './components/googlemaps/GoogleCapaDrogas';
+import GoogleCapaBarras from './components/googlemaps/GoogleCapaBarras';
 import GoogleCapaResiduos from './components/googlemaps/GoogleCapaResiduos';
 import GoogleCapaBusquedaDirecciones from './components/googlemaps/GoogleCapaBusquedaDirecciones';
 import GoogleCapaUbicadorPunto from './components/googlemaps/GoogleCapaUbicadorPuntos/GoogleCapaUbicadorPunto';
 import GoogleClusterIncidencias from './components/googlemaps/GoogleClusterIncidencias';
 import LeyendaCamaras from './components/capas/LeyendaCamaras/LeyendaCamaras';
 
-const App = () => {
+const MapView = () => {
   const [mapType, setMapType] = useState('leaflet'); // 'leaflet' o 'google'
   const [capasVisibles, setCapasVisibles] = useState({
     camaras: false,
@@ -46,6 +56,12 @@ const App = () => {
     paraderosNoAutorizados: false,
     robos: false,
     extorsiones: false,
+    homicidios: false,
+    feminicidios: false,
+    sicariatos: false,
+    secuestros: false,
+    drogas: false,
+    barras: false,
     residuos: false,
     defensaCivil: false,
     clusters: false,
@@ -58,6 +74,12 @@ const App = () => {
   const [payloadFiltros, setPayloadFiltros] = useState(null);
   const [filtrosRobos, setFiltrosRobos] = useState(null);
   const [filtrosExtorsion, setFiltrosExtorsion] = useState(null);
+  const [filtrosHomicidios, setFiltrosHomicidios] = useState(null);
+  const [filtrosFeminicidios, setFiltrosFeminicidios] = useState(null);
+  const [filtrosSicariatos, setFiltrosSicariatos] = useState(null);
+  const [filtrosSecuestros, setFiltrosSecuestros] = useState(null);
+  const [filtrosDrogas, setFiltrosDrogas] = useState(null);
+  const [filtrosBarras, setFiltrosBarras] = useState(null);
   const [radioCluster, setRadioCluster] = useState(50);
   const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
   const [resultadoSeleccionado, setResultadoSeleccionado] = useState(null);
@@ -80,30 +102,54 @@ const App = () => {
     Jurisdiccion: '',
   };
 
-  const handleFiltrar = payload => {
+  const handleFiltrar = useCallback(payload => {
     setPayloadFiltros(payload);
     if (capasVisibles.robos) setFiltrosRobos(payload);
     else setFiltrosRobos(payloadVacio);
 
     if (capasVisibles.extorsiones) setFiltrosExtorsion(payload);
     else setFiltrosExtorsion(payloadVacio);
-  };
 
-  const handleLimpiar = () => {
+    if (capasVisibles.homicidios) setFiltrosHomicidios(payload);
+    else setFiltrosHomicidios(payloadVacio);
+
+    if (capasVisibles.feminicidios) setFiltrosFeminicidios(payload);
+    else setFiltrosFeminicidios(payloadVacio);
+
+    if (capasVisibles.sicariatos) setFiltrosSicariatos(payload);
+    else setFiltrosSicariatos(payloadVacio);
+
+    if (capasVisibles.secuestros) setFiltrosSecuestros(payload);
+    else setFiltrosSecuestros(payloadVacio);
+
+    if (capasVisibles.drogas) setFiltrosDrogas(payload);
+    else setFiltrosDrogas(payloadVacio);
+
+    if (capasVisibles.barras) setFiltrosBarras(payload);
+    else setFiltrosBarras(payloadVacio);
+  }, [capasVisibles]);
+
+  const handleLimpiar = useCallback(() => {
     setFiltrosRobos(payloadVacio);
     setFiltrosExtorsion(payloadVacio);
-  };
+    setFiltrosHomicidios(payloadVacio);
+    setFiltrosFeminicidios(payloadVacio);
+    setFiltrosSicariatos(payloadVacio);
+    setFiltrosSecuestros(payloadVacio);
+    setFiltrosDrogas(payloadVacio);
+    setFiltrosBarras(payloadVacio);
+  }, []);
 
-  const handleBusquedaRealizada = (resultados, idSeleccionado) => {
+  const handleBusquedaRealizada = useCallback((resultados, idSeleccionado) => {
     setResultadosBusqueda(resultados);
     setResultadoSeleccionado(idSeleccionado);
-  };
+  }, []);
 
-  const handleToggleMarcador = () => {
-    setMarcadorActivo(!marcadorActivo);
-  };
+  const handleToggleMarcador = useCallback(() => {
+    setMarcadorActivo(prev => !prev);
+  }, []);
 
-  const handleAgregarPunto = nuevoPunto => {
+  const handleAgregarPunto = useCallback(nuevoPunto => {
     setPuntosUsuario(prevPuntos => {
       // Si el punto ya existe (mismo ID), actualizarlo; si no, agregarlo
       const existe = prevPuntos.find(p => p.id === nuevoPunto.id);
@@ -113,30 +159,30 @@ const App = () => {
         return [...prevPuntos, nuevoPunto];
       }
     });
-  };
+  }, []);
 
-  const handleEliminarPunto = puntoId => {
+  const handleEliminarPunto = useCallback(puntoId => {
     setPuntosUsuario(prevPuntos => prevPuntos.filter(p => p.id !== puntoId));
-  };
+  }, []);
 
-  const handleRutaCalculada = infoRuta => {
+  const handleRutaCalculada = useCallback(infoRuta => {
     setRutaInfo(infoRuta);
-  };
+  }, []);
 
-  const handleLimpiarRuta = () => {
+  const handleLimpiarRuta = useCallback(() => {
     setRutaInfo(null);
     // Crear un evento personalizado para notificar a los componentes de mapa
     window.dispatchEvent(new CustomEvent('clearRoute'));
-  };
+  }, []);
 
-  const handleCamaraSeleccionada = camara => {
+  const handleCamaraSeleccionada = useCallback(camara => {
     setCamaraSeleccionada(camara);
-  };
+  }, []);
 
-  const handleFiltrosCamaras = (camarasFiltradas, filtros) => {
+  const handleFiltrosCamaras = useCallback((camarasFiltradas, filtros) => {
     setCamarasFiltradas(camarasFiltradas);
     setFiltrosCamaras(filtros);
-  };
+  }, []);
 
   const handleSeguimientoCamara = camara => {
     setSeguimientoCamara(camara);
@@ -164,6 +210,12 @@ const App = () => {
     },
     { name: 'robos', label: '🦹 Robos', visible: capasVisibles.robos },
     { name: 'extorsiones', label: '📞 Extorsiones', visible: capasVisibles.extorsiones },
+    { name: 'homicidios', label: '🔪 Homicidios', visible: capasVisibles.homicidios },
+    { name: 'feminicidios', label: '👩 Feminicidios', visible: capasVisibles.feminicidios },
+    { name: 'sicariatos', label: '🔫 Sicariatos', visible: capasVisibles.sicariatos },
+    { name: 'secuestros', label: '👤 Secuestros', visible: capasVisibles.secuestros },
+    { name: 'drogas', label: '💊 Drogas', visible: capasVisibles.drogas },
+    { name: 'barras', label: '⚽ Barras', visible: capasVisibles.barras },
     { name: 'clusters', label: '🎯 Clusters de Incidencias', visible: capasVisibles.clusters },
     {
       name: 'busquedaDirecciones',
@@ -191,33 +243,47 @@ const App = () => {
     { name: 'residuos', label: '🗑️ Puntos Residuos Sólidos', visible: capasVisibles.residuos },
   ];
 
-  const handleToggle = nombre => {
+  const handleToggle = useCallback(nombre => {
     setCapasVisibles(prev => {
       const updated = { ...prev, [nombre]: !prev[nombre] };
 
       // Si se activa
       if (!prev[nombre]) {
-        if (nombre === 'robos' && payloadFiltros) setFiltrosRobos(payloadFiltros);
-        if (nombre === 'extorsiones' && payloadFiltros) setFiltrosExtorsion(payloadFiltros);
+        // Usar payloadFiltros si existe, sino inicializar con objeto vacío para usar fechas por defecto
+        const filtrosIniciales = payloadFiltros || {};
+        if (nombre === 'robos') setFiltrosRobos(filtrosIniciales);
+        if (nombre === 'extorsiones') setFiltrosExtorsion(filtrosIniciales);
+        if (nombre === 'homicidios') setFiltrosHomicidios(filtrosIniciales);
+        if (nombre === 'feminicidios') setFiltrosFeminicidios(filtrosIniciales);
+        if (nombre === 'sicariatos') setFiltrosSicariatos(filtrosIniciales);
+        if (nombre === 'secuestros') setFiltrosSecuestros(filtrosIniciales);
+        if (nombre === 'drogas') setFiltrosDrogas(filtrosIniciales);
+        if (nombre === 'barras') setFiltrosBarras(filtrosIniciales);
       } else {
         // Si se desactiva, fuerza vaciado con payload con guiones
         if (nombre === 'robos') setFiltrosRobos(payloadVacio);
         if (nombre === 'extorsiones') setFiltrosExtorsion(payloadVacio);
+        if (nombre === 'homicidios') setFiltrosHomicidios(payloadVacio);
+        if (nombre === 'feminicidios') setFiltrosFeminicidios(payloadVacio);
+        if (nombre === 'sicariatos') setFiltrosSicariatos(payloadVacio);
+        if (nombre === 'secuestros') setFiltrosSecuestros(payloadVacio);
+        if (nombre === 'drogas') setFiltrosDrogas(payloadVacio);
+        if (nombre === 'barras') setFiltrosBarras(payloadVacio);
       }
 
       return updated;
     });
-  };
+  }, [payloadFiltros]);
 
   const mapCenter = [-11.9699, -76.998];
   const mapZoom = 13.1;
-  const mapStyle = { height: '100vh', width: '100%' };
+  const mapStyle = { height: '100vh', width: '100%', position: 'relative', zIndex: 1 };
 
   return (
-    <ProtectedRoute>
-      <div className="app-container">
-        <Sidebar />
-        {(capasVisibles.robos || capasVisibles.extorsiones) && (
+      <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+        {(capasVisibles.robos || capasVisibles.extorsiones || capasVisibles.homicidios ||
+          capasVisibles.feminicidios || capasVisibles.sicariatos || capasVisibles.secuestros ||
+          capasVisibles.drogas || capasVisibles.barras) && (
           <FiltroIncidentes onFiltrar={handleFiltrar} onLimpiar={handleLimpiar} />
         )}
         <div className="main-content">
@@ -289,6 +355,12 @@ const App = () => {
           <CapaParaderosNoAutorizados visible={capasVisibles.paraderosNoAutorizados} />
           <CapaRobos visible={capasVisibles.robos} filtros={filtrosRobos} />
           <CapaExtorsion visible={capasVisibles.extorsiones} filtros={filtrosExtorsion} />
+          <CapaHomicidios visible={capasVisibles.homicidios} filtros={filtrosHomicidios} />
+          <CapaFeminicidios visible={capasVisibles.feminicidios} filtros={filtrosFeminicidios} />
+          <CapaSicariatos visible={capasVisibles.sicariatos} filtros={filtrosSicariatos} />
+          <CapaSecuestros visible={capasVisibles.secuestros} filtros={filtrosSecuestros} />
+          <CapaDrogas visible={capasVisibles.drogas} filtros={filtrosDrogas} />
+          <CapaBarras visible={capasVisibles.barras} filtros={filtrosBarras} />
           <CapaResiduos visible={capasVisibles.residuos} />
           <CapaDefensaCivil visible={capasVisibles.defensaCivil} />
           <CapaCoordenadasNuevas
@@ -334,6 +406,12 @@ const App = () => {
           <GoogleCapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
           <GoogleCapaRobos visible={capasVisibles.robos} filtros={filtrosRobos} />
           <GoogleCapaExtorsion visible={capasVisibles.extorsiones} filtros={filtrosExtorsion} />
+          <GoogleCapaHomicidios visible={capasVisibles.homicidios} filtros={filtrosHomicidios} />
+          <GoogleCapaFeminicidios visible={capasVisibles.feminicidios} filtros={filtrosFeminicidios} />
+          <GoogleCapaSicariatos visible={capasVisibles.sicariatos} filtros={filtrosSicariatos} />
+          <GoogleCapaSecuestros visible={capasVisibles.secuestros} filtros={filtrosSecuestros} />
+          <GoogleCapaDrogas visible={capasVisibles.drogas} filtros={filtrosDrogas} />
+          <GoogleCapaBarras visible={capasVisibles.barras} filtros={filtrosBarras} />
           <GoogleCapaResiduos visible={capasVisibles.residuos} />
           <GoogleClusterIncidencias
             visible={capasVisibles.clusters}
@@ -364,8 +442,7 @@ const App = () => {
           />
         </div>
       </div>
-    </ProtectedRoute>
   );
 };
 
-export default App;
+export default MapView;

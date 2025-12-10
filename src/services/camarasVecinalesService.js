@@ -17,7 +17,7 @@ const camarasVecinalesService = {
         throw new Error('No hay token de autenticación. Por favor, inicia sesión.');
       }
 
-      const response = await fetch(`${API_URL}communal`, {
+      const response = await fetch(`${API_URL}communal?page=0`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -37,14 +37,20 @@ const camarasVecinalesService = {
       }
 
       const result = await response.json();
+      console.log('📡 Cámaras vecinales obtenidas:', result);
 
-      // El backend retorna: { message: "...", data: { count: ..., data: [...] } }
+      // El backend retorna: { message: "...", data: { data: [...], totalCount: ... } }
+      const camaras = result.data?.data || [];
+      const totalCount = result.data?.totalCount || camaras.length;
+
+      console.log(`✅ Total de cámaras vecinales cargadas: ${camaras.length} de ${totalCount}`);
+
       return {
-        count: result.data?.count || 0,
-        camaras: result.data?.data || []
+        count: totalCount,
+        camaras: camaras
       };
     } catch (error) {
-      console.error('Error en getCamarasVecinales:', error);
+      console.error('❌ Error en getCamarasVecinales:', error);
       throw error;
     }
   }

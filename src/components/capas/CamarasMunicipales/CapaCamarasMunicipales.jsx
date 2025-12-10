@@ -147,8 +147,9 @@ const CapaCamarasMunicipales = ({
         setCargando(true);
         setError(null);
 
-        const resultado = await camarasService.getCamarasMunicipales(0);
-        logger.log(`✅ ${resultado.count} cámaras municipales cargadas desde el backend`);
+        // Obtener TODAS las cámaras municipales (sin límite de paginación)
+        const resultado = await camarasService.getCamarasMunicipales();
+        logger.log(`✅ ${resultado.camaras.length} cámaras municipales cargadas desde el backend (Total: ${resultado.count})`);
 
         // Transformar los datos de la API al formato GeoJSON que espera el componente
         const camarasTransformadas = resultado.camaras.map(camara => {

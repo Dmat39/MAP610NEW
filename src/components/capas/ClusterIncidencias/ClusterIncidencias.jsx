@@ -1,10 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { LayerGroup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { logger } from '../../../utils';
 
+// Límite máximo de registros por tipología para optimizar rendimiento
+const MAX_REGISTROS_POR_TIPOLOGIA = 2000;
+
+// Caché de distancias para evitar recalcular
+const distanciaCache = new Map();
+
 // Función para calcular distancia entre dos puntos en metros usando fórmula de Haversine
 const calcularDistancia = (lat1, lon1, lat2, lon2) => {
+  // Crear key único para el caché
+  const cacheKey = `${lat1.toFixed(6)},${lon1.toFixed(6)}-${lat2.toFixed(6)},${lon2.toFixed(6)}`;
+
+  // Verificar si ya está en caché
+  if (distanciaCache.has(cacheKey)) {
+    return distanciaCache.get(cacheKey);
+  }
+
   const R = 6371000; // Radio de la Tierra en metros
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -15,7 +29,15 @@ const calcularDistancia = (lat1, lon1, lat2, lon2) => {
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  const distancia = R * c;
+
+  // Guardar en caché (limitar tamaño del caché)
+  if (distanciaCache.size > 10000) {
+    distanciaCache.clear(); // Limpiar caché si crece demasiado
+  }
+  distanciaCache.set(cacheKey, distancia);
+
+  return distancia;
 };
 
 // Función para calcular el centroide de un conjunto de puntos
@@ -44,19 +66,29 @@ const calcularRadioCluster = (puntos, centroide) => {
   return Math.max(maxDistancia + 10, 30); // Mínimo 30 metros
 };
 
-// Algoritmo de clustering basado en densidad (DBSCAN mejorado)
+// Algoritmo de clustering basado en densidad (DBSCAN optimizado)
 const realizarClustering = (puntos, radioMaximo = 50) => {
   logger.debug('CLUSTERING', '🔧 Iniciando algoritmo de clustering...', {
     puntos: puntos.length,
     radio: radioMaximo,
   });
+
+  // Si hay demasiados puntos, limitarlos para mantener rendimiento
+  const puntosLimitados = puntos.length > MAX_REGISTROS_POR_TIPOLOGIA * 8
+    ? puntos.slice(0, MAX_REGISTROS_POR_TIPOLOGIA * 8)
+    : puntos;
+
+  if (puntos.length > puntosLimitados.length) {
+    logger.warn(`⚠️ Limitando clustering a ${puntosLimitados.length} puntos de ${puntos.length} totales`);
+  }
+
   const clusters = [];
   const visitados = new Set();
 
-  for (let i = 0; i < puntos.length; i++) {
+  for (let i = 0; i < puntosLimitados.length; i++) {
     if (visitados.has(i)) continue;
 
-    const puntoActual = puntos[i];
+    const puntoActual = puntosLimitados[i];
     const cluster = [puntoActual];
     visitados.add(i);
 
@@ -65,21 +97,21 @@ const realizarClustering = (puntos, radioMaximo = 50) => {
 
     while (cola.length > 0) {
       const indiceActual = cola.shift();
-      const puntoBase = puntos[indiceActual];
+      const puntoBase = puntosLimitados[indiceActual];
 
-      // Buscar vecinos del punto base
-      for (let j = 0; j < puntos.length; j++) {
+      // Buscar vecinos del punto base (optimizado con early exit)
+      for (let j = i + 1; j < puntosLimitados.length; j++) {
         if (visitados.has(j)) continue;
 
         const distancia = calcularDistancia(
           puntoBase.Latitud,
           puntoBase.Longitud,
-          puntos[j].Latitud,
-          puntos[j].Longitud
+          puntosLimitados[j].Latitud,
+          puntosLimitados[j].Longitud
         );
 
         if (distancia <= radioMaximo) {
-          cluster.push(puntos[j]);
+          cluster.push(puntosLimitados[j]);
           visitados.add(j);
           cola.push(j); // Agregar a la cola para expandir desde este punto
         }
@@ -250,87 +282,123 @@ const ClusterIncidencias = ({ visible, radioCluster = 50, filtros = null }) => {
   useEffect(() => {
     if (!visible) return;
 
-    setLoading(true);
+    // Debounce para evitar clustering excesivo al cambiar radio
+    const debounceTimer = setTimeout(() => {
+      setLoading(true);
 
-    // Cargar datos del archivo Robo_extorsion.json (mismo que usan CapaRobos y CapaExtorsion)
-    fetch('/data/Robo_extorsion.json')
-      .then(response => {
-        logger.log('📡 Respuesta recibida:', response.status, response.statusText);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(rawData => {
-        // Validar que los datos tengan la estructura correcta
-        if (!Array.isArray(rawData) || rawData.length === 0) {
-          throw new Error('Los datos no tienen el formato esperado o están vacíos');
-        }
+      // Función para obtener fechas por defecto (últimos 30 días)
+      const getDefaultDates = () => {
+        const today = new Date();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(today.getDate() - 30);
 
-        // Función helper para convertir fecha del JSON a Date
-        const parseJsonDate = fechaStr => {
-          if (!fechaStr) return null;
-          // Formato: "1/1/25" (M/D/YY)
-          const partes = fechaStr.split('/');
-          if (partes.length !== 3) return null;
-
-          const mes = parseInt(partes[0]) - 1; // Meses en Date son 0-based
-          const dia = parseInt(partes[1]);
-          let año = parseInt(partes[2]);
-
-          // Convertir YY a YYYY (asumiendo que 25 = 2025, etc.)
-          if (año < 50) {
-            año += 2000; // 25 -> 2025
-          } else {
-            año += 1900; // 99 -> 1999
-          }
-
-          return new Date(año, mes, dia);
+        const formatDate = (date) => {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
         };
 
-        // Aplicar filtros si existen
-        let datosFiltrados = rawData;
-        if (filtros && Object.keys(filtros).length > 0) {
-          // Filtro por rango de fechas
-          if (filtros.fechaInicio && filtros.fechaFin) {
-            const fechaInicio = new Date(filtros.fechaInicio);
-            const fechaFin = new Date(filtros.fechaFin);
+        return {
+          start: formatDate(thirtyDaysAgo),
+          end: formatDate(today)
+        };
+      };
 
-            datosFiltrados = datosFiltrados.filter(item => {
-              const fechaIncidencia = parseJsonDate(item['Fecha']);
-              if (!fechaIncidencia) return false;
+      // Función para construir URL del endpoint (con límite de registros)
+      const buildURL = (tipo) => {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.13.80:81/api/';
+        const defaultDates = getDefaultDates();
+        const params = new URLSearchParams();
 
-              return fechaIncidencia >= fechaInicio && fechaIncidencia <= fechaFin;
-            });
-          }
+        params.append('type', tipo);
+        params.append('start', filtros?.fechaInicio || defaultDates.start);
+        params.append('end', filtros?.fechaFin || defaultDates.end);
 
-          // Otros filtros (Turno, Horario, Jurisdiccion)
-          datosFiltrados = datosFiltrados.filter(item => {
-            return Object.entries(filtros).every(([campo, valor]) => {
-              if (!valor || valor.trim() === '' || campo === 'fechaInicio' || campo === 'fechaFin')
-                return true;
+        // Agregar filtros opcionales si existen
+        if (filtros?.Turno) params.append('shift', filtros.Turno);
+        if (filtros?.Horario) params.append('schedule', filtros.Horario);
+        if (filtros?.Jurisdiccion) params.append('jurisdiction', filtros.Jurisdiccion);
 
-              const valorItem = (item[campo] || '').toString().toLowerCase().trim();
-              const valorFiltro = valor.toString().toLowerCase().trim();
+        return `${API_URL}incidence?${params.toString()}`;
+      };
 
-              return valorItem.includes(valorFiltro);
-            });
-          });
-        }
+    // Obtener token de autenticación
+    const TOKEN = localStorage.getItem('token');
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    if (TOKEN) {
+      headers['Authorization'] = `Bearer ${TOKEN}`;
+    }
+
+    // Tipologías a obtener: 1=Robo, 2=Extorsion, 3=Homicidio, 4=Feminicidio, 5=Sicariato, 6=Secuestro, 7=Drogas, 8=Barras
+    const tipologias = [
+      { tipo: 1, nombre: 'Robo' },
+      { tipo: 2, nombre: 'Extorsión' },
+      { tipo: 3, nombre: 'Homicidio' },
+      { tipo: 4, nombre: 'Feminicidio' },
+      { tipo: 5, nombre: 'Sicariato' },
+      { tipo: 6, nombre: 'Secuestro' },
+      { tipo: 7, nombre: 'Drogas' },
+      { tipo: 8, nombre: 'Barras' }
+    ];
+
+    // Hacer peticiones para todas las tipologías en paralelo
+    Promise.all(
+      tipologias.map(({ tipo, nombre }) =>
+        fetch(buildURL(tipo), { headers })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`Error ${response.status} al obtener ${nombre}`);
+            }
+            return response.json();
+          })
+          .then(result => {
+            // Extraer datos de la respuesta
+            let rawData = result.data?.data || [];
+
+            // Limitar datos por tipología para optimizar rendimiento
+            if (rawData.length > MAX_REGISTROS_POR_TIPOLOGIA) {
+              logger.warn(`⚠️ Limitando ${nombre} a ${MAX_REGISTROS_POR_TIPOLOGIA} registros de ${rawData.length}`);
+              rawData = rawData.slice(0, MAX_REGISTROS_POR_TIPOLOGIA);
+            }
+
+            // Normalizar y agregar el tipo
+            return rawData.map(item => ({
+              Id: item.code || item.codigo_incidencia,
+              Latitud: parseFloat(item.latitude || item.Latitud),
+              Longitud: parseFloat(item.longitude || item.Longitud),
+              Tipo: nombre,
+              Descripcion: item.description || item.Descripcion,
+              Fecha: item.date || item.Fecha,
+            }));
+          })
+          .catch(error => {
+            logger.warn(`⚠️ Error al obtener ${nombre}:`, error.message);
+            return []; // Retornar array vacío si falla
+          })
+      )
+    )
+      .then(resultados => {
+        // Combinar todos los resultados en un solo array
+        const rawData = resultados.flat();
+
+        logger.log('📊 Datos obtenidos para clustering:', rawData.length, 'incidencias');
 
         // Convertir datos al formato esperado por el algoritmo de clustering
         // Solo incluir registros con coordenadas válidas
-        const data = datosFiltrados
+        const data = rawData
           .filter(item => {
-            const lat = parseFloat(item.Latitud);
-            const lng = parseFloat(item.Longitud);
+            const lat = item.Latitud;
+            const lng = item.Longitud;
             return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
           })
           .map((item, index) => ({
-            Id: item.id || index + 1,
-            Latitud: parseFloat(item.Latitud),
-            Longitud: parseFloat(item.Longitud),
-            Tipo: item.Tipo || determinarTipo(item.Descripcion),
+            Id: item.Id || index + 1,
+            Latitud: item.Latitud,
+            Longitud: item.Longitud,
+            Tipo: item.Tipo,
           }));
 
         // Realizar clustering
@@ -374,6 +442,10 @@ const ClusterIncidencias = ({ visible, radioCluster = 50, filtros = null }) => {
       .finally(() => {
         setLoading(false);
       });
+    }, 300); // Debounce de 300ms
+
+    // Cleanup del debounce timer
+    return () => clearTimeout(debounceTimer);
   }, [visible, radioCluster, filtros]);
 
   if (!visible) return null;

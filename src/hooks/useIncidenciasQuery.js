@@ -69,164 +69,286 @@ const mapJurisdiccion = {
   '10 de octubre': 8,
 };
 
-// Función para construir parámetros de consulta
+// Función para obtener fechas por defecto (últimos 30 días)
+const getDefaultDates = () => {
+  const today = new Date();
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(today.getDate() - 30);
+
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  return {
+    start: formatDate(thirtyDaysAgo),
+    end: formatDate(today)
+  };
+};
+
+// Función para construir parámetros de consulta para el nuevo endpoint /incidence
 const buildQueryParams = (filtros, tipo) => {
   const params = new URLSearchParams();
 
-  const año = filtros?.Año?.trim() || '2025';
-  params.append('anio', año);
+  // Parámetro obligatorio type (tipología)
+  params.append('type', tipo);
 
-  if (filtros?.Mes) {
-    params.append('mes', mapMes[normalizarTexto(filtros.Mes)] || '');
-  }
+  // Parámetros de fecha - usar fechas por defecto si no se proporcionan o están vacías
+  const defaultDates = getDefaultDates();
+  const startDate = (filtros?.fechaInicio && filtros.fechaInicio.trim() !== '')
+    ? filtros.fechaInicio
+    : defaultDates.start;
+  const endDate = (filtros?.fechaFin && filtros.fechaFin.trim() !== '')
+    ? filtros.fechaFin
+    : defaultDates.end;
+
+  params.append('start', startDate);
+  params.append('end', endDate);
+
+  // Parámetros opcionales de filtrado
   if (filtros?.Turno) {
-    params.append('turno', mapTurno[normalizarTexto(filtros.Turno)] || '');
-  }
-  if (filtros?.Dia) {
-    params.append('dia', mapDia[normalizarTexto(filtros.Dia)] || '');
-  }
-  if (filtros?.Horario) {
-    params.append('horario', mapHorario[normalizarTexto(filtros.Horario)] || '');
-  }
-  if (filtros?.Jurisdiccion) {
-    params.append('jurisdiccion', mapJurisdiccion[normalizarTexto(filtros.Jurisdiccion)] || '');
+    const turnoId = mapTurno[normalizarTexto(filtros.Turno)];
+    if (turnoId) params.append('shift', turnoId);
   }
 
-  params.append('tipo', tipo); // 1 para extorsiones, 2 para robos
+  if (filtros?.Horario) {
+    const horarioId = mapHorario[normalizarTexto(filtros.Horario)];
+    if (horarioId) params.append('schedule', horarioId);
+  }
+
+  if (filtros?.Jurisdiccion) {
+    const jurisdiccionId = mapJurisdiccion[normalizarTexto(filtros.Jurisdiccion)];
+    if (jurisdiccionId) params.append('jurisdiction', jurisdiccionId);
+  }
 
   return params.toString();
 };
 
-// Función para hacer la petición a la API
+// Nombres de tipologías para logging
+const tipologiaNombres = {
+  1: 'Robo',
+  2: 'Extorsión',
+  3: 'Homicidio',
+  4: 'Feminicidio',
+  5: 'Sicariato',
+  6: 'Secuestro',
+  7: 'Drogas',
+  8: 'Barras',
+};
+
+// Función para hacer la petición a la API con timeout
 const fetchIncidencias = async (filtros, tipo) => {
+  const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.13.80:81/api/';
+  const TOKEN = localStorage.getItem('token'); // Obtener token del localStorage
   const queryString = buildQueryParams(filtros, tipo);
-  const url = `http://192.168.13.80:81/api/incidencias-filtradas?${queryString}`;
+  const url = `${API_URL}incidence?${queryString}`;
 
-  logger.log(`Fetching ${tipo === 1 ? 'extorsiones' : 'robos'} from API:`, url);
+  logger.log(`Fetching ${tipologiaNombres[tipo] || `tipo ${tipo}`} from API:`, url);
+  logger.log(`🔑 Token presente:`, TOKEN ? `Sí (${TOKEN.substring(0, 20)}...)` : 'No');
 
-  const response = await fetch(url);
+  const headers = {
+    'Content-Type': 'application/json',
+  };
 
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  // Agregar token si existe
+  if (TOKEN) {
+    headers['Authorization'] = `Bearer ${TOKEN}`;
+  } else {
+    logger.warn('⚠️ No se encontró token en localStorage');
   }
 
-  const data = await response.json();
-  return data.result || [];
+  // Crear AbortController para timeout de 30 segundos
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  try {
+    const response = await fetch(url, {
+      headers,
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error(`❌ Error HTTP ${response.status}:`, errorText);
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    // Log completo de la respuesta para debugging
+    logger.log(`📦 Respuesta completa del backend para ${tipologiaNombres[tipo]}:`, result);
+
+    // Manejar la estructura de respuesta del backend: { message: "", data: { count: N, data: [...] } }
+    let rawData = [];
+    if (result.data && Array.isArray(result.data.data)) {
+      rawData = result.data.data;
+      logger.log(`✅ Datos extraídos: ${rawData.length} registros`);
+    } else {
+      // Fallback para otras estructuras posibles
+      rawData = result.result || result.data || result || [];
+      logger.warn(`⚠️ Estructura de respuesta diferente, usando fallback. Datos: ${rawData.length} registros`);
+    }
+
+    logger.log(`📊 Raw data obtenida (${rawData.length} registros):`, rawData.slice(0, 2)); // Log primeros 2 registros
+
+    // Normalizar los campos del backend al formato esperado por los componentes
+    // Backend: code, latitude, longitude, description, date, hour, shift, schedule, jurisdiction
+    // Componentes: codigo_incidencia, Latitud, Longitud, Descripcion, Fecha, Hora, Turno, Horario, Jurisdiccion
+    const normalizedData = rawData.map(item => ({
+      codigo_incidencia: item.code || item.codigo_incidencia || '',
+      Latitud: item.latitude || item.Latitud || 0,
+      Longitud: item.longitude || item.Longitud || 0,
+      Descripcion: item.description || item.Descripcion || '',
+      Fecha: item.date || item.Fecha || '',
+      Hora: item.hour || item.Hora || '',
+      Turno: item.shift || item.Turno || '',
+      Horario: item.schedule || item.Horario || '',
+      Jurisdiccion: item.jurisdiction || item.Jurisdiccion || '',
+    }));
+
+    logger.log(`🔄 Datos normalizados (${normalizedData.length} registros):`, normalizedData.slice(0, 2));
+
+    return normalizedData;
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error.name === 'AbortError') {
+      logger.error(`⏱️ Timeout después de 30 segundos para ${tipologiaNombres[tipo]}`);
+      throw new Error(`La petición tardó demasiado (timeout 30s)`);
+    }
+
+    logger.error(`❌ Error en fetch para ${tipologiaNombres[tipo]}:`, error);
+    throw error;
+  }
 };
 
-// Función para aplicar filtros adicionales (fechas)
+// Función para aplicar filtros adicionales (ya no es necesaria porque el backend filtra)
+// NOTA: El backend ya filtra por fechas, turno, horario y jurisdicción
+// Esta función se mantiene por compatibilidad pero ya no filtra nada
 const applyAdditionalFilters = (data, filtros) => {
-  let filteredData = [...data];
-
-  // Aplicar filtro de rango de fechas si está definido
-  if (filtros?.fechaInicio && filtros?.fechaFin) {
-    const fechaInicio = new Date(filtros.fechaInicio);
-    const fechaFin = new Date(filtros.fechaFin);
-
-    filteredData = filteredData.filter(item => isDateInRange(item.Fecha, fechaInicio, fechaFin));
-  }
-
-  return filteredData;
+  // El backend ya aplicó todos los filtros, solo retornamos los datos
+  logger.log(`📋 Aplicando filtros adicionales (backend ya filtró): ${data.length} registros`);
+  return data;
 };
 
-// Hook para consultas de robos
+// Hook genérico para cualquier tipología
+const useTypologyQuery = (tipo, nombreEvento, filtros, enabled = true) => {
+  const queryKey = [nombreEvento, filtros];
+
+  const query = useQuery({
+    queryKey,
+    queryFn: () => fetchIncidencias(filtros, tipo),
+    enabled: enabled && filtros !== null,
+    select: data => {
+      const filteredData = applyAdditionalFilters(data, filtros);
+      logger.log(`${tipologiaNombres[tipo]} procesados:`, filteredData.length);
+      return filteredData;
+    },
+    staleTime: 30 * 60 * 1000, // 30 minutos (más apropiado para datos de incidencias)
+    cacheTime: 60 * 60 * 1000, // 1 hora (datos se mantienen en cache)
+    retry: 2, // Solo 2 reintentos en lugar de 3 por defecto
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 5000), // Delay exponencial: 1s, 2s, 4s...
+    refetchOnWindowFocus: false, // No re-fetch al volver a la ventana
+    refetchOnMount: false, // No re-fetch al montar si ya hay datos en cache
+    refetchOnReconnect: true, // Re-fetch al reconectar internet
+  });
+
+  useEffect(() => {
+    if (enabled && query.isSuccess && query.data) {
+      window.dispatchEvent(
+        new CustomEvent(nombreEvento, {
+          detail: query.data.length,
+        })
+      );
+    } else if (!enabled || query.isError) {
+      window.dispatchEvent(
+        new CustomEvent(nombreEvento, {
+          detail: 0,
+        })
+      );
+    }
+  }, [enabled, query.data, query.isSuccess, query.isError, nombreEvento]);
+
+  return query;
+};
+
+// Hook para consultas de robos (tipo 1)
 export const useRobosQuery = (filtros, enabled = true) => {
-  // Crear clave única para el caché basada en los filtros
-  const queryKey = ['robos', filtros];
-
-  const query = useQuery({
-    queryKey,
-    queryFn: () => fetchIncidencias(filtros, 2), // 2 para robos
-    enabled: enabled && filtros !== null,
-    select: data => {
-      const filteredData = applyAdditionalFilters(data, filtros);
-      logger.log(`Robos procesados:`, filteredData.length);
-      return filteredData;
-    },
-    staleTime: 12 * 60 * 60 * 1000, // 12 horas
-    cacheTime: 12 * 60 * 60 * 1000, // 12 horas
-  });
-
-  // Usar useEffect para disparar eventos cuando cambien los datos
-  useEffect(() => {
-    if (enabled && query.isSuccess && query.data) {
-      window.dispatchEvent(
-        new CustomEvent('robosTotal', {
-          detail: query.data.length,
-        })
-      );
-    } else if (!enabled || query.isError) {
-      // Resetear contador cuando no está habilitado o hay error
-      window.dispatchEvent(
-        new CustomEvent('robosTotal', {
-          detail: 0,
-        })
-      );
-    }
-  }, [enabled, query.data, query.isSuccess, query.isError]);
-
-  return query;
+  return useTypologyQuery(1, 'robosTotal', filtros, enabled);
 };
 
-// Hook para consultas de extorsiones
+// Hook para consultas de extorsiones (tipo 2)
 export const useExtorsionesQuery = (filtros, enabled = true) => {
-  // Crear clave única para el caché basada en los filtros
-  const queryKey = ['extorsiones', filtros];
+  return useTypologyQuery(2, 'extorsionTotal', filtros, enabled);
+};
 
-  const query = useQuery({
-    queryKey,
-    queryFn: () => fetchIncidencias(filtros, 1), // 1 para extorsiones
-    enabled: enabled && filtros !== null,
-    select: data => {
-      const filteredData = applyAdditionalFilters(data, filtros);
-      logger.log(`Extorsiones procesadas:`, filteredData.length);
-      return filteredData;
-    },
-    staleTime: 12 * 60 * 60 * 1000, // 12 horas
-    cacheTime: 12 * 60 * 60 * 1000, // 12 horas
-  });
+// Hook para consultas de homicidios (tipo 3)
+export const useHomicidiosQuery = (filtros, enabled = true) => {
+  return useTypologyQuery(3, 'homicidiosTotal', filtros, enabled);
+};
 
-  // Usar useEffect para disparar eventos cuando cambien los datos
-  useEffect(() => {
-    if (enabled && query.isSuccess && query.data) {
-      window.dispatchEvent(
-        new CustomEvent('extorsionTotal', {
-          detail: query.data.length,
-        })
-      );
-    } else if (!enabled || query.isError) {
-      // Resetear contador cuando no está habilitado o hay error
-      window.dispatchEvent(
-        new CustomEvent('extorsionTotal', {
-          detail: 0,
-        })
-      );
-    }
-  }, [enabled, query.data, query.isSuccess, query.isError]);
+// Hook para consultas de feminicidios (tipo 4)
+export const useFeminicidiosQuery = (filtros, enabled = true) => {
+  return useTypologyQuery(4, 'feminicidiosTotal', filtros, enabled);
+};
 
-  return query;
+// Hook para consultas de sicariatos (tipo 5)
+export const useSicariatosQuery = (filtros, enabled = true) => {
+  return useTypologyQuery(5, 'sicariatosTotal', filtros, enabled);
+};
+
+// Hook para consultas de secuestros (tipo 6)
+export const useSecuestrosQuery = (filtros, enabled = true) => {
+  return useTypologyQuery(6, 'secuestrosTotal', filtros, enabled);
+};
+
+// Hook para consultas de drogas (tipo 7)
+export const useDrogasQuery = (filtros, enabled = true) => {
+  return useTypologyQuery(7, 'drogasTotal', filtros, enabled);
+};
+
+// Hook para consultas de barras (tipo 8)
+export const useBarrasQuery = (filtros, enabled = true) => {
+  return useTypologyQuery(8, 'barrasTotal', filtros, enabled);
 };
 
 // Hook personalizado para invalidar caché manualmente si es necesario
 export const useInvalidateIncidencias = () => {
   const queryClient = useQueryClient();
 
-  const invalidateRobos = () => {
-    queryClient.invalidateQueries(['robos']);
-  };
-
-  const invalidateExtorsiones = () => {
-    queryClient.invalidateQueries(['extorsiones']);
-  };
+  const invalidateRobos = () => queryClient.invalidateQueries(['robosTotal']);
+  const invalidateExtorsiones = () => queryClient.invalidateQueries(['extorsionTotal']);
+  const invalidateHomicidios = () => queryClient.invalidateQueries(['homicidiosTotal']);
+  const invalidateFeminicidios = () => queryClient.invalidateQueries(['feminicidiosTotal']);
+  const invalidateSicariatos = () => queryClient.invalidateQueries(['sicariatosTotal']);
+  const invalidateSecuestros = () => queryClient.invalidateQueries(['secuestrosTotal']);
+  const invalidateDrogas = () => queryClient.invalidateQueries(['drogasTotal']);
+  const invalidateBarras = () => queryClient.invalidateQueries(['barrasTotal']);
 
   const invalidateAll = () => {
-    queryClient.invalidateQueries(['robos']);
-    queryClient.invalidateQueries(['extorsiones']);
+    queryClient.invalidateQueries(['robosTotal']);
+    queryClient.invalidateQueries(['extorsionTotal']);
+    queryClient.invalidateQueries(['homicidiosTotal']);
+    queryClient.invalidateQueries(['feminicidiosTotal']);
+    queryClient.invalidateQueries(['sicariatosTotal']);
+    queryClient.invalidateQueries(['secuestrosTotal']);
+    queryClient.invalidateQueries(['drogasTotal']);
+    queryClient.invalidateQueries(['barrasTotal']);
   };
 
   return {
     invalidateRobos,
     invalidateExtorsiones,
+    invalidateHomicidios,
+    invalidateFeminicidios,
+    invalidateSicariatos,
+    invalidateSecuestros,
+    invalidateDrogas,
+    invalidateBarras,
     invalidateAll,
   };
 };

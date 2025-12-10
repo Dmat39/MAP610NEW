@@ -1,9 +1,50 @@
 import "./LayerTogglePanel.css";
-import { Layers, ChevronDown } from "lucide-react";
+import { Layers, ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
 
 const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [categoriesExpanded, setCategoriesExpanded] = useState({
+    cameras: true,
+    incidents: false,
+    infrastructure: false,
+    tools: false,
+  });
+
+  // Organizar capas por categorías
+  const categories = {
+    cameras: {
+      icon: '📷',
+      title: 'Cámaras de Seguridad',
+      layers: ['camaras', 'camarasVecinales']
+    },
+    incidents: {
+      icon: '🚨',
+      title: 'Incidencias Delictivas',
+      layers: ['robos', 'extorsiones', 'homicidios', 'feminicidios', 'sicariatos', 'secuestros', 'drogas', 'barras']
+    },
+    infrastructure: {
+      icon: '🏗️',
+      title: 'Infraestructura',
+      layers: ['paraderosAutorizados', 'defensaCivil', 'paraderosNoAutorizados', 'residuos']
+    },
+    tools: {
+      icon: '🛠️',
+      title: 'Herramientas',
+      layers: ['clusters', 'busquedaDirecciones', 'ubicadorPunto', 'coordenadasNuevas', 'rutas']
+    }
+  };
+
+  const toggleCategory = (categoryKey) => {
+    setCategoriesExpanded(prev => ({
+      ...prev,
+      [categoryKey]: !prev[categoryKey]
+    }));
+  };
+
+  const getCapaByName = (name) => {
+    return capas.find(capa => capa.name === name);
+  };
 
   return (
     <div
@@ -20,50 +61,44 @@ const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange }) => {
       </div>
 
       <div className="panel-controls">
-        {capas.map((capa) => (
-          <label key={capa.name} className="layer-checkbox">
-            <input
-              type="checkbox"
-              checked={capa.visible}
-              onChange={() => onToggle(capa.name)}
-            />
-            <span className="checkbox-custom"></span>
-            <span className="layer-label">{capa.label}</span>
-          </label>
-        ))}
+        {Object.entries(categories).map(([categoryKey, category]) => {
+          const categoryLayers = category.layers.map(getCapaByName).filter(Boolean);
+          const isExpanded = categoriesExpanded[categoryKey];
 
-        {/* Separador y toggle de mapas */}
-       {/*  <div className="map-toggle-separator"></div>
-        <div className="map-toggle-section">
-          <h5 className="map-toggle-title">Tipo de Mapa</h5>
-          <div className="map-toggle-options">
-            <label className="map-toggle-option">
-              <input
-                type="radio"
-                name="mapType"
-                value="leaflet"
-                checked={mapType === 'leaflet'}
-                onChange={(e) => onMapTypeChange(e.target.value)}
-              />
-              <span className="map-toggle-label">
-                🍃 Leaflet
-              </span>
-            </label>
+          return (
+            <div key={categoryKey} className="layer-category">
+              <div
+                className="category-header"
+                onClick={() => toggleCategory(categoryKey)}
+              >
+                {isExpanded ? (
+                  <ChevronDown size={14} className="category-chevron" />
+                ) : (
+                  <ChevronRight size={14} className="category-chevron" />
+                )}
+                <span className="category-icon">{category.icon}</span>
+                <span className="category-title">{category.title}</span>
+                <span className="category-count">({categoryLayers.length})</span>
+              </div>
 
-            <label className="map-toggle-option">
-              <input
-                type="radio"
-                name="mapType"
-                value="google"
-                checked={mapType === 'google'}
-                onChange={(e) => onMapTypeChange(e.target.value)}
-              />
-              <span className="map-toggle-label">
-                🗺️ Google Maps
-              </span>
-            </label>
-          </div>
-        </div> */}
+              {isExpanded && (
+                <div className="category-layers">
+                  {categoryLayers.map((capa) => (
+                    <label key={capa.name} className="layer-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={capa.visible}
+                        onChange={() => onToggle(capa.name)}
+                      />
+                      <span className="checkbox-custom"></span>
+                      <span className="layer-label">{capa.label}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

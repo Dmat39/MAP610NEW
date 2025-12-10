@@ -32,8 +32,9 @@ html, body, #root {
   bottom: 0;
   width: calc(100% - 70px);
   height: 100vh;
-  overflow: visible;
+  overflow: auto;
   z-index: 1;
+  background-color: #f5f5f5;
 }
 
 /* Asegurar que todos los elementos respeten el sidebar */

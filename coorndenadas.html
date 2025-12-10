@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sector desde eje X</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    html, body, #map {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+
+  <script>
+    // ============ DATOS QUE TE DA EL BACKEND ============
+    const angleDeg = 75;      // tu ángulo, medido desde eje X (derecha)
+    const radiusDeg = 0.002;  // radio aprox en grados
+    const center = {
+      lat: -12.0464,
+      lng: -77.0428
+    };
+
+    // semicírculo: 180° (90° a cada lado)
+    const start = angleDeg - 90;
+    const end   = angleDeg + 90;
+
+    // ============ MAPA ============
+    const map = L.map("map").setView([center.lat, center.lng], 16);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
+    // ============ GENERAR SECTOR ============
+    const sectorPoints = [];
+    const numPoints = 360; // más puntos = más “perfecto”
+
+    for (let i = 0; i <= numPoints; i++) {
+      const t = start + (i / numPoints) * (end - start);
+      const theta = (t * Math.PI) / 180;
+
+      // *** IMPORTANTE: 0° EN X ***
+      const dx = radiusDeg * Math.cos(theta); // eje X → longitud
+      const dy = radiusDeg * Math.sin(theta); // eje Y → latitud
+
+      const lat = center.lat + dy;
+      const lng = center.lng + dx;
+
+      sectorPoints.push([lat, lng]);
+    }
+
+    // cerrar sector en el centro
+    sectorPoints.push([center.lat, center.lng]);
+
+    L.polygon(sectorPoints, {
+      color: "green",
+      fillColor: "green",
+      fillOpacity: 0.3,
+      weight: 2,
+    }).addTo(map);
+  </script>
+</body>
+</html>

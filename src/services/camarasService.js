@@ -3,10 +3,9 @@ const API_URL = import.meta.env.VITE_API_URL;
 const camarasService = {
   /**
    * Obtiene todas las cámaras municipales con sus ángulos de visión
-   * @param {number} page - Número de página (por defecto 0)
    * @returns {Promise<Object>} Respuesta con las cámaras
    */
-  async getCamarasMunicipales(page = 0) {
+  async getCamarasMunicipales() {
     try {
       const token = localStorage.getItem('token');
 
@@ -14,7 +13,7 @@ const camarasService = {
         throw new Error('No hay token de autenticación. Por favor, inicia sesión.');
       }
 
-      const response = await fetch(`${API_URL}municipal?page=${page}`, {
+      const response = await fetch(`${API_URL}municipal?page=0`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -34,16 +33,72 @@ const camarasService = {
       }
 
       const result = await response.json();
-      console.log('Cámaras obtenidas:', result);
+      console.log('📡 Cámaras municipales obtenidas:', result);
 
-      // La API devuelve: { message, data: { count, data: [...] } }
+      // La API devuelve: { message, data: { data: [...], totalCount, currentPage, totalPages } }
+      const camaras = result.data?.data || result.data || [];
+      const totalCount = result.data?.totalCount || camaras.length;
+
+      console.log(`✅ Total de cámaras municipales cargadas: ${camaras.length} de ${totalCount}`);
+
       return {
-        count: result.data.count,
-        camaras: result.data.data,
+        count: totalCount,
+        camaras: camaras,
         message: result.message,
       };
     } catch (error) {
-      console.error('Error en getCamarasMunicipales:', error);
+      console.error('❌ Error en getCamarasMunicipales:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtiene todas las cámaras vecinales (comunales)
+   * @returns {Promise<Object>} Respuesta con las cámaras
+   */
+  async getCamarasVecinales() {
+    try {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        throw new Error('No hay token de autenticación. Por favor, inicia sesión.');
+      }
+
+      const response = await fetch(`${API_URL}communal?page=0`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token inválido o expirado
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al obtener las cámaras vecinales');
+      }
+
+      const result = await response.json();
+      console.log('📡 Cámaras vecinales obtenidas:', result);
+
+      // La API devuelve: { message, data: { data: [...], totalCount, currentPage, totalPages } }
+      const camaras = result.data?.data || result.data || [];
+      const totalCount = result.data?.totalCount || camaras.length;
+
+      console.log(`✅ Total de cámaras vecinales cargadas: ${camaras.length} de ${totalCount}`);
+
+      return {
+        count: totalCount,
+        camaras: camaras,
+        message: result.message,
+      };
+    } catch (error) {
+      console.error('❌ Error en getCamarasVecinales:', error);
       throw error;
     }
   },

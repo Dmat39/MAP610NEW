@@ -38,8 +38,25 @@
 }
 
 .leyenda-section h5 {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.leyenda-subsection {
+  margin-bottom: 12px;
+}
+
+.leyenda-subsection:last-child {
+  margin-bottom: 0;
+}
+
+.leyenda-subsection h6 {
   margin: 0 0 6px 0;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #6b7280;
   text-transform: uppercase;
@@ -64,6 +81,27 @@
   height: 20px;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+.leyenda-icon-svg {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.leyenda-icon-svg svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.leyenda-color-badge {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
 }
 
 .leyenda-item span {

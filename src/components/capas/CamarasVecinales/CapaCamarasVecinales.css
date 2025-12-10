@@ -1,0 +1,78 @@
+/* Estilos personalizados para popups de cámaras vecinales */
+.custom-popup-vecinal .leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  padding: 0;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.custom-popup-vecinal .leaflet-popup-content {
+  margin: 16px;
+  width: auto !important;
+  max-width: 320px;
+}
+
+.custom-popup-vecinal .leaflet-popup-tip-container {
+  margin-top: -1px;
+}
+
+.custom-popup-vecinal .leaflet-popup-tip {
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  border-top: none;
+  border-left: none;
+}
+
+/* Tooltip personalizado */
+.custom-tooltip-vecinal {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
+  padding: 6px 12px !important;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+.custom-tooltip-vecinal::before {
+  border-top-color: #667eea !important;
+}
+
+/* Estilos para el icono personalizado de cámara vecinal */
+.custom-camara-vecinal-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.camara-vecinal-marker {
+  cursor: pointer;
+}
+
+/* Animación de pulso para los marcadores */
+@keyframes pulse-camara-vecinal {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Hover effect para el marcador */
+.custom-camara-vecinal-icon:hover .camara-vecinal-marker > div:first-child {
+  transform: scale(1.15) translateY(-4px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Efecto de resplandor en hover */
+.custom-camara-vecinal-icon:hover .pulse-ring {
+  animation: none !important;
+  opacity: 0.4 !important;
+  transform: scale(1.2) !important;
+}

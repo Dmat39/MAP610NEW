@@ -1,12 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, MapPin, ChevronDown, User } from 'lucide-react';
+import { LogOut, MapPin, ChevronDown, Camera, Map, Video } from 'lucide-react';
 import './Sidebar.css';
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  const isAdmin = user?.role?.toLowerCase() === 'administrator' || user?.role?.toLowerCase() === 'admin';
 
   const handleLogout = async () => {
     if (window.confirm('¿Estás seguro que deseas cerrar sesión?')) {
@@ -102,9 +107,35 @@ const Sidebar = () => {
         )}
       </div>
 
-      {/* Navigation or other items can go here */}
+      {/* Navigation */}
       <nav className="sidebar-nav">
-        {/* Add navigation items if needed */}
+        <button
+          onClick={() => navigate('/')}
+          className={`nav-item ${location.pathname === '/' ? 'active' : ''}`}
+        >
+          <Map size={20} />
+          <span>Mapa</span>
+        </button>
+
+        {isAdmin && (
+          <>
+            <button
+              onClick={() => navigate('/admin/camaras-vecinales')}
+              className={`nav-item ${location.pathname === '/admin/camaras-vecinales' ? 'active' : ''}`}
+            >
+              <Camera size={20} />
+              <span>Cám. Vecinales</span>
+            </button>
+
+            <button
+              onClick={() => navigate('/admin/camaras-municipales')}
+              className={`nav-item ${location.pathname === '/admin/camaras-municipales' ? 'active' : ''}`}
+            >
+              <Video size={20} />
+              <span>Cám. Municipales</span>
+            </button>
+          </>
+        )}
       </nav>
 
       {/* Bottom Section */}
