@@ -1,84 +1,57 @@
-import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import './Login.css';
+import React, { useState } from "react";
+import { FaIdCard, FaLock } from "react-icons/fa";
+import "./Login.css";
 
-const Login = () => {
-  const [credentials, setCredentials] = useState({ username: '', password: '' });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+export default function Login() {
+  const [dni, setDni] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleSubmit = async e => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    const result = await login(credentials.username, credentials.password);
-
-    if (!result.success) {
-      setError(result.error || 'Usuario o contraseña incorrectos');
-    }
-
-    setLoading(false);
-  };
-
-  const handleChange = e => {
-    setCredentials({
-      ...credentials,
-      [e.target.name]: e.target.value,
-    });
+    console.log("Iniciar sesión", { dni, password });
   };
 
   return (
     <div className="login-container">
-      <div className="login-box">
+
+      {/* TÍTULO INSTITUCIONAL ARRIBA */}
+      <div className="top-title">
+        <h1 className="cecom">CECOM</h1>
+        <h2 className="sjl">SAN JUAN DE LURIGANCHO</h2>
+      </div>
+
+      <div className="login-card">
         <div className="login-header">
-          <h1>Sistema de Mapas</h1>
-          <p>Inicia sesión para continuar</p>
+          <h1>Iniciar Sesión</h1>
+          <p>Acceso para personal autorizado</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label htmlFor="username">Usuario</label>
+        <form className="login-form" onSubmit={handleSubmit}>
+          <div className="input-group">
+            <FaIdCard className="input-icon" />
             <input
               type="text"
-              id="username"
-              name="username"
-              value={credentials.username}
-              onChange={handleChange}
-              placeholder="Ingresa tu usuario"
-              required
-              autoComplete="username"
+              placeholder="Ingrese su DNI"
+              value={dni}
+              onChange={(e) => setDni(e.target.value)}
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Contraseña</label>
+          <div className="input-group">
+            <FaLock className="input-icon" />
             <input
               type="password"
-              id="password"
-              name="password"
-              value={credentials.password}
-              onChange={handleChange}
-              placeholder="Ingresa tu contraseña"
-              required
-              autoComplete="current-password"
+              placeholder="Ingrese su contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
 
-          {error && <div className="error-message">{error}</div>}
-
-          <button type="submit" className="login-button" disabled={loading}>
-            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+          <button type="submit" className="login-btn">
+            Acceder
           </button>
         </form>
-
-        <div className="login-footer">
-          <p>Sistema de Gestión Municipal</p>
-        </div>
       </div>
     </div>
   );
-};
-
-export default Login;
+}
