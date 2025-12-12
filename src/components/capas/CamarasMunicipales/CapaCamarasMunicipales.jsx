@@ -4,7 +4,7 @@ import { useMap } from 'react-leaflet';
 import './CapaCamarasMunicipales.css';
 import './LocationCopyPopup.css';
 import { useMapLocationCopy } from '../../../hooks/useMapLocationCopy';
-import { getAngleFromCoords, isValidReferencia, parseReferencia } from '../../../utils';
+import { getAngleFromCoords, isValidReferencia, parseReferencia, generateVisionField } from '../../../utils';
 import { logger } from '../../../utils/logger.js';
 import camarasService from '../../../services/camarasService';
 
@@ -186,9 +186,16 @@ const CapaCamarasMunicipales = ({
               megafono: camara.megaphone,
               boton: camara.buttom,
               jurisdiccion: 'Municipal',
-              // Campo referencia para cámaras C180 (coordenadas hacia donde apunta)
+              // Coordenadas para generar el campo de visión
+              latitude: camara.latitude,
+              longitude: camara.longitude,
+              // Ángulo de dirección desde el backend (en grados, medido desde el eje X)
+              angle: camara.angle,
+              // Radio del campo de visión en grados
+              radius: camara.radius || 0.0013, // Default 0.002 si no viene del backend
+              // Campo referencia para cámaras C180 (coordenadas hacia donde apunta) - LEGACY
               referencia: camara.referencia || '',
-              // El polígono de visión viene del backend (usado como fallback)
+              // El polígono de visión viene del backend (usado como fallback si existe)
               geometryVision: camara.geometry,
             },
           };
@@ -521,33 +528,17 @@ const CapaCamarasMunicipales = ({
             logger.log(
               '🎯 Mostrando campo de visión para:',
               props.name,
-              'Tipo cámara:',
-              props.camara,
-              'Referencia:',
-              props.referencia,
-              'Geometry:', props.geometryVision
+              'Tipo:',
+              props.cameraModel,
+              'Ángulo:',
+              props.angle,
+              'Lat/Lng:',
+              props.latitude,
+              props.longitude
             );
 
-            // PRIORIDAD: Para C180 con referencia, usar método CSS (más preciso)
-            // Para C360 o sin referencia, usar polígono del backend
-            const usarMetodoCSS = props.camara === '180' && isValidReferencia(props.referencia);
-
-            if (usarMetodoCSS) {
-              // Método CSS con gradiente rotado (para C180 con referencia)
-              const visionField = createVisionField(feature, lat, lng);
-              if (visionField) {
-                elementos.push(
-                  <Marker
-                    key={`vision-${idx}`}
-                    position={[lat, lng]}
-                    icon={visionField.options.icon}
-                    interactive={false}
-                    zIndexOffset={-1000}
-                  />
-                );
-              }
-            } else if (props.geometryVision && props.geometryVision.coordinates) {
-              // Método polígono del backend (para C360 o fallback)
+            // PRIORIDAD 1: Si el backend envía geometryVision (polígono pre-calculado), usarlo
+            if (props.geometryVision && props.geometryVision.coordinates) {
               const coordinates = props.geometryVision.coordinates[0];
               // Convertir de [lng, lat] a [lat, lng] para Leaflet
               const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
@@ -565,6 +556,33 @@ const CapaCamarasMunicipales = ({
                   interactive={false}
                 />
               );
+            } else {
+              // PRIORIDAD 2: Generar el polígono en el frontend usando angle del backend
+              const visionPolygon = generateVisionField(
+                props.cameraModel, // "C180", "C360", "LPR"
+                props.latitude,
+                props.longitude,
+                props.angle, // Puede ser null para C360/LPR
+                props.radius // Radio desde el backend
+              );
+
+              if (visionPolygon) {
+                elementos.push(
+                  <Polygon
+                    key={`vision-polygon-${idx}`}
+                    positions={visionPolygon}
+                    pathOptions={{
+                      color: esSeleccionada ? '#667eea' : '#10b981',
+                      fillColor: esSeleccionada ? '#667eea' : '#10b981',
+                      fillOpacity: 0.2,
+                      weight: 2,
+                    }}
+                    interactive={false}
+                  />
+                );
+              } else {
+                logger.warn(`No se pudo generar campo de visión para cámara ${props.name}`);
+              }
             }
           }
 

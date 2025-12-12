@@ -13,7 +13,13 @@ export {
 } from './dateUtils.js';
 
 // Exportar todas las funciones de cámaras
-export { getAngleFromCoords, isValidReferencia, parseReferencia } from './cameraUtils.js';
+export {
+  getAngleFromCoords,
+  isValidReferencia,
+  parseReferencia,
+  createSectorPolygon,
+  generateVisionField
+} from './cameraUtils.js';
 
 // Exportar logger
 export { default as logger } from './logger.js';
