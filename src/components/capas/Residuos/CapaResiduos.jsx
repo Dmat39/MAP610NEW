@@ -5,6 +5,8 @@ import ClipLoader from "react-spinners/ClipLoader";
 import { Trash2, Recycle } from "lucide-react";
 import "./CapaResiduos.css";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 // Función mejorada para crear iconos usando Lucide React
 const createLucideIcon = (IconComponent, color, bgColor) => {
   // Crear elemento HTML del marcador
@@ -88,9 +90,25 @@ const CapaResiduos = ({ visible }) => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetch("/data/puntos_criticos_residuos.json");
-        const data = await response.json();
-        setPuntos(data);
+        const token = localStorage.getItem('token');
+        const headers = {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        };
+
+        const response = await fetch(`${API_URL}waste?page=0`, { headers });
+        const responseData = await response.json();
+
+        let datos = [];
+        if (Array.isArray(responseData)) {
+          datos = responseData;
+        } else if (responseData?.data?.data && Array.isArray(responseData.data.data)) {
+          datos = responseData.data.data;
+        } else if (responseData?.data && Array.isArray(responseData.data)) {
+          datos = responseData.data;
+        }
+
+        setPuntos(datos);
       } catch (error) {
         console.error("Error fetching residuos data:", error);
         setPuntos([]);
@@ -128,17 +146,19 @@ const CapaResiduos = ({ visible }) => {
   return (
     <LayerGroup>
       {puntos.map((punto, idx) => {
-        const lat = parseFloat(punto.latitud);
-        const lng = parseFloat(punto.longitud);
+        const lat = parseFloat(punto.latitude || punto.lat || punto.latitud);
+        const lng = parseFloat(punto.longitude || punto.lng || punto.longitud);
 
         if (isNaN(lat) || isNaN(lng)) return null;
 
-        const icon = punto.id_tipo === 'verde' ? iconVerde : iconAmarillo;
-        const colorTexto = punto.id_tipo === 'verde' ? '#28a745' : '#ffc107';
+        const tipo = punto.type || punto.id_tipo || 'amarillo';
+        const icon = tipo === 'verde' ? iconVerde : iconAmarillo;
+        const colorTexto = tipo === 'verde' ? '#28a745' : '#ffc107';
+        const nombre = punto.name || punto.nombre || 'Sin nombre';
 
         return (
           <Marker
-            key={`residuo-${idx}-${punto.nombre}`}
+            key={punto.id || `residuo-${idx}-${nombre}`}
             position={[lat, lng]}
             icon={icon}
           >
@@ -148,51 +168,58 @@ const CapaResiduos = ({ visible }) => {
                   🗑️ Punto Crítico de Residuos
                 </div>
                 <div className="divider" style={{ backgroundColor: colorTexto }}></div>
-                
+
                 <div className="info-row">
-                  <span className="label">Código:</span> 
+                  <span className="label">Código:</span>
                   <span style={{ color: colorTexto, fontWeight: 'bold' }}>
-                    {punto.nombre}
+                    {nombre}
                   </span>
                 </div>
-                
+
                 <div className="info-row">
                   <span className="label">Tipo:</span>
-                  <span className="badge" style={{ 
+                  <span className="badge" style={{
                     backgroundColor: colorTexto,
                     color: 'white'
                   }}>
-                    {punto.id_tipo}
+                    {tipo}
                   </span>
                 </div>
-                
+
+                {punto.description && (
+                  <div className="info-row">
+                    <span className="label">Descripción:</span>
+                    <span>{punto.description}</span>
+                  </div>
+                )}
+
                 <div className="coordinates">
                   <strong>📍 Coordenadas:</strong><br />
-                  Lat: {punto.latitud} | Lng: {punto.longitud}
+                  Lat: {lat.toFixed(6)} | Lng: {lng.toFixed(6)}
                 </div>
               </div>
             </Popup>
-            <Tooltip 
-              direction="top" 
-              offset={[0, -25]} 
+            <Tooltip
+              direction="top"
+              offset={[0, -25]}
               opacity={0.95}
-              className={`residuos-tooltip ${punto.id_tipo}`}
+              className={`residuos-tooltip ${tipo}`}
             >
-              <div style={{ 
-                fontSize: "11px", 
+              <div style={{
+                fontSize: "11px",
                 fontWeight: "bold",
                 color: colorTexto,
                 textAlign: 'center',
                 lineHeight: '1.2'
               }}>
-                <div>{punto.nombre}</div>
-                <div style={{ 
-                  fontSize: "9px", 
+                <div>{nombre}</div>
+                <div style={{
+                  fontSize: "9px",
                   textTransform: "uppercase",
                   marginTop: "2px",
                   opacity: 0.8
                 }}>
-                  {punto.id_tipo}
+                  {tipo}
                 </div>
               </div>
             </Tooltip>

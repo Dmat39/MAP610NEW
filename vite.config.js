@@ -10,6 +10,10 @@ export default defineConfig({
   build: {
     // Asegurar que los archivos estáticos se copien correctamente
     copyPublicDir: true,
+    // Deshabilitar sourcemaps en producción
+    sourcemap: false,
+    // Minificar código
+    minify: 'terser',
     rollupOptions: {
       output: {
         // Mantener nombres de archivos estáticos

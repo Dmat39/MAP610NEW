@@ -1,5 +1,7 @@
 import { MapContainer, TileLayer } from 'react-leaflet';
 import { useState, useCallback, useMemo } from 'react';
+import { useAuth } from './context/AuthContext';
+import authService from './services/authService';
 import CapaJurisdiccion from './components/capas/Jurisdiccion/CapaJurisdiccion';
 import CapaCamarasMunicipales from './components/capas/CamarasMunicipales/CapaCamarasMunicipales';
 import CapaCamarasVecinales from './components/capas/CamarasVecinales/CapaCamarasVecinales';
@@ -17,6 +19,7 @@ import CapaSecuestros from './components/capas/Incidencias/CapaSecuestros';
 import CapaDrogas from './components/capas/Incidencias/CapaDrogas';
 import CapaBarras from './components/capas/Incidencias/CapaBarras';
 import CapaResiduos from './components/capas/Residuos/CapaResiduos';
+import CapaSostenimiento from './components/capas/Sostenimiento/CapaSostenimiento';
 import CapaCoordenadasNuevas from './components/capas/CoordenadasNuevas/CapaCoordenadasNuevas';
 import ClusterIncidencias from './components/capas/ClusterIncidencias/ClusterIncidencias';
 import ControlClusters from './components/Controles/Mapa_Clusters/ControlClusters';
@@ -48,6 +51,10 @@ import GoogleClusterIncidencias from './components/googlemaps/GoogleClusterIncid
 import LeyendaCamaras from './components/capas/LeyendaCamaras/LeyendaCamaras';
 
 const MapView = () => {
+  const { user } = useAuth();
+  const userRole = user?.role;
+  const isOperator = userRole === 'OPERATOR';
+
   const [mapType, setMapType] = useState('leaflet'); // 'leaflet' o 'google'
   const [capasVisibles, setCapasVisibles] = useState({
     camaras: false,
@@ -64,6 +71,7 @@ const MapView = () => {
     barras: false,
     residuos: false,
     defensaCivil: false,
+    sostenimiento: false,
     clusters: false,
     busquedaDirecciones: false,
     ubicadorPunto: false,
@@ -201,22 +209,23 @@ const MapView = () => {
     setFiltrosCamaras(null);
   };
 
-  const capas = [
+  // Definir todas las capas
+  const todasLasCapas = [
     { name: 'camaras', label: '📷 Cámaras Municipales', visible: capasVisibles.camaras },
     {
       name: 'camarasVecinales',
       label: '📹 Cámaras Vecinales',
       visible: capasVisibles.camarasVecinales,
     },
-    { name: 'robos', label: '🦹 Robos', visible: capasVisibles.robos },
-    { name: 'extorsiones', label: '📞 Extorsiones', visible: capasVisibles.extorsiones },
-    { name: 'homicidios', label: '🔪 Homicidios', visible: capasVisibles.homicidios },
-    { name: 'feminicidios', label: '👩 Feminicidios', visible: capasVisibles.feminicidios },
-    { name: 'sicariatos', label: '🔫 Sicariatos', visible: capasVisibles.sicariatos },
-    { name: 'secuestros', label: '👤 Secuestros', visible: capasVisibles.secuestros },
-    { name: 'drogas', label: '💊 Drogas', visible: capasVisibles.drogas },
-    { name: 'barras', label: '⚽ Barras', visible: capasVisibles.barras },
-    { name: 'clusters', label: '🎯 Clusters de Incidencias', visible: capasVisibles.clusters },
+    { name: 'robos', label: '🦹 Robos', visible: capasVisibles.robos, restrictedForOperator: true },
+    { name: 'extorsiones', label: '📞 Extorsiones', visible: capasVisibles.extorsiones, restrictedForOperator: true },
+    { name: 'homicidios', label: '🔪 Homicidios', visible: capasVisibles.homicidios, restrictedForOperator: true },
+    { name: 'feminicidios', label: '👩 Feminicidios', visible: capasVisibles.feminicidios, restrictedForOperator: true },
+    { name: 'sicariatos', label: '🔫 Sicariatos', visible: capasVisibles.sicariatos, restrictedForOperator: true },
+    { name: 'secuestros', label: '👤 Secuestros', visible: capasVisibles.secuestros, restrictedForOperator: true },
+    { name: 'drogas', label: '💊 Drogas', visible: capasVisibles.drogas, restrictedForOperator: true },
+    { name: 'barras', label: '⚽ Barras', visible: capasVisibles.barras, restrictedForOperator: true },
+    { name: 'clusters', label: '🎯 Clusters de Incidencias', visible: capasVisibles.clusters, restrictedForOperator: true },
     {
       name: 'busquedaDirecciones',
       label: '🔍 Búsqueda de Direcciones',
@@ -241,7 +250,13 @@ const MapView = () => {
       visible: capasVisibles.paraderosNoAutorizados,
     },
     { name: 'residuos', label: '🗑️ Puntos Residuos Sólidos', visible: capasVisibles.residuos },
+    { name: 'sostenimiento', label: '🏪 Sostenimiento', visible: capasVisibles.sostenimiento },
   ];
+
+  // Filtrar capas según el rol del usuario
+  const capas = isOperator
+    ? todasLasCapas.filter(capa => !capa.restrictedForOperator)
+    : todasLasCapas;
 
   const handleToggle = useCallback(nombre => {
     setCapasVisibles(prev => {
@@ -281,7 +296,7 @@ const MapView = () => {
 
   return (
       <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-        {(capasVisibles.robos || capasVisibles.extorsiones || capasVisibles.homicidios ||
+        {!isOperator && (capasVisibles.robos || capasVisibles.extorsiones || capasVisibles.homicidios ||
           capasVisibles.feminicidios || capasVisibles.sicariatos || capasVisibles.secuestros ||
           capasVisibles.drogas || capasVisibles.barras) && (
           <FiltroIncidentes onFiltrar={handleFiltrar} onLimpiar={handleLimpiar} />
@@ -293,12 +308,14 @@ const MapView = () => {
         mapType={mapType}
         onMapTypeChange={setMapType}
       />
-      <ControlClusters
-        visible={capasVisibles.clusters}
-        radioCluster={radioCluster}
-        onRadioChange={setRadioCluster}
-        mapType={mapType}
-      />
+      {!isOperator && (
+        <ControlClusters
+          visible={capasVisibles.clusters}
+          radioCluster={radioCluster}
+          onRadioChange={setRadioCluster}
+          mapType={mapType}
+        />
+      )}
       <ControlBusqueda
         visible={capasVisibles.busquedaDirecciones}
         onBusquedaRealizada={handleBusquedaRealizada}
@@ -353,26 +370,31 @@ const MapView = () => {
           <CapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
           <CapaParaderosAutorizados visible={capasVisibles.paraderosAutorizados} />
           <CapaParaderosNoAutorizados visible={capasVisibles.paraderosNoAutorizados} />
-          <CapaRobos visible={capasVisibles.robos} filtros={filtrosRobos} />
-          <CapaExtorsion visible={capasVisibles.extorsiones} filtros={filtrosExtorsion} />
-          <CapaHomicidios visible={capasVisibles.homicidios} filtros={filtrosHomicidios} />
-          <CapaFeminicidios visible={capasVisibles.feminicidios} filtros={filtrosFeminicidios} />
-          <CapaSicariatos visible={capasVisibles.sicariatos} filtros={filtrosSicariatos} />
-          <CapaSecuestros visible={capasVisibles.secuestros} filtros={filtrosSecuestros} />
-          <CapaDrogas visible={capasVisibles.drogas} filtros={filtrosDrogas} />
-          <CapaBarras visible={capasVisibles.barras} filtros={filtrosBarras} />
+          {!isOperator && (
+            <>
+              <CapaRobos visible={capasVisibles.robos} filtros={filtrosRobos} />
+              <CapaExtorsion visible={capasVisibles.extorsiones} filtros={filtrosExtorsion} />
+              <CapaHomicidios visible={capasVisibles.homicidios} filtros={filtrosHomicidios} />
+              <CapaFeminicidios visible={capasVisibles.feminicidios} filtros={filtrosFeminicidios} />
+              <CapaSicariatos visible={capasVisibles.sicariatos} filtros={filtrosSicariatos} />
+              <CapaSecuestros visible={capasVisibles.secuestros} filtros={filtrosSecuestros} />
+              <CapaDrogas visible={capasVisibles.drogas} filtros={filtrosDrogas} />
+              <CapaBarras visible={capasVisibles.barras} filtros={filtrosBarras} />
+              <ClusterIncidencias
+                visible={capasVisibles.clusters}
+                radioCluster={radioCluster}
+                filtros={payloadFiltros}
+              />
+            </>
+          )}
           <CapaResiduos visible={capasVisibles.residuos} />
           <CapaDefensaCivil visible={capasVisibles.defensaCivil} />
+          <CapaSostenimiento visible={capasVisibles.sostenimiento} />
           <CapaCoordenadasNuevas
             visible={capasVisibles.coordenadasNuevas}
             marcadorActivo={marcadorActivo}
             puntosUsuario={puntosUsuario}
             onAgregarPunto={handleAgregarPunto}
-          />
-          <ClusterIncidencias
-            visible={capasVisibles.clusters}
-            radioCluster={radioCluster}
-            filtros={payloadFiltros}
           />
           <CapaBusquedaDirecciones
             visible={capasVisibles.busquedaDirecciones}
@@ -404,20 +426,24 @@ const MapView = () => {
             setCamaraConVision={setCamaraConVision}
           />
           <GoogleCapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
-          <GoogleCapaRobos visible={capasVisibles.robos} filtros={filtrosRobos} />
-          <GoogleCapaExtorsion visible={capasVisibles.extorsiones} filtros={filtrosExtorsion} />
-          <GoogleCapaHomicidios visible={capasVisibles.homicidios} filtros={filtrosHomicidios} />
-          <GoogleCapaFeminicidios visible={capasVisibles.feminicidios} filtros={filtrosFeminicidios} />
-          <GoogleCapaSicariatos visible={capasVisibles.sicariatos} filtros={filtrosSicariatos} />
-          <GoogleCapaSecuestros visible={capasVisibles.secuestros} filtros={filtrosSecuestros} />
-          <GoogleCapaDrogas visible={capasVisibles.drogas} filtros={filtrosDrogas} />
-          <GoogleCapaBarras visible={capasVisibles.barras} filtros={filtrosBarras} />
+          {!isOperator && (
+            <>
+              <GoogleCapaRobos visible={capasVisibles.robos} filtros={filtrosRobos} />
+              <GoogleCapaExtorsion visible={capasVisibles.extorsiones} filtros={filtrosExtorsion} />
+              <GoogleCapaHomicidios visible={capasVisibles.homicidios} filtros={filtrosHomicidios} />
+              <GoogleCapaFeminicidios visible={capasVisibles.feminicidios} filtros={filtrosFeminicidios} />
+              <GoogleCapaSicariatos visible={capasVisibles.sicariatos} filtros={filtrosSicariatos} />
+              <GoogleCapaSecuestros visible={capasVisibles.secuestros} filtros={filtrosSecuestros} />
+              <GoogleCapaDrogas visible={capasVisibles.drogas} filtros={filtrosDrogas} />
+              <GoogleCapaBarras visible={capasVisibles.barras} filtros={filtrosBarras} />
+              <GoogleClusterIncidencias
+                visible={capasVisibles.clusters}
+                radioCluster={radioCluster}
+                filtros={payloadFiltros}
+              />
+            </>
+          )}
           <GoogleCapaResiduos visible={capasVisibles.residuos} />
-          <GoogleClusterIncidencias
-            visible={capasVisibles.clusters}
-            radioCluster={radioCluster}
-            filtros={payloadFiltros}
-          />
           <GoogleCapaBusquedaDirecciones
             visible={capasVisibles.busquedaDirecciones}
             resultados={resultadosBusqueda}

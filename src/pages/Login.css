@@ -119,6 +119,26 @@ body {
   outline: none;
 }
 
+/* ---------- MENSAJE DE ERROR ---------- */
+
+.error-message {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fecaca;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 14px;
+  animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
 /* ---------- BOTÓN ---------- */
 
 .login-btn {
@@ -135,9 +155,14 @@ body {
   transition: 0.3s ease;
 }
 
-.login-btn:hover {
+.login-btn:hover:not(:disabled) {
   transform: scale(1.06);
   box-shadow: 0 7px 20px rgba(80, 104, 255, 0.45);
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* ---------- Animaciones ---------- */

@@ -3,6 +3,7 @@ import { ChevronUp, ChevronDown, Search, Filter, MapPin, Zap, AlertTriangle } fr
 import './ControlCamaras.css';
 import { logger } from '../../../utils/logger.js';
 import camarasService from '../../../services/camarasService';
+import { obtenerJurisdiccion, normalizarNombreJurisdiccion } from '../../../utils/geoUtils';
 
 const ControlCamaras = ({
   visible,
@@ -25,6 +26,7 @@ const ControlCamaras = ({
   const [error, setError] = useState(null);
   const [ultimaBusqueda, setUltimaBusqueda] = useState('');
   const [jurisdiccionesCollapsed, setJurisdiccionesCollapsed] = useState(false);
+  const [jurisdiccionesGeoJSON, setJurisdiccionesGeoJSON] = useState(null);
 
   // Helpers de búsqueda robusta
   const normalize = str =>
@@ -114,12 +116,23 @@ const ControlCamaras = ({
     'Caja de Agua',
   ];
 
+  // Cargar datos de jurisdicciones al montar el componente
+  useEffect(() => {
+    fetch('/data/juridiccion.geojson')
+      .then(res => res.json())
+      .then(data => {
+        setJurisdiccionesGeoJSON(data);
+        logger.log('✅ Jurisdicciones GeoJSON cargadas para filtro');
+      })
+      .catch(err => logger.error('❌ Error cargando jurisdicciones:', err));
+  }, []);
+
   // Cargar datos de cámaras al montar el componente
   useEffect(() => {
-    if (visible) {
+    if (visible && jurisdiccionesGeoJSON) {
       cargarCamaras();
     }
-  }, [visible]);
+  }, [visible, jurisdiccionesGeoJSON]);
 
   // Aplicar filtros cuando cambien los filtros
   useEffect(() => {
@@ -156,12 +169,20 @@ const ControlCamaras = ({
             anguloVision = '180';
         }
 
+        // Determinar jurisdicción basada en coordenadas
+        const jurisdiccionRaw = obtenerJurisdiccion(
+          camara.latitude,
+          camara.longitude,
+          jurisdiccionesGeoJSON
+        );
+        const jurisdiccion = normalizarNombreJurisdiccion(jurisdiccionRaw) || 'Sin Jurisdicción';
+
         return {
           id: camara.id || index,
           name: camara.name || `Cámara ${index + 1}`,
           direccion: camara.address || 'Sin dirección',
           tipo: tipo,
-          jurisdiccion: 'Municipal',
+          jurisdiccion: jurisdiccion,
           megafono: Boolean(camara.megaphone),
           boton: Boolean(camara.buttom),
           lat: camara.latitude,
@@ -173,6 +194,7 @@ const ControlCamaras = ({
             cameraModel: camara.camera,
             megafono: camara.megaphone,
             boton: camara.buttom,
+            jurisdiccion: jurisdiccion,
           },
         };
       });

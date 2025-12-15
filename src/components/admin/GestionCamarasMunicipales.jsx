@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Eye } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Eye, Target } from 'lucide-react';
 import camarasMunicipalesAdminService from '../../services/camarasMunicipalesAdminService';
 import authService from '../../services/authService';
 import UseUrlParamsManager from '../../hooks/UseUrlParamsManager';
 import SearchInput from '../Table/SearchInput';
 import TablePagination from '../Table/TablePagination';
+import { generateVisionField, createSectorPolygon } from '../../utils/cameraUtils';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const GestionCamarasMunicipales = () => {
   const location = useLocation();
@@ -31,6 +34,9 @@ const GestionCamarasMunicipales = () => {
     camera: 'LPR',
     latitude: '',
     longitude: '',
+    angle: 0,
+    radius: 0.002,
+    arc: 180,
     buttom: false,
     megaphone: false,
     geometry: null,
@@ -39,10 +45,15 @@ const GestionCamarasMunicipales = () => {
   const [showGeometryEditor, setShowGeometryEditor] = useState(false);
   const [geometryJSON, setGeometryJSON] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [showVisionPreview, setShowVisionPreview] = useState(false);
   const mapRef = useRef(null);
   const googleMapRef = useRef(null);
   const polygonRef = useRef(null);
   const markerRef = useRef(null);
+  const visionMapRef = useRef(null);
+  const visionLeafletMapRef = useRef(null);
+  const visionPolygonRef = useRef(null);
+  const visionMarkerRef = useRef(null);
 
   // Verificar si es administrador
   const isAdmin = authService.isAdmin();
@@ -93,6 +104,9 @@ const GestionCamarasMunicipales = () => {
       camera: 'LPR',
       latitude: '',
       longitude: '',
+      angle: 0,
+      radius: 0.002,
+      arc: 35,
       buttom: false,
       megaphone: false,
       geometry: null,
@@ -105,16 +119,32 @@ const GestionCamarasMunicipales = () => {
   const openEditModal = camera => {
     setModalMode('edit');
     setSelectedCamera(camera);
-    setFormData({
+
+    console.log('📸 Cámara seleccionada para editar:', camera);
+
+    // Determinar arc por defecto según el tipo de cámara
+    let defaultArc = 180;
+    if (camera.camera === 'C360') defaultArc = 360;
+    else if (camera.camera === 'LPR') defaultArc = 35;
+    else if (camera.camera === 'C180') defaultArc = 180;
+
+    const editData = {
       name: camera.name || '',
       address: camera.address || '',
       camera: camera.camera || 'LPR',
-      latitude: camera.latitude || '',
-      longitude: camera.longitude || '',
+      latitude: camera.latitude !== undefined && camera.latitude !== null ? camera.latitude : '',
+      longitude: camera.longitude !== undefined && camera.longitude !== null ? camera.longitude : '',
+      angle: camera.angle !== undefined && camera.angle !== null ? camera.angle : 0,
+      radius: camera.radius !== undefined && camera.radius !== null ? camera.radius : 0.002,
+      arc: camera.arc !== undefined && camera.arc !== null ? camera.arc : defaultArc,
       buttom: camera.buttom || false,
       megaphone: camera.megaphone || false,
       geometry: camera.geometry || null,
-    });
+    };
+
+    console.log('📋 Datos cargados en formulario:', editData);
+
+    setFormData(editData);
     setGeometryJSON(camera.geometry ? JSON.stringify(camera.geometry, null, 2) : '');
     setShowGeometryEditor(false);
     setShowModal(true);
@@ -129,6 +159,9 @@ const GestionCamarasMunicipales = () => {
       camera: 'LPR',
       latitude: '',
       longitude: '',
+      angle: 0,
+      radius: 0.002,
+      arc: 180,
       buttom: false,
       megaphone: false,
       geometry: null,
@@ -136,8 +169,9 @@ const GestionCamarasMunicipales = () => {
     setGeometryJSON('');
     setShowGeometryEditor(false);
     setShowPreview(false);
+    setShowVisionPreview(false);
 
-    // Limpiar referencias del mapa
+    // Limpiar referencias del mapa de geometry
     if (polygonRef.current) {
       polygonRef.current.setMap(null);
       polygonRef.current = null;
@@ -147,14 +181,37 @@ const GestionCamarasMunicipales = () => {
       markerRef.current = null;
     }
     googleMapRef.current = null;
+
+    // Limpiar referencias del mapa de visión (Leaflet)
+    if (visionLeafletMapRef.current) {
+      visionLeafletMapRef.current.remove();
+      visionLeafletMapRef.current = null;
+    }
+    visionPolygonRef.current = null;
+    visionMarkerRef.current = null;
   };
 
   const handleFormChange = e => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+
+    // Si cambia el tipo de cámara, ajustar el arc sugerido
+    if (name === 'camera') {
+      let suggestedArc = 180;
+      if (value === 'C360') suggestedArc = 360;
+      else if (value === 'LPR') suggestedArc = 35;
+      else if (value === 'C180') suggestedArc = 180;
+
+      setFormData(prev => ({
+        ...prev,
+        camera: value,
+        arc: suggestedArc,
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+      }));
+    }
   };
 
   const handleGeometryJSONChange = e => {
@@ -277,26 +334,160 @@ const GestionCamarasMunicipales = () => {
     }
   }, [formData.latitude, formData.longitude]);
 
+  // Inicializar mapa de previsualización de campo de visión con Leaflet
+  useEffect(() => {
+    if (showVisionPreview && visionMapRef.current && !visionLeafletMapRef.current) {
+      const lat = parseFloat(formData.latitude) || -12.027257;
+      const lng = parseFloat(formData.longitude) || -76.999918;
+
+      // Crear mapa Leaflet
+      visionLeafletMapRef.current = L.map(visionMapRef.current, {
+        center: [lat, lng],
+        zoom: 17,
+        zoomControl: true,
+        attributionControl: false,
+      });
+
+      // Agregar capa de OpenStreetMap
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+      }).addTo(visionLeafletMapRef.current);
+
+      // Crear icono personalizado para la cámara
+      const cameraIcon = L.divIcon({
+        className: 'custom-camera-marker',
+        html: '<div style="background-color: #4052af; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      });
+
+      // Agregar marcador de la cámara
+      visionMarkerRef.current = L.marker([lat, lng], {
+        icon: cameraIcon,
+        title: formData.name || 'Cámara',
+      }).addTo(visionLeafletMapRef.current);
+    }
+
+    // Cleanup al desmontar o cerrar
+    return () => {
+      if (!showVisionPreview && visionLeafletMapRef.current) {
+        visionLeafletMapRef.current.remove();
+        visionLeafletMapRef.current = null;
+        visionPolygonRef.current = null;
+        visionMarkerRef.current = null;
+      }
+    };
+  }, [showVisionPreview]);
+
+  // Actualizar polígono de campo de visión cuando cambian los parámetros (Leaflet)
+  useEffect(() => {
+    if (visionLeafletMapRef.current && formData.latitude && formData.longitude && formData.camera) {
+      // Limpiar polígono anterior
+      if (visionPolygonRef.current) {
+        visionLeafletMapRef.current.removeLayer(visionPolygonRef.current);
+        visionPolygonRef.current = null;
+      }
+
+      const lat = parseFloat(formData.latitude);
+      const lng = parseFloat(formData.longitude);
+      const angle = parseFloat(formData.angle) || 0;
+      const radius = parseFloat(formData.radius) || 0.002;
+      const arc = parseFloat(formData.arc) || 180;
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        // Generar polígono usando createSectorPolygon con arc personalizado
+        const visionCoords = createSectorPolygon(lat, lng, angle, arc, radius);
+
+        if (visionCoords && visionCoords.length > 0) {
+          // Determinar color según tipo de cámara
+          let fillColor = '#4052af';
+          if (formData.camera === 'C180') fillColor = '#3b82f6';
+          if (formData.camera === 'C360') fillColor = '#10b981';
+          if (formData.camera === 'LPR') fillColor = '#f59e0b';
+
+          // Crear polígono en Leaflet (coordenadas ya están en formato [lat, lng])
+          visionPolygonRef.current = L.polygon(visionCoords, {
+            color: fillColor,
+            fillColor: fillColor,
+            fillOpacity: 0.3,
+            weight: 2,
+          }).addTo(visionLeafletMapRef.current);
+
+          // Ajustar bounds del mapa
+          const bounds = L.latLngBounds(visionCoords);
+          visionLeafletMapRef.current.fitBounds(bounds, { padding: [20, 20] });
+        }
+
+        // Actualizar posición del marcador
+        if (visionMarkerRef.current) {
+          visionMarkerRef.current.setLatLng([lat, lng]);
+        }
+      }
+    }
+  }, [formData.latitude, formData.longitude, formData.angle, formData.radius, formData.arc, formData.camera]);
+
   const handleSubmit = async e => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
 
+    console.log('💾 Iniciando guardado...');
+    console.log('🔧 Modo:', modalMode);
+    console.log('📝 FormData actual:', formData);
+    console.log('🎯 Cámara seleccionada:', selectedCamera);
+
     try {
       setLoading(true);
 
+      // Validar angle (0-360)
+      const angle = parseFloat(formData.angle);
+      if (isNaN(angle) || angle < 0 || angle > 360) {
+        setError('El ángulo debe estar entre 0 y 360 grados');
+        setLoading(false);
+        return;
+      }
+
+      // Validar radius (> 0)
+      const radius = parseFloat(formData.radius);
+      if (isNaN(radius) || radius <= 0) {
+        setError('El radio debe ser mayor a 0');
+        setLoading(false);
+        return;
+      }
+
+      // Validar arc (0-360)
+      const arc = parseFloat(formData.arc);
+      if (isNaN(arc) || arc <= 0 || arc > 360) {
+        setError('La amplitud debe estar entre 1 y 360 grados');
+        setLoading(false);
+        return;
+      }
+
       const dataToSend = {
-        ...formData,
+        name: formData.name,
+        address: formData.address,
+        camera: formData.camera,
         latitude: parseFloat(formData.latitude),
         longitude: parseFloat(formData.longitude),
+        angle: angle,
+        radius: radius,
+        arc: arc,
+        buttom: formData.buttom,
+        megaphone: formData.megaphone,
         geometry: formData.geometry || null,
       };
 
+      console.log('📤 Datos a enviar:', dataToSend);
+
       if (modalMode === 'create') {
-        await camarasMunicipalesAdminService.create(dataToSend);
+        console.log('➕ Creando nueva cámara...');
+        const result = await camarasMunicipalesAdminService.create(dataToSend);
+        console.log('✅ Cámara creada:', result);
         setSuccess('Cámara municipal creada exitosamente');
       } else {
-        await camarasMunicipalesAdminService.update(selectedCamera.id, dataToSend);
+        console.log('✏️ Actualizando cámara ID:', selectedCamera.id);
+        const result = await camarasMunicipalesAdminService.update(selectedCamera.id, dataToSend);
+        console.log('✅ Cámara actualizada:', result);
         setSuccess('Cámara municipal actualizada exitosamente');
       }
 
@@ -305,6 +496,7 @@ const GestionCamarasMunicipales = () => {
 
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
+      console.error('❌ Error al guardar:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -507,8 +699,8 @@ const GestionCamarasMunicipales = () => {
 
       {/* Modal */}
       {showModal && (
-        <div style={styles.modalOverlay} onClick={closeModal}>
-          <div style={styles.modal} onClick={e => e.stopPropagation()}>
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
             <div style={styles.modalHeader}>
               <h2 style={styles.modalTitle}>
                 {modalMode === 'create' ? 'Nueva Cámara Municipal' : 'Editar Cámara Municipal'}
@@ -588,6 +780,93 @@ const GestionCamarasMunicipales = () => {
                     placeholder="-76.999918"
                   />
                 </div>
+              </div>
+
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>
+                    Ángulo (grados) *
+                    <span style={styles.formLabelHint}> 0-360° dirección</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="360"
+                    name="angle"
+                    value={formData.angle}
+                    onChange={handleFormChange}
+                    required
+                    style={styles.formInput}
+                    placeholder="0"
+                  />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>
+                    Radio (grados) *
+                    <span style={styles.formLabelHint}> ~0.002 = 200m</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    min="0"
+                    name="radius"
+                    value={formData.radius}
+                    onChange={handleFormChange}
+                    required
+                    style={styles.formInput}
+                    placeholder="0.002"
+                  />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>
+                    Amplitud (grados) *
+                    <span style={styles.formLabelHint}> 0-360° apertura</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="360"
+                    name="arc"
+                    value={formData.arc}
+                    onChange={handleFormChange}
+                    required
+                    style={styles.formInput}
+                    placeholder="180"
+                  />
+                </div>
+              </div>
+
+              {/* Previsualización del Campo de Visión */}
+              <div style={styles.visionPreviewSection}>
+                <button
+                  type="button"
+                  onClick={() => setShowVisionPreview(!showVisionPreview)}
+                  style={styles.visionPreviewButton}
+                >
+                  <Target size={16} />
+                  {showVisionPreview ? 'Ocultar Previsualización' : 'Ver Campo de Visión'}
+                </button>
+
+                {showVisionPreview && (
+                  <div style={styles.visionMapContainer}>
+                    <div ref={visionMapRef} style={styles.visionMap}></div>
+                    <div style={styles.visionMapHint}>
+                      <p style={styles.visionMapHintText}>
+                        Vista previa del campo de visión •
+                        <span style={styles.visionMapHintBold}>
+                          {' '}{formData.camera} - Amplitud {formData.arc}°
+                        </span>
+                      </p>
+                      <p style={styles.visionMapHintSmall}>
+                        Ajusta el ángulo, radio y amplitud arriba para ver los cambios en tiempo real
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div style={styles.formRow}>
@@ -1044,6 +1323,12 @@ const styles = {
     color: '#374151',
     marginBottom: '6px',
   },
+  formLabelHint: {
+    fontSize: '12px',
+    fontWeight: '400',
+    color: '#9ca3af',
+    marginLeft: '4px',
+  },
   formInput: {
     width: '100%',
     padding: '10px 12px',
@@ -1243,6 +1528,59 @@ const styles = {
     margin: 0,
     backgroundColor: '#f9fafb',
     borderTop: '1px solid #e5e7eb',
+  },
+  // Vision Preview Styles
+  visionPreviewSection: {
+    marginTop: '20px',
+    marginBottom: '20px',
+  },
+  visionPreviewButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '12px 20px',
+    backgroundColor: '#10b981',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    width: '100%',
+    transition: 'all 0.2s',
+  },
+  visionMapContainer: {
+    marginTop: '16px',
+    border: '2px solid #10b981',
+    borderRadius: '12px',
+    overflow: 'hidden',
+    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
+  },
+  visionMap: {
+    width: '100%',
+    height: '350px',
+  },
+  visionMapHint: {
+    padding: '12px 16px',
+    backgroundColor: '#f0fdf4',
+    borderTop: '1px solid #10b981',
+  },
+  visionMapHintText: {
+    fontSize: '13px',
+    color: '#065f46',
+    margin: '0 0 6px 0',
+    fontWeight: '500',
+  },
+  visionMapHintBold: {
+    fontWeight: '700',
+    color: '#047857',
+  },
+  visionMapHintSmall: {
+    fontSize: '12px',
+    color: '#059669',
+    margin: 0,
+    fontStyle: 'italic',
   },
 };
 

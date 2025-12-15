@@ -24,9 +24,9 @@ const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange }) => {
       layers: ['robos', 'extorsiones', 'homicidios', 'feminicidios', 'sicariatos', 'secuestros', 'drogas', 'barras']
     },
     infrastructure: {
-      icon: '🏗️',
-      title: 'Infraestructura',
-      layers: ['paraderosAutorizados', 'defensaCivil', 'paraderosNoAutorizados', 'residuos']
+      icon: '📍',
+      title: 'Puntos Estratégicos',
+      layers: ['paraderosAutorizados', 'defensaCivil', 'paraderosNoAutorizados', 'residuos', 'sostenimiento']
     },
     tools: {
       icon: '🛠️',

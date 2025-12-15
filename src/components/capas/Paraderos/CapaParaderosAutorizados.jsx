@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Marker, Popup, Tooltip, LayerGroup } from "react-leaflet";
 import L from "leaflet";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const iconoParaderoAutorizado = new L.Icon({
   iconUrl: "/icon/motoa.png",
   iconSize: [16, 16],
@@ -14,38 +16,59 @@ const CapaParaderosAutorizados = ({ visible }) => {
   const [data, setData] = useState([]);
 
   useEffect(() => {
-    fetch("/data/paraderos_autorizados.geojson")
+    if (!visible) return;
+
+    const token = localStorage.getItem('token');
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+
+    fetch(`${API_URL}stop?page=0&authorized=true`, { headers })
       .then((res) => res.json())
-      .then((data) => setData(data.features || []))
+      .then((responseData) => {
+        let datos = [];
+
+        if (Array.isArray(responseData)) {
+          datos = responseData;
+        } else if (responseData?.data?.data && Array.isArray(responseData.data.data)) {
+          datos = responseData.data.data;
+        } else if (responseData?.data && Array.isArray(responseData.data)) {
+          datos = responseData.data;
+        }
+
+        setData(datos);
+      })
       .catch((err) =>
         console.error("Error cargando paraderos autorizados:", err)
       );
-  }, []);
+  }, [visible]);
 
   if (!visible) return null;
 
   return (
     <LayerGroup>
-      {data.map((feature, idx) => {
-        const [lng, lat] = feature.geometry?.coordinates || [];
-        const props = feature.properties || {};
+      {data.map((item, idx) => {
+        // Adaptado para la estructura del backend
+        const lat = parseFloat(item.latitude || item.lat);
+        const lng = parseFloat(item.longitude || item.lng);
 
-        if (!lat || !lng) return null;
+        if (isNaN(lat) || isNaN(lng)) return null;
 
         return (
           <Marker
-            key={idx}
+            key={item.id || idx}
             position={[lat, lng]}
             icon={iconoParaderoAutorizado}
           >
             <Popup>
               <div style={{ fontSize: "13px" }}>
                 <strong>🛵 Paradero Autorizado</strong><br />
-                {props.name || "Sin nombre"}
+                {item.name || "Sin nombre"}
               </div>
             </Popup>
             <Tooltip direction="top" offset={[0, -20]} opacity={0.9}>
-              {props.name || "Paradero"}
+              {item.name || "Paradero"}
             </Tooltip>
           </Marker>
         );

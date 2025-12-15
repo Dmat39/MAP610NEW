@@ -356,8 +356,8 @@ const GestionCamarasVecinales = () => {
 
       {/* Modal */}
       {showModal && (
-        <div style={styles.modalOverlay} onClick={closeModal}>
-          <div style={styles.modal} onClick={e => e.stopPropagation()}>
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
             <div style={styles.modalHeader}>
               <h2 style={styles.modalTitle}>
                 {modalMode === 'create' ? 'Nueva Cámara Vecinal' : 'Editar Cámara Vecinal'}

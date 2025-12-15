@@ -1,14 +1,32 @@
 import React, { useState } from "react";
 import { FaIdCard, FaLock } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
 import "./Login.css";
 
 export default function Login() {
-  const [dni, setDni] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Iniciar sesión", { dni, password });
+    setError("");
+    setLoading(true);
+
+    try {
+      const result = await login(username, password);
+
+      if (!result.success) {
+        setError(result.error || "Error al iniciar sesión");
+      }
+    } catch (err) {
+      setError("Error de conexión. Verifica tu red o contacta al administrador.");
+      console.error("Error en login:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -27,13 +45,21 @@ export default function Login() {
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+
           <div className="input-group">
             <FaIdCard className="input-icon" />
             <input
               type="text"
-              placeholder="Ingrese su DNI"
-              value={dni}
-              onChange={(e) => setDni(e.target.value)}
+              placeholder="Ingrese su usuario"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              disabled={loading}
+              required
             />
           </div>
 
@@ -44,11 +70,13 @@ export default function Login() {
               placeholder="Ingrese su contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              required
             />
           </div>
 
-          <button type="submit" className="login-btn">
-            Acceder
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? "Ingresando..." : "Acceder"}
           </button>
         </form>
       </div>
