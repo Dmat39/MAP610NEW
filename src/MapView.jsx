@@ -100,6 +100,7 @@ const MapView = () => {
   const [seguimientoCamara, setSeguimientoCamara] = useState(null);
   const [limpiarSeguimiento, setLimpiarSeguimiento] = useState(null);
   const [camaraConVision, setCamaraConVision] = useState(null); // Track camera with vision field active
+  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
 
   const payloadVacio = {
     Año: '',
@@ -307,6 +308,7 @@ const MapView = () => {
         onToggle={handleToggle}
         mapType={mapType}
         onMapTypeChange={setMapType}
+        onExpandChange={setIsPanelExpanded}
       />
       {!isOperator && (
         <ControlClusters
@@ -465,6 +467,7 @@ const MapView = () => {
           <LeyendaCamaras
             camarasVecinalesVisible={capasVisibles.camarasVecinales}
             camarasMunicipalesVisible={capasVisibles.camaras}
+            isPanelExpanded={isPanelExpanded}
           />
         </div>
       </div>
