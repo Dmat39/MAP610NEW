@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar/Sidebar';
 import MapView from './MapView';
 import GestionCamarasVecinales from './components/admin/GestionCamarasVecinales';
 import GestionCamarasMunicipales from './components/admin/GestionCamarasMunicipales';
+import GestionUsuarios from './components/admin/GestionUsuarios';
 
 const Router = () => {
   return (
@@ -18,6 +19,7 @@ const Router = () => {
             {/* Rutas de administración */}
             <Route path="/admin/camaras-vecinales" element={<GestionCamarasVecinales />} />
             <Route path="/admin/camaras-municipales" element={<GestionCamarasMunicipales />} />
+            <Route path="/admin/usuarios" element={<GestionUsuarios />} />
 
             {/* Redireccionar cualquier ruta no encontrada a la principal */}
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -89,9 +89,11 @@
 }
 
 .layer-toggle-panel.expanded .panel-controls {
-  max-height: 600px;
+  max-height: calc(100vh - 100px);
   opacity: 1;
   padding: 16px 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .layer-checkbox {

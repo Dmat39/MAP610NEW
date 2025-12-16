@@ -2,14 +2,14 @@
 import React from 'react';
 import './LeyendaCamaras.css';
 
-const LeyendaCamaras = ({ camarasVecinalesVisible, camarasMunicipalesVisible }) => {
+const LeyendaCamaras = ({ camarasVecinalesVisible, camarasMunicipalesVisible, isPanelExpanded }) => {
     // No mostrar la leyenda si ninguna capa está visible
     if (!camarasVecinalesVisible && !camarasMunicipalesVisible) {
         return null;
     }
 
     return (
-        <div className="leyenda-camaras">
+        <div className={`leyenda-camaras ${isPanelExpanded ? 'panel-expanded' : ''}`}>
             <div className="leyenda-header">
                 <h4>Leyenda de Cámaras</h4>
             </div>

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, MapPin, ChevronDown, Camera, Map, Video } from 'lucide-react';
+import { LogOut, MapPin, ChevronDown, Camera, Map, Video, Users } from 'lucide-react';
 import './Sidebar.css';
 
 const Sidebar = () => {
@@ -133,6 +133,14 @@ const Sidebar = () => {
             >
               <Video size={20} />
               <span>Cám. Municipales</span>
+            </button>
+
+            <button
+              onClick={() => navigate('/admin/usuarios')}
+              className={`nav-item ${location.pathname === '/admin/usuarios' ? 'active' : ''}`}
+            >
+              <Users size={20} />
+              <span>Usuarios</span>
             </button>
           </>
         )}

@@ -1,8 +1,8 @@
 import "./LayerTogglePanel.css";
 import { Layers, ChevronDown, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange }) => {
+const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange, onExpandChange }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [categoriesExpanded, setCategoriesExpanded] = useState({
     cameras: true,
@@ -45,6 +45,13 @@ const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange }) => {
   const getCapaByName = (name) => {
     return capas.find(capa => capa.name === name);
   };
+
+  // Notificar cambios en el estado de expansión
+  useEffect(() => {
+    if (onExpandChange) {
+      onExpandChange(isExpanded);
+    }
+  }, [isExpanded, onExpandChange]);
 
   return (
     <div
