@@ -39,21 +39,22 @@ ilo para el marcador personalizado */
 
 .camara-seleccionada-custom div {
   z-index: 3000 !important;
-}/* 
-Tooltip para círculos de seguimiento */
+}/*
+Tooltip para círculos de seguimiento - Limpio y legible */
 .seguimiento-tooltip {
-  background: rgba(16, 185, 129, 0.9) !important;
-  border: none !important;
-  border-radius: 6px !important;
-  color: white !important;
+  background: white !important;
+  border: 2px solid #10b981 !important;
+  border-radius: 8px !important;
+  color: #1f2937 !important;
   font-size: 12px !important;
-  font-weight: 500 !important;
-  padding: 8px 10px !important;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+  font-weight: 600 !important;
+  padding: 8px 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 }
 
 .seguimiento-tooltip::before {
-  border-top-color: rgba(16, 185, 129, 0.9) !important;
+  border-top-color: white !important;
+  filter: drop-shadow(0 -1px 0 #10b981);
 }
 
 /* Estilos para campos de visión de cámaras */

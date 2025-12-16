@@ -24,18 +24,21 @@
   border-left: none;
 }
 
-/* Tooltip personalizado */
+
+/* Tooltip personalizado - Limpio y legible */
 .custom-tooltip-vecinal {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  border: none !important;
+  background: white !important;
+  border: 2px solid #3b82f6 !important;
   border-radius: 8px !important;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
   padding: 6px 12px !important;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  color: #1f2937 !important;
 }
 
 .custom-tooltip-vecinal::before {
-  border-top-color: #667eea !important;
+  border-top-color: white !important;
+  filter: drop-shadow(0 -1px 0 #3b82f6);
 }
 
 /* Estilos para el icono personalizado de cámara vecinal */

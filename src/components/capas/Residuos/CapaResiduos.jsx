@@ -1,85 +1,32 @@
 import { useEffect, useState } from "react";
-import { LayerGroup, Marker, Popup, Tooltip } from "react-leaflet";
-import L from "leaflet";
+import { LayerGroup, Marker, Popup, Tooltip, useMap } from "react-leaflet";
 import ClipLoader from "react-spinners/ClipLoader";
-import { Trash2, Recycle } from "lucide-react";
 import "./CapaResiduos.css";
+import { createResiduosIcon, getIconSizeForZoom } from "../../../utils/adaptiveIcons";
 
 const API_URL = import.meta.env.VITE_API_URL;
-
-// Función mejorada para crear iconos usando Lucide React
-const createLucideIcon = (IconComponent, color, bgColor) => {
-  // Crear elemento HTML del marcador
-  const iconDiv = document.createElement('div');
-  iconDiv.className = 'lucide-residuos-marker';
-  iconDiv.innerHTML = `
-    <div style="
-      width: 32px;
-      height: 32px;
-      background-color: ${bgColor};
-      border: 3px solid ${color};
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.4);
-      position: relative;
-      cursor: pointer;
-      transition: transform 0.2s ease;
-    " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-      <div style="
-        position: absolute;
-        bottom: -6px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
-        border-top: 10px solid ${color};
-      "></div>
-    </div>
-  `;
-  
-  // Agregar el icono SVG directamente
-  const iconContainer = iconDiv.querySelector('div');
-  const svgIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svgIcon.setAttribute('width', '18');
-  svgIcon.setAttribute('height', '18');
-  svgIcon.setAttribute('viewBox', '0 0 24 24');
-  svgIcon.setAttribute('fill', 'none');
-  svgIcon.setAttribute('stroke', color);
-  svgIcon.setAttribute('stroke-width', '2.5');
-  svgIcon.setAttribute('stroke-linecap', 'round');
-  svgIcon.setAttribute('stroke-linejoin', 'round');
-  svgIcon.style.zIndex = '2';
-  svgIcon.style.position = 'relative';
-  
-  // Diferentes paths según el tipo de icono
-  if (IconComponent === Recycle) {
-    svgIcon.innerHTML = '<path d="m7 21-3-3 3-3"/><path d="m21 21-3-3 3-3"/><path d="M4.5 12.5L2 10l-2 2.5"/><path d="M19.5 12.5L22 10l2 2.5"/><path d="M10 16.5V21l-4-2.5L10 16.5Z"/><path d="M14 16.5V21l4-2.5L14 16.5Z"/><path d="M8 8.5h8"/>';
-  } else if (IconComponent === Trash2) {
-    svgIcon.innerHTML = '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>';
-  }
-  
-  iconContainer.appendChild(svgIcon);
-  
-  return L.divIcon({
-    html: iconDiv.innerHTML,
-    className: 'custom-lucide-residuos',
-    iconSize: [32, 42],
-    iconAnchor: [16, 38],
-    popupAnchor: [0, -38],
-  });
-};
-
-// Crear iconos específicos para cada tipo
-const iconVerde = createLucideIcon(Recycle, '#198754', '#d1e7dd');
-const iconAmarillo = createLucideIcon(Trash2, '#fd7e14', '#fff3cd');
 
 const CapaResiduos = ({ visible }) => {
   const [puntos, setPuntos] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentZoom, setCurrentZoom] = useState(13);
+  const map = useMap();
+
+  // Escuchar cambios de zoom
+  useEffect(() => {
+    if (!map) return;
+
+    const handleZoomEnd = () => {
+      setCurrentZoom(map.getZoom());
+    };
+
+    map.on('zoomend', handleZoomEnd);
+    setCurrentZoom(map.getZoom());
+
+    return () => {
+      map.off('zoomend', handleZoomEnd);
+    };
+  }, [map]);
 
   useEffect(() => {
     if (!visible) {
@@ -143,6 +90,9 @@ const CapaResiduos = ({ visible }) => {
     );
   }
 
+  // Calcular tamaño del icono según el zoom
+  const iconSize = getIconSizeForZoom(currentZoom, 32, 50);
+
   return (
     <LayerGroup>
       {puntos.map((punto, idx) => {
@@ -152,48 +102,67 @@ const CapaResiduos = ({ visible }) => {
         if (isNaN(lat) || isNaN(lng)) return null;
 
         const tipo = punto.type || punto.id_tipo || 'amarillo';
-        const icon = tipo === 'verde' ? iconVerde : iconAmarillo;
-        const colorTexto = tipo === 'verde' ? '#28a745' : '#ffc107';
+        const colorTexto = tipo === 'verde' ? '#198754' : '#ffc107';
         const nombre = punto.name || punto.nombre || 'Sin nombre';
 
         return (
           <Marker
             key={punto.id || `residuo-${idx}-${nombre}`}
             position={[lat, lng]}
-            icon={icon}
+            icon={createResiduosIcon(iconSize, tipo)}
           >
             <Popup>
-              <div className="residuos-popup" style={{ maxWidth: "280px" }}>
-                <div className="header" style={{ color: colorTexto }}>
+              <div className="residuos-popup" style={{ maxWidth: "300px" }}>
+                <div className="header" style={{
+                  color: colorTexto,
+                  borderBottom: `2px solid ${colorTexto}`,
+                  paddingBottom: "8px",
+                  marginBottom: "12px",
+                  fontSize: "15px",
+                  fontWeight: "bold"
+                }}>
                   🗑️ Punto Crítico de Residuos
                 </div>
-                <div className="divider" style={{ backgroundColor: colorTexto }}></div>
 
-                <div className="info-row">
-                  <span className="label">Código:</span>
-                  <span style={{ color: colorTexto, fontWeight: 'bold' }}>
+                <div className="info-row" style={{ marginBottom: "8px" }}>
+                  <span className="label" style={{ fontWeight: "600" }}>Código:</span>
+                  <span style={{ color: colorTexto, fontWeight: 'bold', marginLeft: "6px" }}>
                     {nombre}
                   </span>
                 </div>
 
-                <div className="info-row">
-                  <span className="label">Tipo:</span>
+                <div className="info-row" style={{ marginBottom: "8px" }}>
+                  <span className="label" style={{ fontWeight: "600" }}>Tipo:</span>
                   <span className="badge" style={{
                     backgroundColor: colorTexto,
-                    color: 'white'
+                    color: 'white',
+                    padding: "3px 10px",
+                    borderRadius: "5px",
+                    fontSize: "12px",
+                    fontWeight: "500",
+                    marginLeft: "6px",
+                    display: "inline-block"
                   }}>
                     {tipo}
                   </span>
                 </div>
 
                 {punto.description && (
-                  <div className="info-row">
-                    <span className="label">Descripción:</span>
-                    <span>{punto.description}</span>
+                  <div className="info-row" style={{ marginBottom: "8px" }}>
+                    <span className="label" style={{ fontWeight: "600" }}>Descripción:</span>
+                    <div style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+                      {punto.description}
+                    </div>
                   </div>
                 )}
 
-                <div className="coordinates">
+                <div className="coordinates" style={{
+                  fontSize: "11px",
+                  color: "#888",
+                  marginTop: "10px",
+                  paddingTop: "8px",
+                  borderTop: "1px solid #eee"
+                }}>
                   <strong>📍 Coordenadas:</strong><br />
                   Lat: {lat.toFixed(6)} | Lng: {lng.toFixed(6)}
                 </div>
@@ -201,23 +170,23 @@ const CapaResiduos = ({ visible }) => {
             </Popup>
             <Tooltip
               direction="top"
-              offset={[0, -25]}
+              offset={[0, -(iconSize / 2 + 10)]}
               opacity={0.95}
               className={`residuos-tooltip ${tipo}`}
             >
               <div style={{
-                fontSize: "11px",
-                fontWeight: "bold",
+                fontSize: "12px",
+                fontWeight: "600",
                 color: colorTexto,
                 textAlign: 'center',
-                lineHeight: '1.2'
+                lineHeight: '1.3'
               }}>
                 <div>{nombre}</div>
                 <div style={{
-                  fontSize: "9px",
+                  fontSize: "10px",
                   textTransform: "uppercase",
-                  marginTop: "2px",
-                  opacity: 0.8
+                  marginTop: "3px",
+                  opacity: 0.85
                 }}>
                   {tipo}
                 </div>

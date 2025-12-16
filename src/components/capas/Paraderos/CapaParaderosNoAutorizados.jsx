@@ -1,19 +1,30 @@
 // CapaParaderosNoAutorizados.jsx
 import { useEffect, useState } from "react";
-import { Marker, Popup, Tooltip, LayerGroup } from "react-leaflet";
-import L from "leaflet";
+import { Marker, Popup, Tooltip, LayerGroup, useMap } from "react-leaflet";
+import { createParaderoNoAutorizadoIcon, getIconSizeForZoom } from "../../../utils/adaptiveIcons";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-const iconoParaderoNoAutorizado = new L.Icon({
-  iconUrl: "/icon/moton.png",
-  iconSize: [26, 26],
-  iconAnchor: [13, 26],
-  popupAnchor: [0, -26],
-});
-
 const CapaParaderosNoAutorizados = ({ visible }) => {
   const [data, setData] = useState([]);
+  const [currentZoom, setCurrentZoom] = useState(13);
+  const map = useMap();
+
+  // Escuchar cambios de zoom
+  useEffect(() => {
+    if (!map) return;
+
+    const handleZoomEnd = () => {
+      setCurrentZoom(map.getZoom());
+    };
+
+    map.on('zoomend', handleZoomEnd);
+    setCurrentZoom(map.getZoom());
+
+    return () => {
+      map.off('zoomend', handleZoomEnd);
+    };
+  }, [map]);
 
   useEffect(() => {
     if (!visible) return;
@@ -46,6 +57,9 @@ const CapaParaderosNoAutorizados = ({ visible }) => {
 
   if (!visible) return null;
 
+  // Calcular tamaño del icono según el zoom
+  const iconSize = getIconSizeForZoom(currentZoom, 30, 46);
+
   return (
     <LayerGroup>
       {data.map((item, idx) => {
@@ -58,18 +72,44 @@ const CapaParaderosNoAutorizados = ({ visible }) => {
           <Marker
             key={item.id || idx}
             position={[lat, lng]}
-            icon={iconoParaderoNoAutorizado}
+            icon={createParaderoNoAutorizadoIcon(iconSize)}
           >
             <Popup>
-              <div style={{ fontSize: "13px" }}>
-                <strong>🚫 Paradero NO Autorizado</strong><br />
-                <strong>ID:</strong> {item.name || "Sin nombre"}<br />
-                <strong>Descripción:</strong><br />
-                {item.description || "Sin detalle"}
+              <div style={{ fontSize: "14px", maxWidth: "280px" }}>
+                <div style={{
+                  borderBottom: "2px solid #dc3545",
+                  paddingBottom: "8px",
+                  marginBottom: "8px",
+                  fontWeight: "bold",
+                  color: "#dc3545"
+                }}>
+                  🚫 Paradero NO Autorizado
+                </div>
+                <div style={{ marginBottom: "6px" }}>
+                  <strong>ID:</strong> {item.name || "Sin nombre"}
+                </div>
+                <div style={{ marginBottom: "6px" }}>
+                  <strong>Descripción:</strong>
+                  <div style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+                    {item.description || "Sin detalle"}
+                  </div>
+                </div>
               </div>
             </Popup>
-            <Tooltip direction="top" offset={[0, -20]} opacity={0.9}>
-              {item.name || "Paradero"}
+            <Tooltip
+              direction="top"
+              offset={[0, -(iconSize / 2 + 10)]}
+              opacity={0.95}
+              className="paradero-no-autorizado-tooltip"
+            >
+              <div style={{
+                fontSize: "12px",
+                fontWeight: "600",
+                color: "#dc3545",
+                textAlign: "center"
+              }}>
+                {item.name || "Paradero NO Autorizado"}
+              </div>
             </Tooltip>
           </Marker>
         );
