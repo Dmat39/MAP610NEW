@@ -535,7 +535,7 @@ const GoogleCapaCamarasMunicipales = ({
 
   // Efecto para limpiar seguimiento cuando se cambian los filtros
   useEffect(() => {
-    if (camarasFiltradas && camarasFiltradas.length >= 0 && seguimientoActivo) {
+    if (camarasFiltradas && camarasFiltradas.length > 0 && seguimientoActivo) {
       limpiarTodoSeguimiento();
     }
   }, [camarasFiltradas]);
@@ -581,8 +581,8 @@ const GoogleCapaCamarasMunicipales = ({
       // Mostrar solo las cámaras del seguimiento
       camarasAMostrar = camarasCercanas.map(item => item.feature);
       console.log('📍 Mostrando cámaras de seguimiento:', camarasAMostrar.length);
-    } else if (camarasFiltradas && camarasFiltradas.length >= 0) {
-      // Mostrar cámaras filtradas
+    } else if (camarasFiltradas && camarasFiltradas.length > 0) {
+      // Mostrar cámaras filtradas (solo si hay filtros activos)
       camarasAMostrar = camaras.filter((feature, idx) =>
         camarasFiltradas.some(cf => cf.name === feature.properties?.name)
       );

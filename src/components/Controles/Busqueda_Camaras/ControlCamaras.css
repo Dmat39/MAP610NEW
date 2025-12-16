@@ -131,7 +131,8 @@
   font-weight: 500;
   background: rgba(255, 255, 255, 0.8);
   transition: all 0.3s ease;
-  color: #374151;
+  color: #374151 !important;
+  -webkit-text-fill-color: #374151 !important;
 }
 
 .busqueda-input:focus {
@@ -218,8 +219,13 @@
 }
 
 .filtros-botones {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
+}
+
+.filtros-botones .filtro-btn:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 
 .filtro-btn {

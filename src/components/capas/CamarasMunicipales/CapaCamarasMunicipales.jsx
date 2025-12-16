@@ -201,6 +201,9 @@ const CapaCamarasMunicipales = ({
           };
         });
 
+        logger.log('📊 Cámaras transformadas (primeras 3):', camarasTransformadas.slice(0, 3));
+        logger.log('📍 Total de cámaras a mostrar:', camarasTransformadas.length);
+
         setCamaras(camarasTransformadas);
         setCargando(false);
       } catch (err) {
@@ -393,53 +396,29 @@ const CapaCamarasMunicipales = ({
 
   // Efecto para limpiar seguimiento cuando se cambian los filtros
   useEffect(() => {
-    if (camarasFiltradas && camarasFiltradas.length >= 0 && seguimientoActivo) {
+    if (camarasFiltradas && camarasFiltradas.length > 0 && seguimientoActivo) {
       // Si se aplican filtros mientras hay seguimiento activo, limpiar seguimiento
       limpiarTodoSeguimiento();
     }
   }, [camarasFiltradas]);
+
 
   if (!visible) return null;
 
   // Mostrar mensajes de estado
   if (cargando) {
     return (
-      <LayerGroup>
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: 'white',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-          zIndex: 1000
-        }}>
-          Cargando cámaras municipales...
-        </div>
-      </LayerGroup>
+      <div className="map-overlay">
+        Cargando cámaras municipales...
+      </div>
     );
   }
 
   if (error) {
     return (
-      <LayerGroup>
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: '#fee',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-          zIndex: 1000,
-          color: '#c00'
-        }}>
-          Error: {error}
-        </div>
-      </LayerGroup>
+      <div className="map-overlay error">
+        Error: {error}
+      </div>
     );
   }
 
@@ -449,104 +428,126 @@ const CapaCamarasMunicipales = ({
   if (seguimientoActivo && camarasCercanas.length > 0) {
     // Mostrar solo las cámaras del seguimiento
     camarasAMostrar = camarasCercanas.map(item => item.feature);
-  } else if (camarasFiltradas && camarasFiltradas.length >= 0) {
-    // Mostrar cámaras filtradas
+    logger.log('📍 Modo: Seguimiento -', camarasAMostrar.length, 'cámaras');
+  } else if (camarasFiltradas && camarasFiltradas.length > 0) {
+    // Mostrar cámaras filtradas (solo si hay filtros activos)
     camarasAMostrar = camaras.filter(feature =>
       camarasFiltradas.some(cf => cf.name === feature.properties?.name)
     );
+    logger.log('🔍 Modo: Filtradas -', camarasAMostrar.length, 'cámaras');
   } else {
     // Mostrar todas las cámaras
     camarasAMostrar = camaras;
+    logger.log('📷 Modo: Todas -', camarasAMostrar.length, 'cámaras');
   }
 
   return (
     <LayerGroup>
-      {camarasAMostrar
-        .map((feature, idx) => {
-          const coords = feature.geometry?.coordinates;
-          const props = feature.properties;
-          if (!coords || coords.length < 2) return null;
+      {camarasAMostrar.map((feature, idx) => {
+        const coords = feature.geometry?.coordinates;
+        const props = feature.properties;
+        if (!coords || coords.length < 2) return null;
 
-          // En GeoJSON, las coordenadas están como [lng, lat]
-          const [lng, lat] = coords;
-          const markerId = `marker-${idx}`;
+        // En GeoJSON, las coordenadas están como [lng, lat]
+        const [lng, lat] = coords;
+        const markerId = `marker-${idx}`;
 
-          // Determinar si esta cámara está seleccionada (por prop o por click local)
-          const esSeleccionada =
-            (camaraSeleccionada &&
-              (camaraSeleccionada.name === props.name || camaraSeleccionada.id === idx)) ||
-            camaraConVision === props.name;
+        // Determinar si esta cámara está seleccionada (por prop o por click local)
+        const esSeleccionada =
+          (camaraSeleccionada &&
+            (camaraSeleccionada.name === props.name || camaraSeleccionada.id === idx)) ||
+          camaraConVision === props.name;
 
-          // Debug log - SIEMPRE mostrar para debugging
-          logger.log('🔍 Cámara:', props.name, {
-            esSeleccionada,
-            camaraConVision,
-            camaraSeleccionada,
-            tipoCamara: props.camara,
+        // Determinar si esta cámara está en modo seguimiento
+        const enSeguimiento =
+          seguimientoActivo && camarasCercanas.some(item => item.properties?.name === props.name);
+
+        // Calcular información de distancia si está en seguimiento
+        let infoDistancia = '';
+        if (enSeguimiento && circuloSeguimiento) {
+          const centroCirculo = circuloSeguimiento.getLatLng();
+          const distancia = L.latLng(lat, lng).distanceTo(centroCirculo);
+          const distanciaKm = (distancia / 1000).toFixed(2);
+          infoDistancia = ` (${distanciaKm}km)`;
+        }
+
+        // Crear el icono según si está seleccionada o no
+        let iconUrl;
+        switch (props.tipo) {
+          case 'TIPO I':
+            iconUrl = '/icon/camera.png';
+            break;
+          case 'TIPO II':
+            iconUrl = '/icon/camera2.png';
+            break;
+          case 'TIPO III':
+            iconUrl = '/icon/camera3.png';
+            break;
+          default:
+            iconUrl = '/icon/camera.png';
+        }
+
+        let iconoMarcador;
+        if (esSeleccionada) {
+          // Icono con efecto de selección
+          iconoMarcador = new L.DivIcon({
+            html: `<div style="
+            width: 40px;
+            height: 40px;
+            background-image: url('${iconUrl}');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.8));
+            animation: pulse-camara 2s infinite;
+          "></div>`,
+            iconSize: [40, 40],
+            iconAnchor: [20, 20],
+            popupAnchor: [0, -20],
+            className: 'camara-seleccionada-custom',
           });
+        } else {
+          // Icono normal
+          iconoMarcador = crearIconoCamara(props.tipo);
+        }
 
-          // Determinar colores según el tipo de cámara (no usado actualmente)
-          // Se mantiene para referencia futura
-          let _circleColors;
-          if (esSeleccionada) {
-            // Si está seleccionada, usar colores de selección
-            _circleColors = {
-              color: '#667eea',
-              fillColor: '#667eea',
-            };
+        // Generar campo de visión si corresponde
+        let visionPolygonElement = null;
+        if (esSeleccionada || enSeguimiento) {
+          // PRIORIDAD 1: Si el backend envía geometryVision (polígono pre-calculado), usarlo
+          if (props.geometryVision && props.geometryVision.coordinates) {
+            const coordinates = props.geometryVision.coordinates[0];
+            // Convertir de [lng, lat] a [lat, lng] para Leaflet
+            const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
+
+            visionPolygonElement = (
+              <Polygon
+                key={`vision-polygon-${idx}`}
+                positions={latLngs}
+                pathOptions={{
+                  color: esSeleccionada ? '#667eea' : '#10b981',
+                  fillColor: esSeleccionada ? '#667eea' : '#10b981',
+                  fillOpacity: 0.2,
+                  weight: 2,
+                }}
+                interactive={false}
+              />
+            );
           } else {
-            // Colores según el tipo de cámara
-            switch (props.tipo) {
-              case 'TIPO II':
-                _circleColors = {
-                  color: '#6c5ce7',
-                  fillColor: '#44d500',
-                };
-                break;
-              case 'TIPO III':
-                _circleColors = {
-                  color: '#1e47d1',
-                  fillColor: '#1a68ff',
-                };
-                break;
-              // default: // TIPO I y otros (no usado actualmente)
-              //   circleColors = {
-              //     color: "#6c5ce7",
-              //     fillColor: "#a29bfe"
-              //   };
-            }
-          }
-
-          const elementos = [];
-
-          // 1. Determinar si esta cámara está en modo seguimiento
-          const enSeguimiento =
-            seguimientoActivo && camarasCercanas.some(item => item.properties?.name === props.name);
-
-          // 2. Mostrar el campo de visión si la cámara está seleccionada O en seguimiento
-          if (esSeleccionada || enSeguimiento) {
-            logger.log(
-              '🎯 Mostrando campo de visión para:',
-              props.name,
-              'Tipo:',
-              props.cameraModel,
-              'Ángulo:',
-              props.angle,
-              'Lat/Lng:',
+            // PRIORIDAD 2: Generar el polígono en el frontend usando angle del backend
+            const visionPolygon = generateVisionField(
+              props.cameraModel, // "C180", "C360", "LPR"
               props.latitude,
-              props.longitude
+              props.longitude,
+              props.angle, // Puede ser null para C360/LPR
+              props.radius // Radio desde el backend
             );
 
-            // PRIORIDAD 1: Si el backend envía geometryVision (polígono pre-calculado), usarlo
-            if (props.geometryVision && props.geometryVision.coordinates) {
-              const coordinates = props.geometryVision.coordinates[0];
-              // Convertir de [lng, lat] a [lat, lng] para Leaflet
-              const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
-
-              elementos.push(
+            if (visionPolygon) {
+              visionPolygonElement = (
                 <Polygon
                   key={`vision-polygon-${idx}`}
-                  positions={latLngs}
+                  positions={visionPolygon}
                   pathOptions={{
                     color: esSeleccionada ? '#667eea' : '#10b981',
                     fillColor: esSeleccionada ? '#667eea' : '#10b981',
@@ -556,87 +557,13 @@ const CapaCamarasMunicipales = ({
                   interactive={false}
                 />
               );
-            } else {
-              // PRIORIDAD 2: Generar el polígono en el frontend usando angle del backend
-              const visionPolygon = generateVisionField(
-                props.cameraModel, // "C180", "C360", "LPR"
-                props.latitude,
-                props.longitude,
-                props.angle, // Puede ser null para C360/LPR
-                props.radius // Radio desde el backend
-              );
-
-              if (visionPolygon) {
-                elementos.push(
-                  <Polygon
-                    key={`vision-polygon-${idx}`}
-                    positions={visionPolygon}
-                    pathOptions={{
-                      color: esSeleccionada ? '#667eea' : '#10b981',
-                      fillColor: esSeleccionada ? '#667eea' : '#10b981',
-                      fillOpacity: 0.2,
-                      weight: 2,
-                    }}
-                    interactive={false}
-                  />
-                );
-              } else {
-                logger.warn(`No se pudo generar campo de visión para cámara ${props.name}`);
-              }
             }
           }
+        }
 
-          // Calcular información de distancia si está en seguimiento
-          let infoDistancia = '';
-          if (enSeguimiento && circuloSeguimiento) {
-            const centroCirculo = circuloSeguimiento.getLatLng();
-            const distancia = L.latLng(lat, lng).distanceTo(centroCirculo);
-            const distanciaKm = (distancia / 1000).toFixed(2);
-            infoDistancia = ` (${distanciaKm}km)`;
-          }
-
-          // 4. Crear el icono según si está seleccionada o no
-          let iconUrl;
-          switch (props.tipo) {
-            case 'TIPO I':
-              iconUrl = '/icon/camera.png';
-              break;
-            case 'TIPO II':
-              iconUrl = '/icon/camera2.png';
-              break;
-            case 'TIPO III':
-              iconUrl = '/icon/camera3.png';
-              break;
-            default:
-              iconUrl = '/icon/camera.png';
-          }
-
-          let iconoMarcador;
-          if (esSeleccionada) {
-            // Icono con efecto de selección
-            iconoMarcador = new L.DivIcon({
-              html: `<div style="
-              width: 40px;
-              height: 40px;
-              background-image: url('${iconUrl}');
-              background-size: contain;
-              background-repeat: no-repeat;
-              background-position: center;
-              filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.8));
-              animation: pulse-camara 2s infinite;
-            "></div>`,
-              iconSize: [40, 40],
-              iconAnchor: [20, 20],
-              popupAnchor: [0, -20],
-              className: 'camara-seleccionada-custom',
-            });
-          } else {
-            // Icono normal
-            iconoMarcador = crearIconoCamara(props.tipo);
-          }
-
-          // 5. Renderizar UN SOLO marcador que funcione siempre
-          elementos.push(
+        return (
+          <React.Fragment key={`camara-${idx}`}>
+            {visionPolygonElement}
             <Marker
               key={markerId}
               position={[lat, lng]}
@@ -744,11 +671,9 @@ const CapaCamarasMunicipales = ({
                 </div>
               </Popup>
             </Marker>
-          );
-
-          return elementos;
-        })
-        .flat()}
+          </React.Fragment>
+        );
+      })}
     </LayerGroup>
   );
 };

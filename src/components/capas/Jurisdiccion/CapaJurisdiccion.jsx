@@ -75,15 +75,15 @@ const CapaJurisdiccion = ({
   // Efecto para aplicar estilos CSS cuando esté inactivo
   useEffect(() => {
     if (esInactivo) {
-      // Hacer las jurisdicciones no clickeables
-      const jurisdiccionElements = document.querySelectorAll('.leaflet-interactive');
+      // Hacer SOLO las jurisdicciones (paths/polygons) no clickeables, no todos los elementos interactivos
+      const jurisdiccionElements = document.querySelectorAll('.leaflet-overlay-pane svg path.leaflet-interactive');
       jurisdiccionElements.forEach(el => {
         el.style.pointerEvents = 'none';
         el.style.cursor = ubicadorActivo ? 'crosshair' : 'default';
       });
     } else {
-      // Restaurar interactividad
-      const jurisdiccionElements = document.querySelectorAll('.leaflet-interactive');
+      // Restaurar interactividad solo para jurisdicciones
+      const jurisdiccionElements = document.querySelectorAll('.leaflet-overlay-pane svg path.leaflet-interactive');
       jurisdiccionElements.forEach(el => {
         el.style.pointerEvents = 'auto';
         el.style.cursor = '';
@@ -91,8 +91,8 @@ const CapaJurisdiccion = ({
     }
 
     return () => {
-      // Cleanup: restaurar cuando se desmonte
-      const jurisdiccionElements = document.querySelectorAll('.leaflet-interactive');
+      // Cleanup: restaurar cuando se desmonte (solo jurisdicciones)
+      const jurisdiccionElements = document.querySelectorAll('.leaflet-overlay-pane svg path.leaflet-interactive');
       jurisdiccionElements.forEach(el => {
         el.style.pointerEvents = 'auto';
         el.style.cursor = '';

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Search, Filter, MapPin, Zap, AlertTriangle } from 'lucide-react';
+import { ChevronUp, ChevronDown, Search, Filter, MapPin, Zap, AlertTriangle, Camera } from 'lucide-react';
 import './ControlCamaras.css';
 import { logger } from '../../../utils/logger.js';
 import camarasService from '../../../services/camarasService';
@@ -20,6 +20,7 @@ const ControlCamaras = ({
   const [filtros, setFiltros] = useState({
     megafono: false,
     boton: false,
+    lpr: false,
     jurisdicciones: [],
   });
   const [cargando, setCargando] = useState(true);
@@ -226,6 +227,10 @@ const ControlCamaras = ({
       resultado = resultado.filter(camara => camara.boton);
     }
 
+    if (filtros.lpr) {
+      resultado = resultado.filter(camara => camara.tipo === 'TIPO III');
+    }
+
     // Filtro por jurisdicciones
     if (filtros.jurisdicciones.length > 0) {
       resultado = resultado.filter(camara => filtros.jurisdicciones.includes(camara.jurisdiccion));
@@ -269,7 +274,7 @@ const ControlCamaras = ({
     setBusqueda('');
     setUltimaBusqueda('');
     setError(null);
-    setFiltros({ megafono: false, boton: false, jurisdicciones: [] });
+    setFiltros({ megafono: false, boton: false, lpr: false, jurisdicciones: [] });
 
     // Limpiar la cámara seleccionada
     if (onLimpiarSeleccion) {
@@ -400,6 +405,18 @@ const ControlCamaras = ({
                 <span className="filtro-count">{camaras.filter(c => c.boton).length}</span>
               )}
             </button>
+
+            <button
+              className={`filtro-btn ${filtros.lpr ? 'activo' : ''}`}
+              onClick={() => toggleFiltro('lpr')}
+              title="Mostrar solo cámaras LPR (Tipo III)"
+            >
+              <Camera size={14} />
+              <span>LPR</span>
+              {filtros.lpr && (
+                <span className="filtro-count">{camaras.filter(c => c.tipo === 'TIPO III').length}</span>
+              )}
+            </button>
           </div>
         </div>
 
@@ -477,6 +494,12 @@ const ControlCamaras = ({
                 <span className="stat-label">🚨 Botón</span>
               </div>
             )}
+            {filtros.lpr && (
+              <div className="stat-item activo">
+                <span className="stat-numero">{camaras.filter(c => c.tipo === 'TIPO III').length}</span>
+                <span className="stat-label">📹 LPR</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -485,6 +508,7 @@ const ControlCamaras = ({
           ultimaBusqueda ||
           filtros.megafono ||
           filtros.boton ||
+          filtros.lpr ||
           filtros.jurisdicciones.length > 0) && (
           <div className="acciones-container">
             <button onClick={limpiarBusqueda} className="btn-limpiar-todo">

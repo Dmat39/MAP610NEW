@@ -221,6 +221,7 @@ html, body, #root {
 }
 
 /* Asegurar que no haya elementos ocultos con sombras */
-.leaflet-marker-pane img {
+/* COMENTADO: Esta regla estaba ocultando todos los iconos de cámaras municipales */
+/* .leaflet-marker-pane img {
   display: none !important;
-}
+} */
