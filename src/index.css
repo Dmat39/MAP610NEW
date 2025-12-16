@@ -68,3 +68,159 @@ html, body, #root {
 .leaflet-control-zoom {
   display: none !important;
 }
+
+/* ============================================
+   Estilos para Iconos Adaptativos del Mapa
+   ============================================ */
+
+/* Contenedor base del icono adaptativo */
+.custom-adaptive-marker {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Prevenir iconos negros en los bordes */
+.leaflet-marker-icon.custom-adaptive-marker {
+  background-color: transparent !important;
+  border: 0 !important;
+  outline: none !important;
+}
+
+/* Asegurar que los divIcon no tengan sombra predeterminada */
+.leaflet-marker-icon.custom-adaptive-marker::before,
+.leaflet-marker-icon.custom-adaptive-marker::after {
+  display: none !important;
+}
+
+/* Animación hover para el círculo del marcador */
+.adaptive-marker-container .marker-circle:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  filter: none !important;
+}
+
+/* Animación de pulsación suave */
+.adaptive-marker-container {
+  animation: markerPulse 2s ease-in-out infinite;
+}
+
+@keyframes markerPulse {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Tooltips personalizados para cada tipo de capa */
+.paradero-tooltip,
+.paradero-no-autorizado-tooltip,
+.defensa-civil-tooltip,
+.sostenimiento-tooltip {
+  background: white !important;
+  border: 2px solid #ddd !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.paradero-tooltip::before,
+.paradero-no-autorizado-tooltip::before,
+.defensa-civil-tooltip::before,
+.sostenimiento-tooltip::before {
+  border-top-color: white !important;
+}
+
+/* Estilos para tooltips de residuos */
+.residuos-tooltip {
+  background: white !important;
+  border: 2px solid #ddd !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.residuos-tooltip.verde {
+  border-color: #198754 !important;
+}
+
+.residuos-tooltip.amarillo {
+  border-color: #ffc107 !important;
+}
+
+/* Mejorar popups de Leaflet */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-popup-content {
+  margin: 16px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', sans-serif;
+}
+
+/* Mejorar la punta del popup */
+.leaflet-popup-tip {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ============================================
+   Prevención de Iconos Negros en los Bordes
+   ============================================ */
+
+/* Eliminar TODAS las sombras de marcadores de Leaflet */
+.leaflet-marker-icon {
+  filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Evitar que los divIcon hereden estilos no deseados */
+.leaflet-div-icon {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Ocultar completamente cualquier sombra de marcador predeterminada */
+.leaflet-marker-shadow {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Mejorar el rendimiento de los marcadores */
+.leaflet-marker-pane {
+  will-change: transform;
+}
+
+/* Eliminar cualquier sombra en el pane de marcadores */
+.leaflet-marker-pane * {
+  filter: none !important;
+}
+
+/* Asegurar que los iconos personalizados no tengan bordes oscuros */
+.custom-adaptive-marker img {
+  display: none !important;
+}
+
+/* Prevenir cualquier background oscuro en markers */
+.leaflet-marker-icon.custom-adaptive-marker,
+.leaflet-marker-icon.custom-adaptive-marker * {
+  box-shadow: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Remover sombras del shadow pane completo */
+.leaflet-shadow-pane {
+  display: none !important;
+}
+
+/* Asegurar que no haya elementos ocultos con sombras */
+.leaflet-marker-pane img {
+  display: none !important;
+}

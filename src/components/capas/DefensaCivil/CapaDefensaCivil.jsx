@@ -1,17 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Marker, Popup, LayerGroup, Tooltip } from 'react-leaflet';
-import L from 'leaflet';
+import { Marker, Popup, LayerGroup, Tooltip, useMap } from 'react-leaflet';
 import FiltroGiro from '../../filtros/FiltroGiro';
 import { logger } from '../../../utils/logger.js';
+import { createDefensaCivilIcon, getIconSizeForZoom } from '../../../utils/adaptiveIcons';
 
 const API_URL = import.meta.env.VITE_API_URL;
-
-const iconoDefensa = new L.Icon({
-  iconUrl: '/icon/defensa.png',
-  iconSize: [20, 20],
-  iconAnchor: [10, 20],
-  popupAnchor: [0, -20],
-});
 
 const normalizarTexto = texto =>
   (texto || '')
@@ -23,6 +16,24 @@ const CapaDefensaCivil = ({ visible }) => {
   const [lugares, setLugares] = useState([]);
   const [filtroGiro, setFiltroGiro] = useState('');
   const [girosDisponibles, setGirosDisponibles] = useState([]);
+  const [currentZoom, setCurrentZoom] = useState(13);
+  const map = useMap();
+
+  // Escuchar cambios de zoom
+  useEffect(() => {
+    if (!map) return;
+
+    const handleZoomEnd = () => {
+      setCurrentZoom(map.getZoom());
+    };
+
+    map.on('zoomend', handleZoomEnd);
+    setCurrentZoom(map.getZoom());
+
+    return () => {
+      map.off('zoomend', handleZoomEnd);
+    };
+  }, [map]);
 
   useEffect(() => {
     if (!visible) return;
@@ -74,6 +85,9 @@ const CapaDefensaCivil = ({ visible }) => {
       ? lugares
       : lugares.filter(item => normalizarTexto(item.GIro || item.giro).includes(normalizarTexto(filtroGiro)));
 
+  // Calcular tamaño del icono según el zoom
+  const iconSize = getIconSizeForZoom(currentZoom, 32, 48);
+
   return (
     <>
       <FiltroGiro
@@ -93,18 +107,58 @@ const CapaDefensaCivil = ({ visible }) => {
           }
 
           return (
-            <Marker key={item.id || `${lat}-${lng}-${idx}`} position={[lat, lng]} icon={iconoDefensa}>
+            <Marker
+              key={item.id || `${lat}-${lng}-${idx}`}
+              position={[lat, lng]}
+              icon={createDefensaCivilIcon(iconSize)}
+            >
               <Popup>
-                <div style={{ fontSize: '13px', maxWidth: '260px' }}>
-                  <strong>🏢 Defensa Civil</strong>
-                  <br />
-                  <strong>Dirección:</strong> {item.address || item.Dirección || 'Sin dirección'}
-                  <br />
-                  <strong>Giro:</strong> {item.GIro || item.giro || 'Sin giro'}
+                <div style={{ fontSize: '14px', maxWidth: '300px' }}>
+                  <div style={{
+                    borderBottom: "2px solid #007bff",
+                    paddingBottom: "8px",
+                    marginBottom: "8px",
+                    fontWeight: "bold",
+                    color: "#007bff"
+                  }}>
+                    🏢 Defensa Civil
+                  </div>
+                  <div style={{ marginBottom: "6px" }}>
+                    <strong>Dirección:</strong>
+                    <div style={{ fontSize: "12px", color: "#555", marginTop: "2px" }}>
+                      {item.address || item.Dirección || 'Sin dirección'}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: "6px" }}>
+                    <strong>Giro:</strong>
+                    <span style={{
+                      marginLeft: "6px",
+                      padding: "2px 8px",
+                      backgroundColor: "#cfe2ff",
+                      color: "#007bff",
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                      fontWeight: "500"
+                    }}>
+                      {item.GIro || item.giro || 'Sin giro'}
+                    </span>
+                  </div>
                 </div>
               </Popup>
-              <Tooltip direction="top" offset={[0, -20]} opacity={0.9}>
-                {item.GIro || item.giro || 'Defensa Civil'}
+              <Tooltip
+                direction="top"
+                offset={[0, -(iconSize / 2 + 10)]}
+                opacity={0.95}
+                className="defensa-civil-tooltip"
+              >
+                <div style={{
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  color: "#007bff",
+                  textAlign: "center"
+                }}>
+                  {item.GIro || item.giro || 'Defensa Civil'}
+                </div>
               </Tooltip>
             </Marker>
           );
