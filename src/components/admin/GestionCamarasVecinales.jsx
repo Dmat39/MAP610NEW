@@ -345,7 +345,13 @@ const GestionCamarasVecinales = () => {
             {/* PAGINACIÓN FIJA (fuera del scroll) */}
             {count > 0 && (
               <div style={styles.paginationContainer}>
-                <TablePagination count={count} />
+                <TablePagination
+                  currentPage={parseInt(params.page) || 1}
+                  totalItems={count}
+                  itemsPerPage={parseInt(params.limit) || 20}
+                  onPageChange={newPage => addParams({ page: newPage })}
+                  onLimitChange={newLimit => addParams({ limit: newLimit, page: 1 })}
+                />
               </div>
             )}
           </div>

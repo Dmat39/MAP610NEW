@@ -63,7 +63,6 @@ const GoogleCapaCamarasVecinales = ({ visible, map, google }) => {
       const marker = new google.maps.Marker({
         position: { lat, lng },
         map: map,
-        title: camara.neighbor,
         icon: {
           url: iconUrl,
           scaledSize: new google.maps.Size(26, 26),

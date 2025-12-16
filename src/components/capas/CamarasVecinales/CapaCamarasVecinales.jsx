@@ -10,57 +10,130 @@ import "./CapaCamarasVecinales.css";
 
 // Función para crear icono personalizado según la marca
 const crearIconoVecinal = (marca, modo) => {
-  // Colores según la marca
-  const colores = {
+  // Configuración de brillo según la marca
+  const configuracion = {
     HIKVISION: {
-      primary: '#ef4444',
-      secondary: '#dc2626',
-      bg: '#fef2f2',
-      shadow: 'rgba(239, 68, 68, 0.4)'
+      glowColor: '#ef4444',
+      glowOpacity: '0.3',
+      filterId: 'glow-red'
     },
     DAHUA: {
-      primary: '#3b82f6',
-      secondary: '#2563eb',
-      bg: '#eff6ff',
-      shadow: 'rgba(59, 130, 246, 0.4)'
+      glowColor: '#3b82f6',
+      glowOpacity: '0.3',
+      filterId: 'glow-blue'
     }
   };
 
-  const color = colores[marca] || colores.DAHUA;
+  const config = configuracion[marca] || configuracion.DAHUA;
 
   // Icono según el modo (FIXED, DOME, BOTH)
   let iconoSvg = '';
   if (modo === 'DOME') {
-    // Cámara tipo domo
+    // Cámara tipo domo con contorno negro y brillo de color
     iconoSvg = `
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="16" cy="20" r="8" fill="${color.primary}" opacity="0.2"/>
-        <path d="M16 10C11.58 10 8 13.58 8 18C8 20.21 9 22.15 10.57 23.43C11.35 24.04 12.29 24.45 13.31 24.62C14.17 24.76 15.07 24.82 16 24.82C16.93 24.82 17.83 24.76 18.69 24.62C19.71 24.45 20.65 24.04 21.43 23.43C23 22.15 24 20.21 24 18C24 13.58 20.42 10 16 10Z" fill="${color.primary}"/>
-        <circle cx="16" cy="18" r="3.5" fill="${color.bg}"/>
-        <circle cx="16" cy="18" r="2" fill="${color.secondary}"/>
+        <defs>
+          <filter id="${config.filterId}" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        <!-- Brillo de fondo -->
+        <ellipse cx="16" cy="17" rx="11" ry="10" fill="${config.glowColor}" opacity="${config.glowOpacity}" filter="url(#${config.filterId})"/>
+
+        <!-- Parte superior -->
+        <path d="M 8 11 L 8 14 L 24 14 L 24 11 C 24 10.5 23.5 10 23 10 L 9 10 C 8.5 10 8 10.5 8 11 Z" fill="#f5f5f5" stroke="#1f2937" stroke-width="1.5"/>
+
+        <!-- Líneas decorativas -->
+        <line x1="9" y1="12" x2="16" y2="12" stroke="#9ca3af" stroke-width="1"/>
+        <line x1="18" y1="12" x2="23" y2="12" stroke="#9ca3af" stroke-width="1"/>
+
+        <!-- Base domo -->
+        <path d="M 8 14 L 8 19 C 8 22 11.5 24.5 16 24.5 C 20.5 24.5 24 22 24 19 L 24 14 Z" fill="#e5e7eb" stroke="#1f2937" stroke-width="1.5"/>
+
+        <!-- Anillo del lente -->
+        <circle cx="16" cy="19" r="4" fill="#d1d5db" stroke="#1f2937" stroke-width="1.2"/>
+
+        <!-- Lente central -->
+        <circle cx="16" cy="19" r="2.5" fill="#374151" stroke="#1f2937" stroke-width="1"/>
+
+        <!-- Reflejo -->
+        <ellipse cx="17" cy="18" rx="0.8" ry="1" fill="#ffffff" opacity="0.7"/>
+
+        <!-- Centro del lente -->
+        <circle cx="16" cy="19" r="1.3" fill="#111827"/>
       </svg>
     `;
   } else if (modo === 'BOTH') {
-    // Cámara mixta (fixed + dome)
+    // Cámara mixta (fixed + dome) con contorno negro y brillo de color
     iconoSvg = `
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="10" y="8" width="12" height="8" rx="1" fill="${color.primary}"/>
-        <rect x="13" y="10" width="6" height="4" rx="0.5" fill="${color.bg}"/>
-        <circle cx="16" cy="12" r="1.5" fill="${color.secondary}"/>
-        <path d="M16 16C13.79 16 12 17.79 12 20C12 21.1 12.45 22.09 13.17 22.83C13.67 23.33 14.3 23.68 15 23.83C15.32 23.91 15.65 23.95 16 23.95C16.35 23.95 16.68 23.91 17 23.83C17.7 23.68 18.33 23.33 18.83 22.83C19.55 22.09 20 21.1 20 20C20 17.79 18.21 16 16 16Z" fill="${color.primary}" opacity="0.8"/>
-        <circle cx="16" cy="20" r="1.5" fill="${color.bg}"/>
+        <defs>
+          <filter id="${config.filterId}-both" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        <!-- Brillo de fondo -->
+        <ellipse cx="16" cy="17" rx="11" ry="10" fill="${config.glowColor}" opacity="${config.glowOpacity}" filter="url(#${config.filterId}-both)"/>
+
+        <!-- Cámara fija superior -->
+        <rect x="10" y="8" width="12" height="6" rx="1" fill="#e5e7eb" stroke="#1f2937" stroke-width="1.5"/>
+        <rect x="13" y="10" width="6" height="2.5" rx="0.5" fill="#d1d5db" stroke="#1f2937" stroke-width="0.8"/>
+        <circle cx="16" cy="11" r="1" fill="#374151"/>
+
+        <!-- Base domo inferior -->
+        <path d="M 12 14 L 12 18 C 12 20 13.8 21.5 16 21.5 C 18.2 21.5 20 20 20 18 L 20 14 Z" fill="#e5e7eb" stroke="#1f2937" stroke-width="1.5"/>
+
+        <!-- Lente del domo -->
+        <circle cx="16" cy="17.5" r="2.5" fill="#d1d5db" stroke="#1f2937" stroke-width="1"/>
+        <circle cx="16" cy="17.5" r="1.5" fill="#374151"/>
+        <ellipse cx="16.5" cy="17" rx="0.5" ry="0.7" fill="#ffffff" opacity="0.7"/>
       </svg>
     `;
   } else {
-    // Cámara tipo FIXED (por defecto)
+    // Cámara tipo FIXED (por defecto) con contorno negro y brillo de color
     iconoSvg = `
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="8" y="10" width="16" height="12" rx="2" fill="${color.primary}"/>
-        <rect x="11" y="13" width="10" height="6" rx="1" fill="${color.bg}"/>
-        <circle cx="16" cy="16" r="2.5" fill="${color.secondary}"/>
-        <circle cx="16" cy="16" r="1" fill="${color.bg}"/>
-        <rect x="6" y="18" width="2" height="6" rx="1" fill="${color.primary}" opacity="0.7"/>
-        <circle cx="21" cy="13" r="1" fill="${color.bg}" opacity="0.8"/>
+        <defs>
+          <filter id="${config.filterId}-fixed" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        <!-- Brillo de fondo -->
+        <ellipse cx="16" cy="16" rx="11" ry="9" fill="${config.glowColor}" opacity="${config.glowOpacity}" filter="url(#${config.filterId}-fixed)"/>
+
+        <!-- Cuerpo de la cámara -->
+        <rect x="8" y="10" width="16" height="12" rx="2" fill="#e5e7eb" stroke="#1f2937" stroke-width="1.5"/>
+
+        <!-- Pantalla/lente frontal -->
+        <rect x="11" y="13" width="10" height="6" rx="1" fill="#d1d5db" stroke="#1f2937" stroke-width="1"/>
+
+        <!-- Lente central -->
+        <circle cx="16" cy="16" r="2.5" fill="#374151" stroke="#1f2937" stroke-width="1"/>
+        <circle cx="16" cy="16" r="1.3" fill="#111827"/>
+
+        <!-- Reflejo del lente -->
+        <ellipse cx="16.8" cy="15.5" rx="0.6" ry="0.8" fill="#ffffff" opacity="0.7"/>
+
+        <!-- Soporte -->
+        <rect x="6" y="18" width="2" height="5" rx="1" fill="#9ca3af" stroke="#1f2937" stroke-width="1"/>
+
+        <!-- LED indicador -->
+        <circle cx="21" cy="13" r="0.8" fill="#22c55e" opacity="0.8"/>
       </svg>
     `;
   }
@@ -73,7 +146,6 @@ const crearIconoVecinal = (marca, modo) => {
       display: flex;
       align-items: center;
       justify-content: center;
-      filter: drop-shadow(0 4px 8px ${color.shadow});
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     ">
       ${iconoSvg}
@@ -316,20 +388,6 @@ const CapaCamarasVecinales = ({ visible }) => {
                 </div>
               </div>
             </Popup>
-            <Tooltip
-              direction="top"
-              offset={[0, -20]}
-              opacity={1}
-              className="custom-tooltip-vecinal"
-            >
-              <div style={{
-                fontWeight: "600",
-                fontSize: "12px",
-                padding: "2px 4px"
-              }}>
-                📹 {camara.neighbor}
-              </div>
-            </Tooltip>
           </Marker>
         );
       })}

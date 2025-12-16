@@ -24,8 +24,14 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
   });
 
   const [contadores, setContadores] = useState({
-    extorsion: 0,
     robos: 0,
+    extorsion: 0,
+    homicidios: 0,
+    feminicidios: 0,
+    sicariatos: 0,
+    secuestros: 0,
+    drogas: 0,
+    barras: 0,
     total: 0,
   });
 
@@ -125,30 +131,99 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
   ];
 
   useEffect(() => {
+    const calcularTotal = (nuevosContadores) => {
+      return nuevosContadores.robos +
+             nuevosContadores.extorsion +
+             nuevosContadores.homicidios +
+             nuevosContadores.feminicidios +
+             nuevosContadores.sicariatos +
+             nuevosContadores.secuestros +
+             nuevosContadores.drogas +
+             nuevosContadores.barras;
+    };
+
     const handleRobos = e => {
       logger.log('🔷 Recibido robosTotal:', e.detail);
-      setContadores(prev => ({
-        ...prev,
-        robos: e.detail,
-        total: e.detail + prev.extorsion,
-      }));
+      setContadores(prev => {
+        const nuevos = { ...prev, robos: e.detail };
+        return { ...nuevos, total: calcularTotal(nuevos) };
+      });
     };
 
     const handleExtorsion = e => {
       logger.log('🟠 Recibido extorsionTotal:', e.detail);
-      setContadores(prev => ({
-        ...prev,
-        extorsion: e.detail,
-        total: e.detail + prev.robos,
-      }));
+      setContadores(prev => {
+        const nuevos = { ...prev, extorsion: e.detail };
+        return { ...nuevos, total: calcularTotal(nuevos) };
+      });
+    };
+
+    const handleHomicidios = e => {
+      logger.log('🔴 Recibido homicidiosTotal:', e.detail);
+      setContadores(prev => {
+        const nuevos = { ...prev, homicidios: e.detail };
+        return { ...nuevos, total: calcularTotal(nuevos) };
+      });
+    };
+
+    const handleFeminicidios = e => {
+      logger.log('💜 Recibido feminicidiosTotal:', e.detail);
+      setContadores(prev => {
+        const nuevos = { ...prev, feminicidios: e.detail };
+        return { ...nuevos, total: calcularTotal(nuevos) };
+      });
+    };
+
+    const handleSicariatos = e => {
+      logger.log('🔫 Recibido sicariatosTotal:', e.detail);
+      setContadores(prev => {
+        const nuevos = { ...prev, sicariatos: e.detail };
+        return { ...nuevos, total: calcularTotal(nuevos) };
+      });
+    };
+
+    const handleSecuestros = e => {
+      logger.log('👤 Recibido secuestrosTotal:', e.detail);
+      setContadores(prev => {
+        const nuevos = { ...prev, secuestros: e.detail };
+        return { ...nuevos, total: calcularTotal(nuevos) };
+      });
+    };
+
+    const handleDrogas = e => {
+      logger.log('💊 Recibido drogasTotal:', e.detail);
+      setContadores(prev => {
+        const nuevos = { ...prev, drogas: e.detail };
+        return { ...nuevos, total: calcularTotal(nuevos) };
+      });
+    };
+
+    const handleBarras = e => {
+      logger.log('⚽ Recibido barrasTotal:', e.detail);
+      setContadores(prev => {
+        const nuevos = { ...prev, barras: e.detail };
+        return { ...nuevos, total: calcularTotal(nuevos) };
+      });
     };
 
     window.addEventListener('robosTotal', handleRobos);
     window.addEventListener('extorsionTotal', handleExtorsion);
+    window.addEventListener('homicidiosTotal', handleHomicidios);
+    window.addEventListener('feminicidiosTotal', handleFeminicidios);
+    window.addEventListener('sicariatosTotal', handleSicariatos);
+    window.addEventListener('secuestrosTotal', handleSecuestros);
+    window.addEventListener('drogasTotal', handleDrogas);
+    window.addEventListener('barrasTotal', handleBarras);
 
     return () => {
       window.removeEventListener('robosTotal', handleRobos);
       window.removeEventListener('extorsionTotal', handleExtorsion);
+      window.removeEventListener('homicidiosTotal', handleHomicidios);
+      window.removeEventListener('feminicidiosTotal', handleFeminicidios);
+      window.removeEventListener('sicariatosTotal', handleSicariatos);
+      window.removeEventListener('secuestrosTotal', handleSecuestros);
+      window.removeEventListener('drogasTotal', handleDrogas);
+      window.removeEventListener('barrasTotal', handleBarras);
     };
   }, []);
 
@@ -267,7 +342,7 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
       left: 'calc(70px + 15px)',
       width: '33%',
       maxWidth: '420px',
-      zIndex: dateRangeOpen ? 1400 : 100,
+      zIndex: 100,
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
       padding: '14px 16px',
       borderRadius: '12px',
@@ -278,9 +353,7 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
       gap: isCollapsed ? '0' : '14px',
       backdropFilter: 'blur(6px)',
       transition: 'all 0.3s ease',
-      overflow: dateRangeOpen ? 'visible' : 'hidden',
-      minHeight: dateRangeOpen ? '630px' : 'auto',
-      maxHeight: dateRangeOpen ? 'none' : '400px',
+      overflow: 'visible',
     },
 
     filtrosHeader: {
@@ -329,9 +402,9 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
 
     contadoresPanel: {
       display: 'flex',
-      justifyContent: 'space-between',
+      flexDirection: 'column',
       background: 'linear-gradient(135deg, #667eea, #764ba2)',
-      padding: '10px',
+      padding: '12px',
       borderRadius: '10px',
       color: 'white',
       gap: '10px',
@@ -342,25 +415,59 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
       transformOrigin: 'top',
     },
 
+    contadoresGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(4, 1fr)',
+      gap: '8px',
+      marginBottom: '8px',
+    },
+
     contadorItem: {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      minWidth: '80px',
       textAlign: 'center',
+      padding: '6px 4px',
+      background: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: '6px',
+      minHeight: '50px',
+      justifyContent: 'center',
     },
 
     contadorNumero: {
-      fontSize: '22px',
+      fontSize: '18px',
       fontWeight: 'bold',
       lineHeight: 1,
     },
 
     contadorLabel: {
+      fontSize: '9px',
+      textTransform: 'uppercase',
+      marginTop: '3px',
+      opacity: 0.9,
+      lineHeight: 1.2,
+    },
+
+    contadorTotal: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'rgba(255, 255, 255, 0.2)',
+      padding: '8px',
+      borderRadius: '8px',
+      gap: '8px',
+    },
+
+    contadorNumeroTotal: {
+      fontSize: '24px',
+      fontWeight: 'bold',
+      lineHeight: 1,
+    },
+
+    contadorLabelTotal: {
       fontSize: '11px',
       textTransform: 'uppercase',
-      marginTop: '2px',
-      opacity: 0.9,
+      opacity: 0.95,
     },
 
     filtrosContent: {
@@ -432,20 +539,44 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
       </div>
 
       <div style={styles.contadoresPanel}>
-        <div style={styles.contadorItem}>
-          <ShieldCheck size={16} style={{ marginBottom: '4px' }} />
-          <div style={styles.contadorNumero}>{contadores.extorsion}</div>
-          <div style={styles.contadorLabel}>Extorsión</div>
+        <div style={styles.contadoresGrid}>
+          <div style={styles.contadorItem}>
+            <div style={styles.contadorNumero}>{contadores.robos}</div>
+            <div style={styles.contadorLabel}>Robos</div>
+          </div>
+          <div style={styles.contadorItem}>
+            <div style={styles.contadorNumero}>{contadores.extorsion}</div>
+            <div style={styles.contadorLabel}>Extorsión</div>
+          </div>
+          <div style={styles.contadorItem}>
+            <div style={styles.contadorNumero}>{contadores.homicidios}</div>
+            <div style={styles.contadorLabel}>Homicidios</div>
+          </div>
+          <div style={styles.contadorItem}>
+            <div style={styles.contadorNumero}>{contadores.feminicidios}</div>
+            <div style={styles.contadorLabel}>Feminicidios</div>
+          </div>
+          <div style={styles.contadorItem}>
+            <div style={styles.contadorNumero}>{contadores.sicariatos}</div>
+            <div style={styles.contadorLabel}>Sicariatos</div>
+          </div>
+          <div style={styles.contadorItem}>
+            <div style={styles.contadorNumero}>{contadores.secuestros}</div>
+            <div style={styles.contadorLabel}>Secuestros</div>
+          </div>
+          <div style={styles.contadorItem}>
+            <div style={styles.contadorNumero}>{contadores.drogas}</div>
+            <div style={styles.contadorLabel}>Drogas</div>
+          </div>
+          <div style={styles.contadorItem}>
+            <div style={styles.contadorNumero}>{contadores.barras}</div>
+            <div style={styles.contadorLabel}>Barras</div>
+          </div>
         </div>
-        <div style={styles.contadorItem}>
-          <AlarmClock size={16} style={{ marginBottom: '4px' }} />
-          <div style={styles.contadorNumero}>{contadores.robos}</div>
-          <div style={styles.contadorLabel}>Robos</div>
-        </div>
-        <div style={styles.contadorItem}>
-          <BadgeCheck size={16} style={{ marginBottom: '4px' }} />
-          <div style={styles.contadorNumero}>{contadores.total}</div>
-          <div style={styles.contadorLabel}>Total</div>
+        <div style={styles.contadorTotal}>
+          <BadgeCheck size={18} style={{ marginRight: '6px' }} />
+          <div style={styles.contadorNumeroTotal}>{contadores.total}</div>
+          <div style={styles.contadorLabelTotal}>Total Incidencias</div>
         </div>
       </div>
 
@@ -484,23 +615,27 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
               <div
                 style={{
                   position: 'absolute',
-                  top: '100%',
+                  bottom: '100%',
                   left: 0,
+                  marginBottom: '8px',
                   zIndex: 1500,
                   backgroundColor: 'white',
                   border: '1px solid #d1d5db',
                   borderRadius: '10px',
-                  marginTop: '1px',
-                  overflow: 'hidden',
                   boxShadow:
                     '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                  minWidth: '300px',
+                  width: '350px',
+                  maxHeight: '450px',
+                  display: 'flex',
+                  flexDirection: 'column',
                 }}
               >
                 <div
                   style={{
                     padding: '8px 12px 5px 12px',
                     borderBottom: '1px solid #e5e7eb',
+                    flexShrink: 0,
+                    backgroundColor: 'white',
                   }}
                 >
                   <div
@@ -549,17 +684,25 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
                   </div>
                 </div>
 
-                <DateRange
-                  editableDateInputs={true}
-                  onChange={handleRangeChange}
-                  moveRangeOnFirstSelection={false}
-                  ranges={tempDateRange}
-                  maxDate={new Date()}
-                  rangeColors={['#4052af']}
-                  months={1}
-                  direction="horizontal"
-                  showDateDisplay={false}
-                />
+                <div
+                  style={{
+                    maxHeight: '380px',
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                  }}
+                >
+                  <DateRange
+                    editableDateInputs={true}
+                    onChange={handleRangeChange}
+                    moveRangeOnFirstSelection={false}
+                    ranges={tempDateRange}
+                    maxDate={new Date()}
+                    rangeColors={['#4052af']}
+                    months={1}
+                    direction="horizontal"
+                    showDateDisplay={false}
+                  />
+                </div>
 
                 <div
                   style={{
@@ -568,6 +711,8 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
                     display: 'flex',
                     justifyContent: 'space-between',
                     gap: '8px',
+                    flexShrink: 0,
+                    backgroundColor: 'white',
                   }}
                 >
                   <button

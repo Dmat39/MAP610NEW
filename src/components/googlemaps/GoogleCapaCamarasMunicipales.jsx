@@ -775,7 +775,6 @@ const GoogleCapaCamarasMunicipales = ({
       const marker = new google.maps.Marker({
         position: { lat, lng },
         map: map,
-        title: props.name,
         icon: iconConfig,
         zIndex: esSeleccionada ? 2000 : (enSeguimiento ? 1500 : 1000)
       });
