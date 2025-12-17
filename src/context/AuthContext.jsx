@@ -27,10 +27,10 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     try {
       const data = await authService.login(username, password);
-      console.log('Datos recibidos en login:', data);
-      console.log('Usuario a setear:', data.user);
+      // console.log('Datos recibidos en login:', data); // COMENTADO: No exponer datos de login en producción
+      // console.log('Usuario a setear:', data.user); // COMENTADO: No exponer datos de usuario en producción
       setUser(data.user);
-      console.log('isAuthenticated será:', !!data.user);
+      // console.log('isAuthenticated será:', !!data.user); // COMENTADO: No exponer estado de autenticación en producción
       return { success: true, data };
     } catch (error) {
       console.error('Error en AuthContext login:', error);

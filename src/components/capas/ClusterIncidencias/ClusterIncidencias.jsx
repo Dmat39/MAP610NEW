@@ -307,7 +307,10 @@ const ClusterIncidencias = ({ visible, radioCluster = 50, filtros = null }) => {
 
       // Función para construir URL del endpoint (con límite de registros)
       const buildURL = (tipo) => {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.13.80:81/api/';
+        const API_URL = import.meta.env.VITE_API_URL;
+        if (!API_URL) {
+          throw new Error('VITE_API_URL no está configurada. Por favor, define la variable de entorno.');
+        }
         const defaultDates = getDefaultDates();
         const params = new URLSearchParams();
 

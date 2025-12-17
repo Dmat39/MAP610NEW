@@ -140,13 +140,16 @@ const tipologiaNombres = {
 
 // Función para hacer la petición a la API con timeout
 const fetchIncidencias = async (filtros, tipo) => {
-  const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.13.80:81/api/';
+  const API_URL = import.meta.env.VITE_API_URL;
+  if (!API_URL) {
+    throw new Error('VITE_API_URL no está configurada. Por favor, define la variable de entorno.');
+  }
   const TOKEN = localStorage.getItem('token'); // Obtener token del localStorage
   const queryString = buildQueryParams(filtros, tipo);
   const url = `${API_URL}incidence?${queryString}`;
 
   logger.log(`Fetching ${tipologiaNombres[tipo] || `tipo ${tipo}`} from API:`, url);
-  logger.log(`🔑 Token presente:`, TOKEN ? `Sí (${TOKEN.substring(0, 20)}...)` : 'No');
+  // logger.log(`🔑 Token presente:`, TOKEN ? `Sí (${TOKEN.substring(0, 20)}...)` : 'No'); // COMENTADO: No exponer token en producción
 
   const headers = {
     'Content-Type': 'application/json',

@@ -21,8 +21,8 @@ const camarasVecinalesAdminService = {
       const queryString = params.toString();
       const url = `${API_URL}communal${queryString ? `?${queryString}` : ''}`;
 
-      console.log('🔍 Fetching cámaras vecinales from:', url);
-      console.log('🔑 Token:', token ? 'Present' : 'Missing');
+      // console.log('🔍 Fetching cámaras vecinales from:', url); // COMENTADO: Logging de debugging
+      // console.log('🔑 Token:', token ? 'Present' : 'Missing'); // COMENTADO: Logging de debugging
 
       const response = await fetch(url, {
         method: 'GET',
@@ -32,7 +32,7 @@ const camarasVecinalesAdminService = {
         },
       });
 
-      console.log('📡 Response status:', response.status);
+      // console.log('📡 Response status:', response.status); // COMENTADO: Logging de debugging
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -41,7 +41,7 @@ const camarasVecinalesAdminService = {
       }
 
       const data = await response.json();
-      console.log('✅ Response data:', data);
+      // console.log('✅ Response data:', data); // COMENTADO: Logging de debugging
 
       // El backend devuelve: { message: "", data: { data: [...], totalCount: N, ... } }
       let camaras = [];
@@ -58,8 +58,8 @@ const camarasVecinalesAdminService = {
         count = camaras.length;
       }
 
-      console.log('📊 Cámaras encontradas:', camaras.length);
-      console.log('📋 Count total:', count);
+      // console.log('📊 Cámaras encontradas:', camaras.length); // COMENTADO: Logging de debugging
+      // console.log('📋 Count total:', count); // COMENTADO: Logging de debugging
 
       return {
         data: camaras,

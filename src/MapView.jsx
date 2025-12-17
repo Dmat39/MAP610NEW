@@ -57,7 +57,7 @@ const MapView = () => {
 
   const [mapType, setMapType] = useState('leaflet'); // 'leaflet' o 'google'
   const [capasVisibles, setCapasVisibles] = useState({
-    camaras: false,
+    camaras: true, // Visible por defecto
     camarasVecinales: false,
     paraderosAutorizados: false,
     paraderosNoAutorizados: false,

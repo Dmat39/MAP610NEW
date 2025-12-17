@@ -1,6 +1,7 @@
 import "./LayerTogglePanel.css";
 import { Layers, ChevronDown, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
+import authService from "../../services/authService";
 
 const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange, onExpandChange }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -10,6 +11,10 @@ const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange, onExpandC
     infrastructure: false,
     tools: false,
   });
+
+  // Obtener el rol del usuario
+  const userRole = authService.getUserRole();
+  const isOperator = userRole === 'OPERATOR';
 
   // Organizar capas por categorías
   const categories = {
@@ -68,7 +73,15 @@ const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange, onExpandC
       </div>
 
       <div className="panel-controls">
-        {Object.entries(categories).map(([categoryKey, category]) => {
+        {Object.entries(categories)
+          .filter(([categoryKey]) => {
+            // Ocultar incidencias delictivas si el usuario es OPERADOR
+            if (categoryKey === 'incidents' && isOperator) {
+              return false;
+            }
+            return true;
+          })
+          .map(([categoryKey, category]) => {
           const categoryLayers = category.layers.map(getCapaByName).filter(Boolean);
           const isExpanded = categoriesExpanded[categoryKey];
 

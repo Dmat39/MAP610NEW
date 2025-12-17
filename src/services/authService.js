@@ -17,7 +17,7 @@ const authService = {
       }
 
       const data = await response.json();
-      console.log('Respuesta del login:', data);
+      // console.log('Respuesta del login:', data); // COMENTADO: No exponer datos de login en producción
 
       // Tu API devuelve: { message, data: { user, rol, token } }
       const apiData = data.data || data;
@@ -32,7 +32,7 @@ const authService = {
       // Guardar token
       if (token) {
         localStorage.setItem('token', token);
-        console.log('Token guardado:', token);
+        // console.log('Token guardado:', token); // COMENTADO: No exponer token en producción
       } else {
         console.warn('No se encontró token en la respuesta');
       }
@@ -40,7 +40,7 @@ const authService = {
       // Guardar usuario
       if (user.username) {
         localStorage.setItem('user', JSON.stringify(user));
-        console.log('Usuario guardado:', user);
+        // console.log('Usuario guardado:', user); // COMENTADO: No exponer datos de usuario en producción
       } else {
         console.warn('No se encontró información de usuario');
       }
