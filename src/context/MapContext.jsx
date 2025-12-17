@@ -29,7 +29,6 @@ export const MapProvider = ({ children }) => {
     clusters: false,
     busquedaDirecciones: false,
     ubicadorPunto: false,
-    coordenadasNuevas: false,
     rutas: false,
   });
 

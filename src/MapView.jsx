@@ -20,7 +20,6 @@ import CapaDrogas from './components/capas/Incidencias/CapaDrogas';
 import CapaBarras from './components/capas/Incidencias/CapaBarras';
 import CapaResiduos from './components/capas/Residuos/CapaResiduos';
 import CapaSostenimiento from './components/capas/Sostenimiento/CapaSostenimiento';
-import CapaCoordenadasNuevas from './components/capas/CoordenadasNuevas/CapaCoordenadasNuevas';
 import ClusterIncidencias from './components/capas/ClusterIncidencias/ClusterIncidencias';
 import ControlClusters from './components/Controles/Mapa_Clusters/ControlClusters';
 import FiltroGiro from './components/filtros/FiltroGiro';
@@ -75,7 +74,6 @@ const MapView = () => {
     clusters: false,
     busquedaDirecciones: false,
     ubicadorPunto: false,
-    coordenadasNuevas: false,
     rutas: false,
   });
 
@@ -212,46 +210,41 @@ const MapView = () => {
 
   // Definir todas las capas
   const todasLasCapas = [
-    { name: 'camaras', label: '📷 Cámaras Municipales', visible: capasVisibles.camaras },
+    { name: 'camaras', label: 'Cámaras Municipales', visible: capasVisibles.camaras },
     {
       name: 'camarasVecinales',
-      label: '📹 Cámaras Vecinales',
+      label: 'Cámaras Vecinales',
       visible: capasVisibles.camarasVecinales,
     },
-    { name: 'robos', label: '🦹 Robos', visible: capasVisibles.robos, restrictedForOperator: true },
-    { name: 'extorsiones', label: '📞 Extorsiones', visible: capasVisibles.extorsiones, restrictedForOperator: true },
-    { name: 'homicidios', label: '🔪 Homicidios', visible: capasVisibles.homicidios, restrictedForOperator: true },
-    { name: 'feminicidios', label: '👩 Feminicidios', visible: capasVisibles.feminicidios, restrictedForOperator: true },
-    { name: 'sicariatos', label: '🔫 Sicariatos', visible: capasVisibles.sicariatos, restrictedForOperator: true },
-    { name: 'secuestros', label: '👤 Secuestros', visible: capasVisibles.secuestros, restrictedForOperator: true },
-    { name: 'drogas', label: '💊 Drogas', visible: capasVisibles.drogas, restrictedForOperator: true },
-    { name: 'barras', label: '⚽ Barras', visible: capasVisibles.barras, restrictedForOperator: true },
-    { name: 'clusters', label: '🎯 Clusters de Incidencias', visible: capasVisibles.clusters, restrictedForOperator: true },
+    { name: 'robos', label: 'Robos', visible: capasVisibles.robos, restrictedForOperator: true },
+    { name: 'extorsiones', label: 'Extorsiones', visible: capasVisibles.extorsiones, restrictedForOperator: true },
+    { name: 'homicidios', label: 'Homicidios', visible: capasVisibles.homicidios, restrictedForOperator: true },
+    { name: 'feminicidios', label: 'Feminicidios', visible: capasVisibles.feminicidios, restrictedForOperator: true },
+    { name: 'sicariatos', label: 'Sicariatos', visible: capasVisibles.sicariatos, restrictedForOperator: true },
+    { name: 'secuestros', label: 'Secuestros', visible: capasVisibles.secuestros, restrictedForOperator: true },
+    { name: 'drogas', label: 'Drogas', visible: capasVisibles.drogas, restrictedForOperator: true },
+    { name: 'barras', label: 'Barras', visible: capasVisibles.barras, restrictedForOperator: true },
+    { name: 'clusters', label: 'Clusters de Incidencias', visible: capasVisibles.clusters, restrictedForOperator: true },
     {
       name: 'busquedaDirecciones',
-      label: '🔍 Búsqueda de Direcciones',
+      label: 'Búsqueda de Direcciones',
       visible: capasVisibles.busquedaDirecciones,
     },
-    { name: 'ubicadorPunto', label: '📍 Ubicador de Puntos', visible: capasVisibles.ubicadorPunto },
-    {
-      name: 'coordenadasNuevas',
-      label: '🔵 Coordenadas Nuevas',
-      visible: capasVisibles.coordenadasNuevas,
-    },
-    { name: 'rutas', label: '🛣️ Calculador de Rutas', visible: capasVisibles.rutas },
+    { name: 'ubicadorPunto', label: 'Ubicador de Puntos', visible: capasVisibles.ubicadorPunto },
+    { name: 'rutas', label: 'Calculador de Rutas', visible: capasVisibles.rutas },
     {
       name: 'paraderosAutorizados',
-      label: '🛵 Paraderos Autorizados',
+      label: 'Paraderos Autorizados',
       visible: capasVisibles.paraderosAutorizados,
     },
-    { name: 'defensaCivil', label: '🏢 Defensa Civil', visible: capasVisibles.defensaCivil },
+    { name: 'defensaCivil', label: 'Defensa Civil', visible: capasVisibles.defensaCivil },
     {
       name: 'paraderosNoAutorizados',
-      label: '🚫 Paraderos No Autorizados',
+      label: 'Paraderos No Autorizados',
       visible: capasVisibles.paraderosNoAutorizados,
     },
-    { name: 'residuos', label: '🗑️ Puntos Residuos Sólidos', visible: capasVisibles.residuos },
-    { name: 'sostenimiento', label: '🏪 Sostenimiento', visible: capasVisibles.sostenimiento },
+    { name: 'residuos', label: 'Puntos Residuos Sólidos', visible: capasVisibles.residuos },
+    { name: 'sostenimiento', label: 'Sostenimiento', visible: capasVisibles.sostenimiento },
   ];
 
   // Filtrar capas según el rol del usuario
@@ -323,14 +316,6 @@ const MapView = () => {
         onBusquedaRealizada={handleBusquedaRealizada}
         mapType={mapType}
       />
-      <ControlMarcadorCamaras
-        visible={capasVisibles.coordenadasNuevas}
-        puntosGuardados={puntosUsuario}
-        onToggleMarcador={handleToggleMarcador}
-        onEliminarPunto={handleEliminarPunto}
-        marcadorActivo={marcadorActivo}
-        mapType={mapType}
-      />
       <ControlRutas
         visible={capasVisibles.rutas}
         onLimpiarRuta={handleLimpiarRuta}
@@ -354,7 +339,6 @@ const MapView = () => {
             ubicadorActivo={
               capasVisibles.ubicadorPunto ||
               capasVisibles.busquedaDirecciones ||
-              capasVisibles.coordenadasNuevas ||
               capasVisibles.rutas
             }
             camaraConVision={camaraConVision}
@@ -392,12 +376,6 @@ const MapView = () => {
           <CapaResiduos visible={capasVisibles.residuos} />
           <CapaDefensaCivil visible={capasVisibles.defensaCivil} />
           <CapaSostenimiento visible={capasVisibles.sostenimiento} />
-          <CapaCoordenadasNuevas
-            visible={capasVisibles.coordenadasNuevas}
-            marcadorActivo={marcadorActivo}
-            puntosUsuario={puntosUsuario}
-            onAgregarPunto={handleAgregarPunto}
-          />
           <CapaBusquedaDirecciones
             visible={capasVisibles.busquedaDirecciones}
             resultados={resultadosBusqueda}
@@ -412,7 +390,6 @@ const MapView = () => {
             ubicadorActivo={
               capasVisibles.ubicadorPunto ||
               capasVisibles.busquedaDirecciones ||
-              capasVisibles.coordenadasNuevas ||
               capasVisibles.rutas
             }
             camaraConVision={camaraConVision}

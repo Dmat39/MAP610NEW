@@ -19,24 +19,20 @@ const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange, onExpandC
   // Organizar capas por categorías
   const categories = {
     cameras: {
-      icon: '📷',
       title: 'Cámaras de Seguridad',
       layers: ['camaras', 'camarasVecinales']
     },
     incidents: {
-      icon: '🚨',
       title: 'Incidencias Delictivas',
       layers: ['robos', 'extorsiones', 'homicidios', 'feminicidios', 'sicariatos', 'secuestros', 'drogas', 'barras']
     },
     infrastructure: {
-      icon: '📍',
       title: 'Puntos Estratégicos',
       layers: ['paraderosAutorizados', 'defensaCivil', 'paraderosNoAutorizados', 'residuos', 'sostenimiento']
     },
     tools: {
-      icon: '🛠️',
       title: 'Herramientas',
-      layers: ['clusters', 'busquedaDirecciones', 'ubicadorPunto', 'coordenadasNuevas', 'rutas']
+      layers: ['clusters', 'busquedaDirecciones', 'ubicadorPunto', 'rutas']
     }
   };
 
@@ -96,7 +92,6 @@ const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange, onExpandC
                 ) : (
                   <ChevronRight size={14} className="category-chevron" />
                 )}
-                <span className="category-icon">{category.icon}</span>
                 <span className="category-title">{category.title}</span>
                 <span className="category-count">({categoryLayers.length})</span>
               </div>
