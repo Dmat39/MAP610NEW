@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronUp, ChevronDown, MapPin, Download, Trash2, Plus } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import './ControlMarcadorCamaras.css';
 
 const ControlMarcadorCamaras = ({ 
@@ -19,41 +19,62 @@ const ControlMarcadorCamaras = ({
     setIsCollapsed(!isCollapsed);
   };
 
-  const exportarExcel = () => {
+  const exportarExcel = async () => {
     if (puntosGuardados.length === 0) {
       alert('No hay puntos para exportar');
       return;
     }
 
-    // Preparar datos para Excel
-    const datosExcel = puntosGuardados.map((punto, index) => ({
-      'ID': index + 1,
-      'Latitud': punto.latitud,
-      'Longitud': punto.longitud,
-      'Dirección': punto.direccion || 'No disponible',
-      'Fecha Creación': punto.fechaCreacion || new Date().toLocaleString()
-    }));
+    try {
+      // Preparar datos para Excel
+      const datosExcel = puntosGuardados.map((punto, index) => ({
+        'ID': index + 1,
+        'Latitud': punto.latitud,
+        'Longitud': punto.longitud,
+        'Dirección': punto.direccion || 'No disponible',
+        'Fecha Creación': punto.fechaCreacion || new Date().toLocaleString()
+      }));
 
-    // Crear workbook y worksheet
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(datosExcel);
+      // Crear workbook y worksheet con ExcelJS
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Puntos Marcados');
 
-    // Ajustar ancho de columnas
-    const columnWidths = [
-      { wch: 5 },  // ID
-      { wch: 15 }, // Latitud
-      { wch: 15 }, // Longitud
-      { wch: 50 }, // Dirección
-      { wch: 20 }  // Fecha
-    ];
-    worksheet['!cols'] = columnWidths;
+      // Definir columnas con anchos
+      worksheet.columns = [
+        { header: 'ID', key: 'ID', width: 5 },
+        { header: 'Latitud', key: 'Latitud', width: 15 },
+        { header: 'Longitud', key: 'Longitud', width: 15 },
+        { header: 'Dirección', key: 'Dirección', width: 50 },
+        { header: 'Fecha Creación', key: 'Fecha Creación', width: 20 }
+      ];
 
-    // Agregar worksheet al workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Puntos Marcados');
+      // Agregar filas de datos
+      worksheet.addRows(datosExcel);
 
-    // Generar archivo y descargarlo
-    const nombreArchivo = `puntos_marcados_${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(workbook, nombreArchivo);
+      // Estilizar encabezados
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' }
+      };
+
+      // Generar archivo y descargarlo
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const nombreArchivo = `puntos_marcados_${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.download = nombreArchivo;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error al exportar Excel:', error);
+      alert('Error al generar el archivo Excel');
+    }
   };
 
   return (
