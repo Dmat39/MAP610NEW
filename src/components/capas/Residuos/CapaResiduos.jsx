@@ -101,7 +101,11 @@ const CapaResiduos = ({ visible }) => {
 
         if (isNaN(lat) || isNaN(lng)) return null;
 
-        const tipo = punto.type || punto.id_tipo || 'amarillo';
+        // Mapear el campo color del backend (GREEN, YELLOW) a tipo (verde, amarillo)
+        let tipo = punto.type || punto.id_tipo || 'amarillo';
+        if (punto.color) {
+          tipo = punto.color === 'GREEN' ? 'verde' : 'amarillo';
+        }
         const colorTexto = tipo === 'verde' ? '#198754' : '#ffc107';
         const nombre = punto.name || punto.nombre || 'Sin nombre';
 
