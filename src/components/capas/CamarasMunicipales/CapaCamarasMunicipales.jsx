@@ -192,7 +192,7 @@ const CapaCamarasMunicipales = ({
               // Ángulo de dirección desde el backend (en grados, medido desde el eje X)
               angle: camara.angle,
               // Radio del campo de visión en grados
-              radius: camara.radius || 0.0013, // Default 0.002 si no viene del backend
+              radius: camara.radius || 0.0013, // Default 0.0011 si no viene del backend
               // Campo referencia para cámaras C180 (coordenadas hacia donde apunta) - LEGACY
               referencia: camara.referencia || '',
               // El polígono de visión viene del backend (usado como fallback si existe)

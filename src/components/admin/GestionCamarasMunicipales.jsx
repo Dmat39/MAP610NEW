@@ -35,7 +35,7 @@ const GestionCamarasMunicipales = () => {
     latitude: '',
     longitude: '',
     angle: 0,
-    radius: 0.002,
+    radius: 0.0011,
     arc: 180,
     buttom: false,
     megaphone: false,
@@ -105,7 +105,7 @@ const GestionCamarasMunicipales = () => {
       latitude: '',
       longitude: '',
       angle: 0,
-      radius: 0.002,
+      radius: 0.0011,
       arc: 35,
       buttom: false,
       megaphone: false,
@@ -135,7 +135,7 @@ const GestionCamarasMunicipales = () => {
       latitude: camera.latitude !== undefined && camera.latitude !== null ? camera.latitude : '',
       longitude: camera.longitude !== undefined && camera.longitude !== null ? camera.longitude : '',
       angle: camera.angle !== undefined && camera.angle !== null ? camera.angle : 0,
-      radius: camera.radius !== undefined && camera.radius !== null ? camera.radius : 0.002,
+      radius: camera.radius !== undefined && camera.radius !== null ? camera.radius : 0.0011,
       arc: camera.arc !== undefined && camera.arc !== null ? camera.arc : defaultArc,
       buttom: camera.buttom || false,
       megaphone: camera.megaphone || false,
@@ -160,7 +160,7 @@ const GestionCamarasMunicipales = () => {
       latitude: '',
       longitude: '',
       angle: 0,
-      radius: 0.002,
+      radius: 0.0011,
       arc: 180,
       buttom: false,
       megaphone: false,
@@ -269,6 +269,7 @@ const GestionCamarasMunicipales = () => {
         streetViewControl: false,
         mapTypeControl: false,
         fullscreenControl: false,
+        disableDoubleClickZoom: true, // Deshabilitar zoom en doble clic
       });
 
       // Agregar marcador de la cámara
@@ -284,6 +285,19 @@ const GestionCamarasMunicipales = () => {
           strokeColor: 'white',
           strokeWeight: 2,
         },
+      });
+
+      // Agregar evento de doble clic para actualizar coordenadas
+      googleMapRef.current.addListener('dblclick', (e) => {
+        const lat = e.latLng.lat();
+        const lng = e.latLng.lng();
+        setFormData(prev => ({
+          ...prev,
+          latitude: lat,
+          longitude: lng,
+        }));
+        setSuccess('Coordenadas actualizadas desde el mapa');
+        setTimeout(() => setSuccess(null), 2000);
       });
     }
   }, [showPreview]);
@@ -346,6 +360,7 @@ const GestionCamarasMunicipales = () => {
         zoom: 17,
         zoomControl: true,
         attributionControl: false,
+        doubleClickZoom: false, // Deshabilitar zoom en doble clic
       });
 
       // Agregar capa de OpenStreetMap
@@ -366,6 +381,18 @@ const GestionCamarasMunicipales = () => {
         icon: cameraIcon,
         title: formData.name || 'Cámara',
       }).addTo(visionLeafletMapRef.current);
+
+      // Agregar evento de doble clic para actualizar coordenadas
+      visionLeafletMapRef.current.on('dblclick', (e) => {
+        const { lat, lng } = e.latlng;
+        setFormData(prev => ({
+          ...prev,
+          latitude: lat,
+          longitude: lng,
+        }));
+        setSuccess('Coordenadas actualizadas desde el mapa');
+        setTimeout(() => setSuccess(null), 2000);
+      });
     }
 
     // Cleanup al desmontar o cerrar
@@ -391,7 +418,7 @@ const GestionCamarasMunicipales = () => {
       const lat = parseFloat(formData.latitude);
       const lng = parseFloat(formData.longitude);
       const angle = parseFloat(formData.angle) || 0;
-      const radius = parseFloat(formData.radius) || 0.002;
+      const radius = parseFloat(formData.radius) || 0.0011;
       const arc = parseFloat(formData.arc) || 180;
 
       if (!isNaN(lat) && !isNaN(lng)) {
@@ -811,7 +838,7 @@ const GestionCamarasMunicipales = () => {
                 <div style={styles.formGroup}>
                   <label style={styles.formLabel}>
                     Radio (grados) *
-                    <span style={styles.formLabelHint}> ~0.002 = 200m</span>
+                    <span style={styles.formLabelHint}> ~0.0011 = 200m</span>
                   </label>
                   <input
                     type="number"
@@ -822,7 +849,7 @@ const GestionCamarasMunicipales = () => {
                     onChange={handleFormChange}
                     required
                     style={styles.formInput}
-                    placeholder="0.002"
+                    placeholder="0.0011"
                   />
                 </div>
 
@@ -869,6 +896,9 @@ const GestionCamarasMunicipales = () => {
                       </p>
                       <p style={styles.visionMapHintSmall}>
                         Ajusta el ángulo, radio y amplitud arriba para ver los cambios en tiempo real
+                      </p>
+                      <p style={styles.visionMapHintSmall}>
+                        <strong>Tip:</strong> Haz doble clic en el mapa para cambiar la ubicación de la cámara
                       </p>
                     </div>
                   </div>
@@ -990,9 +1020,14 @@ const GestionCamarasMunicipales = () => {
                     {showPreview && formData.geometry && (
                       <div style={styles.previewMapContainer}>
                         <div ref={mapRef} style={styles.previewMap}></div>
-                        <p style={styles.previewMapHint}>
-                          Previsualización del área de cobertura de la cámara
-                        </p>
+                        <div style={styles.previewMapHint}>
+                          <p style={{ margin: '0 0 4px 0' }}>
+                            Previsualización del área de cobertura de la cámara
+                          </p>
+                          <p style={{ margin: 0, fontSize: '11px', fontStyle: 'italic' }}>
+                            <strong>Tip:</strong> Haz doble clic en el mapa para cambiar la ubicación de la cámara
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>

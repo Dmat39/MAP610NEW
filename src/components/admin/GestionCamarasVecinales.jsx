@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Eye } from 'lucide-react';
 import camarasVecinalesAdminService from '../../services/camarasVecinalesAdminService';
 import authService from '../../services/authService';
 import UseUrlParamsManager from '../../hooks/UseUrlParamsManager';
 import SearchInput from '../Table/SearchInput';
 import TablePagination from '../Table/TablePagination';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const GestionCamarasVecinales = () => {
   const location = useLocation();
@@ -33,6 +35,12 @@ const GestionCamarasVecinales = () => {
     latitude: '',
     longitude: '',
   });
+
+  // Estado y referencias para mapa de previsualización
+  const [showMapPreview, setShowMapPreview] = useState(false);
+  const mapRef = useRef(null);
+  const leafletMapRef = useRef(null);
+  const markerRef = useRef(null);
 
   // Verificar si es administrador
   const isAdmin = authService.isAdmin();
@@ -114,6 +122,14 @@ const GestionCamarasVecinales = () => {
       latitude: '',
       longitude: '',
     });
+    setShowMapPreview(false);
+
+    // Limpiar referencias del mapa
+    if (leafletMapRef.current) {
+      leafletMapRef.current.remove();
+      leafletMapRef.current = null;
+    }
+    markerRef.current = null;
   };
 
   const handleFormChange = e => {
@@ -173,6 +189,75 @@ const GestionCamarasVecinales = () => {
       setLoading(false);
     }
   };
+
+  // Inicializar mapa de previsualización con Leaflet
+  useEffect(() => {
+    if (showMapPreview && mapRef.current && !leafletMapRef.current) {
+      const lat = parseFloat(formData.latitude) || -12.027257;
+      const lng = parseFloat(formData.longitude) || -76.999918;
+
+      // Crear mapa Leaflet
+      leafletMapRef.current = L.map(mapRef.current, {
+        center: [lat, lng],
+        zoom: 17,
+        zoomControl: true,
+        attributionControl: false,
+        doubleClickZoom: false, // Deshabilitar zoom en doble clic
+      });
+
+      // Agregar capa de OpenStreetMap
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+      }).addTo(leafletMapRef.current);
+
+      // Crear icono personalizado para la cámara
+      const cameraIcon = L.divIcon({
+        className: 'custom-camera-marker',
+        html: '<div style="background-color: #10b981; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      });
+
+      // Agregar marcador de la cámara
+      markerRef.current = L.marker([lat, lng], {
+        icon: cameraIcon,
+        title: formData.address || 'Cámara Vecinal',
+      }).addTo(leafletMapRef.current);
+
+      // Agregar evento de doble clic para actualizar coordenadas
+      leafletMapRef.current.on('dblclick', (e) => {
+        const { lat, lng } = e.latlng;
+        setFormData(prev => ({
+          ...prev,
+          latitude: lat,
+          longitude: lng,
+        }));
+        setSuccess('Coordenadas actualizadas desde el mapa');
+        setTimeout(() => setSuccess(null), 2000);
+      });
+    }
+
+    // Cleanup al desmontar o cerrar
+    return () => {
+      if (!showMapPreview && leafletMapRef.current) {
+        leafletMapRef.current.remove();
+        leafletMapRef.current = null;
+        markerRef.current = null;
+      }
+    };
+  }, [showMapPreview]);
+
+  // Actualizar posición del marcador cuando cambian las coordenadas
+  useEffect(() => {
+    if (markerRef.current && formData.latitude && formData.longitude) {
+      const lat = parseFloat(formData.latitude);
+      const lng = parseFloat(formData.longitude);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        markerRef.current.setLatLng([lat, lng]);
+        leafletMapRef.current?.setView([lat, lng], 17);
+      }
+    }
+  }, [formData.latitude, formData.longitude]);
 
   if (!isAdmin) {
     return (
@@ -459,6 +544,32 @@ const GestionCamarasVecinales = () => {
                     placeholder="-76.999918"
                   />
                 </div>
+              </div>
+
+              {/* Previsualización del Mapa */}
+              <div style={styles.mapPreviewSection}>
+                <button
+                  type="button"
+                  onClick={() => setShowMapPreview(!showMapPreview)}
+                  style={styles.mapPreviewButton}
+                >
+                  <Eye size={16} />
+                  {showMapPreview ? 'Ocultar Mapa' : 'Ver Ubicación en Mapa'}
+                </button>
+
+                {showMapPreview && (
+                  <div style={styles.mapContainer}>
+                    <div ref={mapRef} style={styles.map}></div>
+                    <div style={styles.mapHint}>
+                      <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: '#065f46', fontWeight: '500' }}>
+                        Vista previa de la ubicación de la cámara vecinal
+                      </p>
+                      <p style={{ margin: 0, fontSize: '12px', fontStyle: 'italic', color: '#059669' }}>
+                        <strong>Tip:</strong> Haz doble clic en el mapa para cambiar la ubicación de la cámara
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div style={styles.modalActions}>
@@ -835,6 +946,43 @@ const styles = {
     fontSize: '14px',
     fontWeight: '500',
     cursor: 'pointer',
+  },
+  // Estilos del mapa de previsualización
+  mapPreviewSection: {
+    marginTop: '20px',
+    marginBottom: '20px',
+  },
+  mapPreviewButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '12px 20px',
+    backgroundColor: '#10b981',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    width: '100%',
+    transition: 'all 0.2s',
+  },
+  mapContainer: {
+    marginTop: '16px',
+    border: '2px solid #10b981',
+    borderRadius: '12px',
+    overflow: 'hidden',
+    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
+  },
+  map: {
+    width: '100%',
+    height: '350px',
+  },
+  mapHint: {
+    padding: '12px 16px',
+    backgroundColor: '#f0fdf4',
+    borderTop: '1px solid #10b981',
   },
 };
 
