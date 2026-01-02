@@ -1,0 +1,204 @@
+/* ============================================
+   PALETA DE COLORES - CECOM SJL
+   Sistema de diseño profesional
+   ============================================ */
+
+:root {
+  /* ---------- COLORES PRINCIPALES ---------- */
+  /* Basado en la paleta moderna azul */
+
+  --color-primary-darkest: #001D39;    /* Azul muy oscuro - Fondos principales */
+  --color-primary-dark: #0A4174;       /* Azul oscuro - Acentos oscuros */
+  --color-primary-medium: #49769F;     /* Azul medio - Elementos intermedios */
+  --color-primary: #4E8EA2;            /* Azul/Turquesa - Color principal */
+  --color-primary-light: #6EA2B3;      /* Azul claro - Hover states */
+  --color-primary-lighter: #7BBDE8;    /* Azul claro brillante - Acentos luminosos */
+  --color-primary-lightest: #BDD8E9;   /* Azul muy claro - Textos secundarios */
+
+  /* ---------- VARIANTES CON TRANSPARENCIA ---------- */
+
+  /* Variantes al 10% */
+  --color-primary-10: rgba(78, 142, 162, 0.1);
+  --color-primary-light-10: rgba(110, 162, 179, 0.1);
+  --color-primary-lighter-10: rgba(123, 189, 232, 0.1);
+
+  /* Variantes al 15% */
+  --color-primary-15: rgba(78, 142, 162, 0.15);
+  --color-primary-light-15: rgba(110, 162, 179, 0.15);
+  --color-primary-lighter-15: rgba(123, 189, 232, 0.15);
+
+  /* Variantes al 20% */
+  --color-primary-20: rgba(78, 142, 162, 0.2);
+  --color-primary-light-20: rgba(110, 162, 179, 0.2);
+  --color-primary-lighter-20: rgba(123, 189, 232, 0.2);
+
+  /* Variantes al 25% */
+  --color-primary-25: rgba(78, 142, 162, 0.25);
+  --color-primary-light-25: rgba(110, 162, 179, 0.25);
+  --color-primary-lighter-25: rgba(123, 189, 232, 0.25);
+
+  /* Variantes al 30% */
+  --color-primary-30: rgba(78, 142, 162, 0.3);
+  --color-primary-light-30: rgba(110, 162, 179, 0.3);
+  --color-primary-lighter-30: rgba(123, 189, 232, 0.3);
+
+  /* Variantes al 40% */
+  --color-primary-40: rgba(78, 142, 162, 0.4);
+  --color-primary-light-40: rgba(110, 162, 179, 0.4);
+
+  /* Variantes al 50% */
+  --color-primary-50: rgba(78, 142, 162, 0.5);
+  --color-primary-light-50: rgba(110, 162, 179, 0.5);
+
+  /* Variantes al 60% */
+  --color-primary-60: rgba(78, 142, 162, 0.6);
+
+  /* Variantes al 65% */
+  --color-primary-dark-65: rgba(10, 65, 116, 0.65);
+
+  /* Variantes al 75% */
+  --color-primary-darkest-75: rgba(0, 29, 57, 0.75);
+
+  /* Variantes al 80% */
+  --color-primary-darkest-80: rgba(0, 29, 57, 0.8);
+
+  /* Variantes al 85% */
+  --color-primary-darkest-85: rgba(0, 29, 57, 0.85);
+
+  /* ---------- FONDOS ---------- */
+
+  --bg-gradient-main: linear-gradient(135deg, #001D39 0%, #0A4174 50%, #49769F 100%);
+  --bg-gradient-card: linear-gradient(135deg, rgba(0, 29, 57, 0.75) 0%, rgba(10, 65, 116, 0.65) 100%);
+  --bg-gradient-button: linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%);
+  --bg-gradient-button-disabled: linear-gradient(135deg, #49769F 0%, #0A4174 100%);
+
+  /* Gradientes para bordes y líneas decorativas */
+  --bg-gradient-border: linear-gradient(90deg, #4E8EA2, #6EA2B3, #7BBDE8, #6EA2B3, #4E8EA2);
+  --bg-gradient-underline: linear-gradient(90deg, transparent, #6EA2B3, transparent);
+  --bg-gradient-input-border: linear-gradient(90deg, #4E8EA2, #6EA2B3, #7BBDE8);
+
+  /* ---------- SOMBRAS ---------- */
+
+  /* Sombras para tarjetas */
+  --shadow-card:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 16px 70px rgba(123, 189, 232, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.1);
+
+  /* Sombras para botones */
+  --shadow-button:
+    0 4px 16px rgba(78, 142, 162, 0.35),
+    0 0 0 0 rgba(110, 162, 179, 0.5);
+
+  --shadow-button-hover:
+    0 8px 24px rgba(110, 162, 179, 0.45),
+    0 0 0 4px rgba(123, 189, 232, 0.25);
+
+  /* Sombras para inputs */
+  --shadow-input-focus:
+    0 4px 12px rgba(110, 162, 179, 0.25),
+    0 0 0 4px rgba(123, 189, 232, 0.15);
+
+  /* Sombras para partículas y elementos luminosos */
+  --shadow-particle:
+    0 0 10px rgba(123, 189, 232, 0.6),
+    0 0 20px rgba(123, 189, 232, 0.3),
+    0 0 30px rgba(189, 216, 233, 0.2);
+
+  /* ---------- TEXTOS ---------- */
+
+  --text-primary: #FFFFFF;
+  --text-secondary: #BDD8E9;
+  --text-tertiary: #8BA8B5;
+  --text-placeholder: #8BA8B5;
+
+  /* Gradientes de texto */
+  --text-gradient-title: linear-gradient(135deg, #ffffff 0%, #7BBDE8 100%);
+
+  /* ---------- ESTADOS ---------- */
+
+  /* Estados de error */
+  --color-error: #ef4444;
+  --color-error-bg: rgba(239, 68, 68, 0.12);
+  --color-error-border: rgba(239, 68, 68, 0.4);
+  --color-error-text: #fecaca;
+
+  /* Estados de éxito */
+  --color-success: #10b981;
+  --color-success-bg: rgba(16, 185, 129, 0.12);
+  --color-success-border: rgba(16, 185, 129, 0.4);
+  --color-success-text: #a7f3d0;
+
+  /* Estados de advertencia */
+  --color-warning: #f59e0b;
+  --color-warning-bg: rgba(245, 158, 11, 0.12);
+  --color-warning-border: rgba(245, 158, 11, 0.4);
+  --color-warning-text: #fde68a;
+
+  /* Estados de información */
+  --color-info: #3b82f6;
+  --color-info-bg: rgba(59, 130, 246, 0.12);
+  --color-info-border: rgba(59, 130, 246, 0.4);
+  --color-info-text: #bfdbfe;
+
+  /* ---------- EFECTOS ---------- */
+
+  /* Backdrop filters */
+  --backdrop-blur-sm: blur(10px);
+  --backdrop-blur-md: blur(20px);
+  --backdrop-blur-lg: blur(30px) saturate(150%);
+
+  /* Border radius */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+
+  /* Transiciones */
+  --transition-fast: all 0.2s ease;
+  --transition-normal: all 0.3s ease;
+  --transition-slow: all 0.4s ease;
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Z-index layers */
+  --z-background: 0;
+  --z-particles: 1;
+  --z-content: 2;
+  --z-header: 3;
+  --z-modal: 100;
+  --z-tooltip: 200;
+}
+
+/* ---------- UTILIDADES DE GLASSMORPHISM ---------- */
+
+.glass-card {
+  background: var(--bg-gradient-card);
+  backdrop-filter: var(--backdrop-blur-lg);
+  -webkit-backdrop-filter: var(--backdrop-blur-lg);
+  border: 1px solid var(--color-primary-lighter-25);
+  box-shadow: var(--shadow-card);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: var(--backdrop-blur-md);
+  -webkit-backdrop-filter: var(--backdrop-blur-md);
+  border: 1px solid var(--color-primary-light-20);
+}
+
+/* ---------- UTILIDADES DE TEXTO ---------- */
+
+.text-gradient {
+  background: var(--text-gradient-title);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ---------- MODO OSCURO (Futuro) ---------- */
+
+@media (prefers-color-scheme: dark) {
+  /* Ya estamos en modo oscuro por defecto */
+}

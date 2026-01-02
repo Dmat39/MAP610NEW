@@ -27,8 +27,7 @@ export default function Login() {
         setError(result.error || "Error al iniciar sesión");
       }
     } catch (err) {
-      setError("Error de conexión. Verifica tu red o contacta al administrador.");
-      console.error("Error en login:", err);
+      setError("Error de conexión. Intente nuevamente.");
     } finally {
       setLoading(false);
     }

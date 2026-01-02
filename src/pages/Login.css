@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import '../styles/colors.css';
 
 * {
   margin: 0;
@@ -25,7 +26,7 @@ body {
   justify-content: center;
   align-items: center;
   overflow: hidden;
-  background: linear-gradient(135deg, #1a252f 0%, #232a32 50%, #2d3942 100%);
+  background: linear-gradient(135deg, #001D39 0%, #0A4174 50%, #49769F 100%);
   background-size: 400% 400%;
   animation: gradientAnimation 15s ease infinite;
 }
@@ -42,7 +43,7 @@ body {
   }
 }
 
-/* ---------- PARTÍCULAS ANIMADAS ---------- */
+/* ---------- PARTÍCULAS ANIMADAS (ESTILO MODERNO) ---------- */
 
 .particles {
   position: fixed;
@@ -57,38 +58,47 @@ body {
 
 .particle {
   position: absolute;
-  width: 6px;
-  height: 6px;
-  background: #37a4b7;
+  width: 4px;
+  height: 4px;
+  background: linear-gradient(135deg, #7BBDE8, #BDD8E9);
   border-radius: 50%;
   opacity: 0;
-  animation: particleFloat 8s infinite ease-in-out;
-  box-shadow: 0 0 15px #37a4b7, 0 0 30px #37a4b760;
-  filter: blur(1px);
+  animation: particleFloat 12s infinite ease-in-out;
+  box-shadow:
+    0 0 10px rgba(123, 189, 232, 0.6),
+    0 0 20px rgba(123, 189, 232, 0.3),
+    0 0 30px rgba(189, 216, 233, 0.2);
+  filter: blur(0.5px);
 }
 
 @keyframes particleFloat {
   0% {
     opacity: 0;
-    transform: translateY(100vh) translateX(0) scale(0) rotate(0deg);
+    transform: translateY(100vh) translateX(0) scale(0);
   }
-  10% {
-    opacity: 0.6;
+  5% {
+    opacity: 0.3;
+  }
+  15% {
+    opacity: 0.8;
   }
   50% {
     opacity: 1;
-    transform: translateY(-50vh) translateX(50px) scale(1.5) rotate(180deg);
+    transform: translateY(40vh) translateX(30px) scale(1.2);
   }
-  90% {
-    opacity: 0.6;
+  85% {
+    opacity: 0.7;
+  }
+  95% {
+    opacity: 0.2;
   }
   100% {
     opacity: 0;
-    transform: translateY(-120vh) translateX(-30px) scale(0) rotate(360deg);
+    transform: translateY(-20vh) translateX(-20px) scale(0);
   }
 }
 
-/* ---------- ONDAS ANIMADAS DE FONDO ---------- */
+/* ---------- ONDAS ANIMADAS DE FONDO (ESTILO DASHBOARD MODERNO) ---------- */
 
 .waves {
   position: fixed;
@@ -103,68 +113,84 @@ body {
 
 .wave {
   position: absolute;
-  width: 300%;
-  height: 300%;
-  border-radius: 42%;
+  opacity: 0.6;
 }
 
 .wave-1 {
-  background: radial-gradient(circle at center, #37a4b720 0%, #37a4b710 30%, transparent 70%);
-  animation: waveRotate1 30s infinite linear;
-  left: -100%;
-  top: -150%;
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle at center,
+    rgba(123, 189, 232, 0.25) 0%,
+    rgba(110, 162, 179, 0.15) 30%,
+    transparent 70%);
+  border-radius: 45%;
+  top: -20%;
+  left: -10%;
+  animation: waveFloat1 25s ease-in-out infinite;
+  filter: blur(60px);
 }
 
 .wave-2 {
-  background: radial-gradient(circle at center, #4fb8ca18 0%, #37a4b708 40%, transparent 70%);
-  animation: waveRotate2 40s infinite linear reverse;
-  right: -100%;
-  bottom: -150%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle at center,
+    rgba(78, 142, 162, 0.2) 0%,
+    rgba(73, 118, 159, 0.1) 40%,
+    transparent 70%);
+  border-radius: 40%;
+  bottom: -15%;
+  right: -5%;
+  animation: waveFloat2 20s ease-in-out infinite;
+  filter: blur(50px);
 }
 
 .wave-3 {
-  background: radial-gradient(circle at center, #37a4b715 0%, transparent 60%);
-  animation: waveRotate3 50s infinite linear;
-  left: -100%;
-  bottom: -150%;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle at center,
+    rgba(110, 162, 179, 0.18) 0%,
+    rgba(78, 142, 162, 0.08) 50%,
+    transparent 70%);
+  border-radius: 48%;
+  top: 40%;
+  right: -15%;
+  animation: waveFloat3 30s ease-in-out infinite;
+  filter: blur(70px);
 }
 
-@keyframes waveRotate1 {
-  from {
-    transform: rotate(0deg) scale(1);
-  }
-  50% {
-    transform: rotate(180deg) scale(1.1);
-  }
-  to {
-    transform: rotate(360deg) scale(1);
-  }
-}
-
-@keyframes waveRotate2 {
-  from {
-    transform: rotate(0deg) scale(1);
-  }
-  50% {
-    transform: rotate(-180deg) scale(1.15);
-  }
-  to {
-    transform: rotate(-360deg) scale(1);
-  }
-}
-
-@keyframes waveRotate3 {
-  from {
-    transform: rotate(0deg) scale(1);
+@keyframes waveFloat1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
   }
   33% {
-    transform: rotate(120deg) scale(1.05);
+    transform: translate(30px, -40px) scale(1.1);
   }
   66% {
-    transform: rotate(240deg) scale(1.1);
+    transform: translate(-20px, 30px) scale(0.95);
   }
-  to {
-    transform: rotate(360deg) scale(1);
+}
+
+@keyframes waveFloat2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate(-40px, -30px) scale(1.15) rotate(90deg);
+  }
+}
+
+@keyframes waveFloat3 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(-30px, 40px) scale(1.08);
+  }
+  50% {
+    transform: translate(20px, -20px) scale(0.92);
+  }
+  75% {
+    transform: translate(40px, 30px) scale(1.05);
   }
 }
 
@@ -177,7 +203,7 @@ body {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle at 30% 30%, #37a4b725 0%, transparent 50%);
+  background: radial-gradient(circle at 30% 30%, #4E8EA225 0%, transparent 50%);
   animation: lightMove1 20s infinite ease-in-out;
   z-index: 0;
   pointer-events: none;
@@ -190,7 +216,7 @@ body {
   right: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle at 70% 70%, #4fb8ca20 0%, transparent 50%);
+  background: radial-gradient(circle at 70% 70%, #6EA2B320 0%, transparent 50%);
   animation: lightMove2 25s infinite ease-in-out;
   z-index: 0;
   pointer-events: none;
@@ -237,49 +263,49 @@ body {
 
 .shield-icon {
   font-size: 48px;
-  color: #37a4b7;
+  color: #6EA2B3;
   margin-bottom: 15px;
   animation: shieldPulse 3s infinite ease-in-out;
-  filter: drop-shadow(0 0 20px #37a4b780);
+  filter: drop-shadow(0 0 20px #6EA2B380);
 }
 
 @keyframes shieldPulse {
   0%, 100% {
     transform: scale(1);
-    filter: drop-shadow(0 0 20px #37a4b780);
+    filter: drop-shadow(0 0 20px #6EA2B380);
   }
   50% {
     transform: scale(1.1);
-    filter: drop-shadow(0 0 30px #37a4b7);
+    filter: drop-shadow(0 0 30px #6EA2B3);
   }
 }
 
 .cecom {
   font-size: 72px;
   font-weight: 800;
-  background: linear-gradient(135deg, #ffffff 0%, #37a4b7 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #7BBDE8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   letter-spacing: 6px;
   margin-bottom: 5px;
-  text-shadow: 0 0 30px rgba(55, 164, 183, 0.3);
+  text-shadow: 0 0 30px rgba(123, 189, 232, 0.3);
   animation: titleGlow 3s infinite ease-in-out;
 }
 
 @keyframes titleGlow {
   0%, 100% {
-    filter: drop-shadow(0 0 10px #37a4b750);
+    filter: drop-shadow(0 0 10px #7BBDE850);
   }
   50% {
-    filter: drop-shadow(0 0 25px #37a4b7);
+    filter: drop-shadow(0 0 25px #7BBDE8);
   }
 }
 
 .sjl {
   font-size: 20px;
   font-weight: 300;
-  color: #b8d4d9;
+  color: #BDD8E9;
   letter-spacing: 5px;
   text-transform: uppercase;
 }
@@ -287,7 +313,7 @@ body {
 .title-underline {
   width: 80px;
   height: 3px;
-  background: linear-gradient(90deg, transparent, #37a4b7, transparent);
+  background: linear-gradient(90deg, transparent, #6EA2B3, transparent);
   margin: 15px auto 0;
   animation: underlineExpand 2s infinite ease-in-out;
 }
@@ -308,14 +334,20 @@ body {
 .login-card {
   width: 450px;
   padding: 50px;
-  background: rgba(35, 42, 50, 0.85);
-  border-radius: 24px;
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(55, 164, 183, 0.2);
+  background: linear-gradient(
+    135deg,
+    rgba(0, 29, 57, 0.75) 0%,
+    rgba(10, 65, 116, 0.65) 100%
+  );
+  border-radius: 32px;
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(189, 216, 233, 0.25);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    0 0 60px rgba(55, 164, 183, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 16px 70px rgba(123, 189, 232, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.1);
   z-index: 2;
   position: relative;
   opacity: 0;
@@ -335,7 +367,7 @@ body {
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #37a4b7, #4fb8ca, #37a4b7);
+  background: linear-gradient(90deg, #4E8EA2, #6EA2B3, #7BBDE8, #6EA2B3, #4E8EA2);
   border-radius: 24px 24px 0 0;
   background-size: 200% 100%;
   animation: gradientShift 3s ease infinite;
@@ -363,7 +395,7 @@ body {
   transform: translateX(-50%);
   width: 100px;
   height: 100px;
-  background: radial-gradient(circle, #37a4b730 0%, transparent 70%);
+  background: radial-gradient(circle, #7BBDE830 0%, transparent 70%);
   border-radius: 50%;
   animation: glowPulse 2s infinite ease-in-out;
   pointer-events: none;
@@ -385,11 +417,11 @@ body {
   color: white;
   font-weight: 600;
   margin-bottom: 8px;
-  text-shadow: 0 2px 10px rgba(55, 164, 183, 0.3);
+  text-shadow: 0 2px 10px rgba(123, 189, 232, 0.4);
 }
 
 .login-header p {
-  color: #b8d4d9;
+  color: #BDD8E9;
   font-size: 14px;
   font-weight: 300;
 }
@@ -412,24 +444,24 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(55, 164, 183, 0.1);
+  background: rgba(78, 142, 162, 0.15);
   border-radius: 8px;
   transition: all 0.3s ease;
 }
 
 .input-group:focus-within .input-icon-wrapper {
-  background: rgba(55, 164, 183, 0.2);
+  background: rgba(110, 162, 179, 0.25);
   transform: translateY(-50%) scale(1.05);
 }
 
 .input-group .input-icon {
-  color: #37a4b7;
+  color: #6EA2B3;
   font-size: 18px;
   transition: all 0.3s ease;
 }
 
 .input-group:focus-within .input-icon {
-  color: #4fb8ca;
+  color: #7BBDE8;
   transform: scale(1.1);
 }
 
@@ -437,7 +469,7 @@ body {
   width: 100%;
   padding: 16px 16px 16px 68px;
   border-radius: 14px;
-  border: 2px solid rgba(55, 164, 183, 0.2);
+  border: 2px solid rgba(110, 162, 179, 0.25);
   background: rgba(255, 255, 255, 0.05);
   color: white;
   font-size: 15px;
@@ -446,18 +478,18 @@ body {
 }
 
 .input-group input::placeholder {
-  color: #7a8894;
+  color: #8BA8B5;
   font-weight: 300;
 }
 
 .input-group input:focus {
   background: rgba(255, 255, 255, 0.08);
-  border-color: #37a4b7;
+  border-color: #6EA2B3;
   outline: none;
   transform: translateY(-2px);
   box-shadow:
-    0 4px 12px rgba(55, 164, 183, 0.2),
-    0 0 0 4px rgba(55, 164, 183, 0.1);
+    0 4px 12px rgba(110, 162, 179, 0.25),
+    0 0 0 4px rgba(123, 189, 232, 0.15);
 }
 
 .input-border {
@@ -466,7 +498,7 @@ body {
   left: 0;
   width: 0;
   height: 2px;
-  background: linear-gradient(90deg, #37a4b7, #4fb8ca);
+  background: linear-gradient(90deg, #4E8EA2, #6EA2B3, #7BBDE8);
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 0 0 14px 14px;
 }
@@ -515,7 +547,7 @@ body {
   width: 100%;
   padding: 16px;
   margin-top: 15px;
-  background: linear-gradient(135deg, #37a4b7 0%, #2d8a9a 100%);
+  background: linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%);
   border: none;
   border-radius: 14px;
   color: white;
@@ -526,8 +558,8 @@ body {
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow:
-    0 4px 16px rgba(55, 164, 183, 0.3),
-    0 0 0 0 rgba(55, 164, 183, 0.5);
+    0 4px 16px rgba(78, 142, 162, 0.35),
+    0 0 0 0 rgba(110, 162, 179, 0.5);
 }
 
 .btn-content {
@@ -558,8 +590,8 @@ body {
 .login-btn:hover:not(:disabled) {
   transform: translateY(-3px);
   box-shadow:
-    0 8px 24px rgba(55, 164, 183, 0.4),
-    0 0 0 4px rgba(55, 164, 183, 0.2);
+    0 8px 24px rgba(110, 162, 179, 0.45),
+    0 0 0 4px rgba(123, 189, 232, 0.25);
 }
 
 .login-btn:active:not(:disabled) {
@@ -567,9 +599,9 @@ body {
 }
 
 .login-btn:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
-  background: linear-gradient(135deg, #5a6a75 0%, #464f58 100%);
+  background: linear-gradient(135deg, #49769F 0%, #0A4174 100%);
 }
 
 /* ---------- SPINNER ---------- */
