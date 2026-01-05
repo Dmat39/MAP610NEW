@@ -403,9 +403,9 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
     contadoresPanel: {
       display: 'flex',
       flexDirection: 'column',
-      background: 'linear-gradient(135deg, #667eea, #764ba2)',
+      background: 'linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%)',
       padding: '12px',
-      borderRadius: '10px',
+      borderRadius: '12px',
       color: 'white',
       gap: '10px',
       opacity: isCollapsed ? 0 : 1,
@@ -413,6 +413,7 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
       transform: isCollapsed ? 'scaleY(0)' : 'scaleY(1)',
       transition: 'all 0.3s ease',
       transformOrigin: 'top',
+      boxShadow: '0 4px 12px rgba(78, 142, 162, 0.35)',
     },
 
     contadoresGrid: {
@@ -662,20 +663,20 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
                         style={{
                           fontSize: '10px',
                           padding: '4px 8px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '4px',
-                          background: 'white',
+                          border: '1px solid rgba(110, 162, 179, 0.3)',
+                          borderRadius: '6px',
+                          background: 'rgba(110, 162, 179, 0.15)',
                           cursor: 'pointer',
-                          color: '#374151',
+                          color: '#0A4174',
                           transition: 'all 0.2s ease',
                         }}
                         onMouseEnter={e => {
-                          e.target.style.borderColor = '#4052af';
-                          e.target.style.backgroundColor = '#f8f9ff';
+                          e.target.style.borderColor = '#6EA2B3';
+                          e.target.style.backgroundColor = 'rgba(110, 162, 179, 0.25)';
                         }}
                         onMouseLeave={e => {
-                          e.target.style.borderColor = '#d1d5db';
-                          e.target.style.backgroundColor = 'white';
+                          e.target.style.borderColor = 'rgba(110, 162, 179, 0.3)';
+                          e.target.style.backgroundColor = 'rgba(110, 162, 179, 0.15)';
                         }}
                       >
                         {option.label}
@@ -697,7 +698,7 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
                     moveRangeOnFirstSelection={false}
                     ranges={tempDateRange}
                     maxDate={new Date()}
-                    rangeColors={['#4052af']}
+                    rangeColors={['#4E8EA2']}
                     months={1}
                     direction="horizontal"
                     showDateDisplay={false}
@@ -719,12 +720,13 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
                     onClick={() => setDateRangeOpen(false)}
                     style={{
                       fontSize: '12px',
-                      padding: '6px 12px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '4px',
-                      background: 'white',
+                      padding: '8px 16px',
+                      border: '1px solid rgba(110, 162, 179, 0.3)',
+                      borderRadius: '8px',
+                      background: 'rgba(110, 162, 179, 0.15)',
                       cursor: 'pointer',
-                      color: '#6b7280',
+                      color: '#0A4174',
+                      fontWeight: '500',
                     }}
                   >
                     Cancelar
@@ -733,12 +735,14 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
                     onClick={applyDateFilter}
                     style={{
                       fontSize: '12px',
-                      padding: '6px 12px',
+                      padding: '8px 16px',
                       border: 'none',
-                      borderRadius: '4px',
-                      background: '#4052af',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%)',
                       color: 'white',
                       cursor: 'pointer',
+                      fontWeight: '600',
+                      boxShadow: '0 4px 12px rgba(78, 142, 162, 0.35)',
                     }}
                   >
                     Aplicar Filtro

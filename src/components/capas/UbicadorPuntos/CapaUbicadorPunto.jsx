@@ -47,10 +47,6 @@ const CapaUbicadorPunto = ({ visible }) => {
     if (window.cerrarPopupUbicador) {
       delete window.cerrarPopupUbicador;
     }
-    // Rehabilitar interceptor si está activo
-    if (isActive) {
-      toggleInterceptor(true);
-    }
   };
 
   // Función para deshabilitar/habilitar interceptor
@@ -71,10 +67,17 @@ const CapaUbicadorPunto = ({ visible }) => {
   const crearMarcador = useCallback(
     async (lat, lng) => {
       // Limpiar marcador anterior (solo mantener uno a la vez)
-      limpiarMarcador();
+      if (marcadorRef.current) {
+        if (map.hasLayer(marcadorRef.current)) {
+          map.removeLayer(marcadorRef.current);
+        }
+        marcadorRef.current = null;
+      }
 
-      // Deshabilitar interceptor mientras hay popup abierto
-      toggleInterceptor(false);
+      // Limpiar función global anterior si existe
+      if (window.cerrarPopupUbicador) {
+        delete window.cerrarPopupUbicador;
+      }
 
       // Crear marcador temporal mientras se obtiene la dirección
       const marcador = L.marker([lat, lng], {
@@ -90,11 +93,7 @@ const CapaUbicadorPunto = ({ visible }) => {
 
       // Crear función personalizada para cerrar popup
       const cerrarPopup = () => {
-        marcador.closePopup();
-        // Rehabilitar interceptor después de cerrar popup
-        setTimeout(() => {
-          toggleInterceptor(true);
-        }, 100);
+        limpiarMarcador();
       };
 
       // Actualizar popup con la dirección
@@ -102,7 +101,7 @@ const CapaUbicadorPunto = ({ visible }) => {
       <div class="popup-ubicador" style="font-size: 13px; max-width: 300px; position: relative;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <strong style="color: #e74c3c;">📍 Punto Ubicado</strong>
-          <button class="close-btn" onclick="window.cerrarPopupUbicador()" 
+          <button class="close-btn" onclick="window.cerrarPopupUbicador()"
                   title="Cerrar">×</button>
         </div>
         <strong>Coordenadas:</strong><br/>
@@ -111,7 +110,7 @@ const CapaUbicadorPunto = ({ visible }) => {
         <strong>Dirección:</strong><br/>
         <span style="color: #34495e;">${direccion}</span>
         <hr style="margin: 8px 0; border: none; border-top: 1px solid #ecf0f1;">
-        <small style="color: #7f8c8d;"><em>Haz clic en otro lugar del mapa para ubicar un nuevo punto</em></small>
+        <small style="color: #7f8c8d;"><em>Haz clic en el botón × o en otro lugar del mapa para ubicar un nuevo punto</em></small>
       </div>
     `;
 
@@ -126,13 +125,6 @@ const CapaUbicadorPunto = ({ visible }) => {
         closeOnClick: false, // No cerrar al hacer click en el popup
       });
       marcador.openPopup();
-
-      // Escuchar cuando se cierre el popup por otros medios
-      marcador.on('popupclose', () => {
-        setTimeout(() => {
-          toggleInterceptor(true);
-        }, 100);
-      });
     },
     [map]
   );

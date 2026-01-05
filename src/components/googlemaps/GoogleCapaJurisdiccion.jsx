@@ -4,11 +4,11 @@ const GoogleCapaJurisdiccion = ({ map, google, ubicadorActivo = false, camaraCon
   const [data, setData] = useState(null);
   const [polygons, setPolygons] = useState([]);
 
-  // Jurisdicciones deben estar inactivas si:
-  // 1. El ubicador está activo
-  // 2. Una cámara tiene campo de visión activo
-  // 3. Una cámara está seleccionada desde la búsqueda
-  const esInactivo = ubicadorActivo || camaraConVision !== null || camaraSeleccionada !== null;
+  // Jurisdicciones deben estar inactivas (no clickeables) si:
+  // 1. Una cámara tiene campo de visión activo
+  // 2. Una cámara está seleccionada desde la búsqueda
+  // Nota: Si el ubicador está activo, las jurisdicciones siguen visibles pero no clickeables
+  const esInactivo = camaraConVision !== null || camaraSeleccionada !== null;
 
   useEffect(() => {
     fetch("/data/juridiccion.geojson")
@@ -43,8 +43,8 @@ const GoogleCapaJurisdiccion = ({ map, google, ubicadorActivo = false, camaraCon
 
         polygon.setMap(map);
 
-        // Agregar info window solo si está activo (no ubicador ni cámara)
-        if (!esInactivo) {
+        // Agregar info window solo si no hay cámara activa y no hay ubicador activo
+        if (!esInactivo && !ubicadorActivo) {
           const infoWindow = new google.maps.InfoWindow({
             content: `<b>${feature.properties.name || "Jurisdicción"}</b>`
           });
@@ -55,9 +55,9 @@ const GoogleCapaJurisdiccion = ({ map, google, ubicadorActivo = false, camaraCon
           });
         }
 
-        // Configurar si el polígono es clickeable
+        // Configurar si el polígono es clickeable (no clickeable si ubicador está activo o está inactivo)
         polygon.setOptions({
-          clickable: !esInactivo
+          clickable: !esInactivo && !ubicadorActivo
         });
 
         newPolygons.push(polygon);
@@ -70,7 +70,7 @@ const GoogleCapaJurisdiccion = ({ map, google, ubicadorActivo = false, camaraCon
     return () => {
       newPolygons.forEach(polygon => polygon.setMap(null));
     };
-  }, [map, google, data, esInactivo, camaraConVision, camaraSeleccionada]);
+  }, [map, google, data, esInactivo, ubicadorActivo, camaraConVision, camaraSeleccionada]);
 
   return null; // Este componente no renderiza JSX
 };

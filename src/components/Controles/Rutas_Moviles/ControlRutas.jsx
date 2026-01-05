@@ -1,11 +1,14 @@
 /* import "./ControlStyles.css"; */
 import "./ControlRutas.css";
 
-const ControlRutas = ({ visible, rutaInfo, onLimpiarRuta, mapType }) => {
+const ControlRutas = ({ visible, rutaInfo, onLimpiarRuta, mapType, topPosition = 10 }) => {
     if (!visible) return null;
 
     return (
-        <div className={`control-rutas ${mapType === 'google' ? 'google-mode' : ''}`}>
+        <div
+            className={`control-rutas ${mapType === 'google' ? 'google-mode' : ''}`}
+            style={{ top: `${topPosition}px` }}
+        >
             <div className="control-rutas-header">
                 <div className="header-content">
                     <div>

@@ -20,8 +20,6 @@ import CapaDrogas from './components/capas/Incidencias/CapaDrogas';
 import CapaBarras from './components/capas/Incidencias/CapaBarras';
 import CapaResiduos from './components/capas/Residuos/CapaResiduos';
 import CapaSostenimiento from './components/capas/Sostenimiento/CapaSostenimiento';
-import ClusterIncidencias from './components/capas/ClusterIncidencias/ClusterIncidencias';
-import ControlClusters from './components/Controles/Mapa_Clusters/ControlClusters';
 import FiltroGiro from './components/filtros/FiltroGiro';
 import CapaBusquedaDirecciones from './components/capas/BusquedaDirecciones/CapaBusquedaDirecciones';
 import CapaUbicadorPunto from './components/capas/UbicadorPuntos/CapaUbicadorPunto';
@@ -46,7 +44,6 @@ import GoogleCapaBarras from './components/googlemaps/GoogleCapaBarras';
 import GoogleCapaResiduos from './components/googlemaps/GoogleCapaResiduos';
 import GoogleCapaBusquedaDirecciones from './components/googlemaps/GoogleCapaBusquedaDirecciones';
 import GoogleCapaUbicadorPunto from './components/googlemaps/GoogleCapaUbicadorPuntos/GoogleCapaUbicadorPunto';
-import GoogleClusterIncidencias from './components/googlemaps/GoogleClusterIncidencias';
 import LeyendaCamaras from './components/capas/LeyendaCamaras/LeyendaCamaras';
 
 const MapView = () => {
@@ -71,7 +68,6 @@ const MapView = () => {
     residuos: false,
     defensaCivil: false,
     sostenimiento: false,
-    clusters: false,
     busquedaDirecciones: false,
     ubicadorPunto: false,
     rutas: false,
@@ -86,7 +82,6 @@ const MapView = () => {
   const [filtrosSecuestros, setFiltrosSecuestros] = useState(null);
   const [filtrosDrogas, setFiltrosDrogas] = useState(null);
   const [filtrosBarras, setFiltrosBarras] = useState(null);
-  const [radioCluster, setRadioCluster] = useState(50);
   const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
   const [resultadoSeleccionado, setResultadoSeleccionado] = useState(null);
   const [puntosUsuario, setPuntosUsuario] = useState([]);
@@ -224,7 +219,6 @@ const MapView = () => {
     { name: 'secuestros', label: 'Secuestros', visible: capasVisibles.secuestros, restrictedForOperator: true },
     { name: 'drogas', label: 'Drogas', visible: capasVisibles.drogas, restrictedForOperator: true },
     { name: 'barras', label: 'Barras', visible: capasVisibles.barras, restrictedForOperator: true },
-    { name: 'clusters', label: 'Clusters de Incidencias', visible: capasVisibles.clusters, restrictedForOperator: true },
     {
       name: 'busquedaDirecciones',
       label: 'Búsqueda de Direcciones',
@@ -303,24 +297,18 @@ const MapView = () => {
         onMapTypeChange={setMapType}
         onExpandChange={setIsPanelExpanded}
       />
-      {!isOperator && (
-        <ControlClusters
-          visible={capasVisibles.clusters}
-          radioCluster={radioCluster}
-          onRadioChange={setRadioCluster}
-          mapType={mapType}
-        />
-      )}
       <ControlBusqueda
         visible={capasVisibles.busquedaDirecciones}
         onBusquedaRealizada={handleBusquedaRealizada}
         mapType={mapType}
+        topPosition={10}
       />
       <ControlRutas
         visible={capasVisibles.rutas}
         onLimpiarRuta={handleLimpiarRuta}
         rutaInfo={rutaInfo}
         mapType={mapType}
+        topPosition={capasVisibles.busquedaDirecciones ? 440 : 10}
       />
       <ControlCamaras
         visible={capasVisibles.camaras}
@@ -330,6 +318,11 @@ const MapView = () => {
         onLimpiarSeguimiento={handleLimpiarSeguimiento}
         onLimpiarSeleccion={handleLimpiarSeleccion}
         mapType={mapType}
+        topPosition={
+          (capasVisibles.busquedaDirecciones ? 440 : 0) +
+          (capasVisibles.rutas ? 400 : 0) +
+          10
+        }
       />
 
       {mapType === 'leaflet' ? (
@@ -366,11 +359,6 @@ const MapView = () => {
               <CapaSecuestros visible={capasVisibles.secuestros} filtros={filtrosSecuestros} />
               <CapaDrogas visible={capasVisibles.drogas} filtros={filtrosDrogas} />
               <CapaBarras visible={capasVisibles.barras} filtros={filtrosBarras} />
-              <ClusterIncidencias
-                visible={capasVisibles.clusters}
-                radioCluster={radioCluster}
-                filtros={payloadFiltros}
-              />
             </>
           )}
           <CapaResiduos visible={capasVisibles.residuos} />
@@ -415,11 +403,6 @@ const MapView = () => {
               <GoogleCapaSecuestros visible={capasVisibles.secuestros} filtros={filtrosSecuestros} />
               <GoogleCapaDrogas visible={capasVisibles.drogas} filtros={filtrosDrogas} />
               <GoogleCapaBarras visible={capasVisibles.barras} filtros={filtrosBarras} />
-              <GoogleClusterIncidencias
-                visible={capasVisibles.clusters}
-                radioCluster={radioCluster}
-                filtros={payloadFiltros}
-              />
             </>
           )}
           <GoogleCapaResiduos visible={capasVisibles.residuos} />

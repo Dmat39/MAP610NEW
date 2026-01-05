@@ -20,7 +20,7 @@ const usuariosService = {
       const params = new URLSearchParams();
 
       if (filters.search) params.append('search', filters.search);
-      if (filters.role) params.append('role', filters.role);
+      if (filters.role) params.append('rol', filters.role);
       if (filters.page) params.append('page', filters.page);
       if (filters.limit) params.append('limit', filters.limit);
 

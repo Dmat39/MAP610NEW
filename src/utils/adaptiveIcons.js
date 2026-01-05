@@ -104,56 +104,96 @@ export const getIconSizeForZoom = (zoom, minSize = 24, maxSize = 48) => {
 // SVG PATHS para diferentes tipos de iconos
 
 export const SVG_PATHS = {
-  // Paradero Autorizado - Mototaxi detallado
+  // Paradero Autorizado - Bus/Autobús moderno
   MOTO_AUTORIZADO: `
+    <!-- Cuerpo principal del bus -->
+    <rect x="4" y="8" width="16" height="9" rx="1.5" fill="currentColor" opacity="0.9" stroke-width="2"/>
+
+    <!-- Parabrisas frontal -->
+    <path d="M4 10 L6 8.5 L8 8.5 L8 10 Z" fill="white" opacity="0.6" stroke="none"/>
+
+    <!-- Ventanas del bus -->
+    <rect x="6" y="9.5" width="2.5" height="3" rx="0.3" fill="white" opacity="0.7" stroke="none"/>
+    <rect x="9" y="9.5" width="2.5" height="3" rx="0.3" fill="white" opacity="0.7" stroke="none"/>
+    <rect x="12" y="9.5" width="2.5" height="3" rx="0.3" fill="white" opacity="0.7" stroke="none"/>
+    <rect x="15.5" y="9.5" width="2" height="3" rx="0.3" fill="white" opacity="0.7" stroke="none"/>
+
+    <!-- Faros delanteros -->
+    <circle cx="5" cy="16" r="0.4" fill="white" opacity="0.9"/>
+    <circle cx="19" cy="16" r="0.4" fill="white" opacity="0.9"/>
+
     <!-- Rueda trasera -->
-    <circle cx="6" cy="17" r="2.5" fill="none" stroke-width="2"/>
-    <circle cx="6" cy="17" r="1" fill="currentColor"/>
+    <circle cx="7" cy="18" r="2" fill="white" stroke-width="2.2"/>
+    <circle cx="7" cy="18" r="0.8" fill="currentColor"/>
 
     <!-- Rueda delantera -->
-    <circle cx="18" cy="17" r="2.5" fill="none" stroke-width="2"/>
-    <circle cx="18" cy="17" r="1" fill="currentColor"/>
+    <circle cx="17" cy="18" r="2" fill="white" stroke-width="2.2"/>
+    <circle cx="17" cy="18" r="0.8" fill="currentColor"/>
 
-    <!-- Cabina/techo -->
-    <path d="M8 9 L10 7 L14 7 L16 9 L16 12 L8 12 Z" fill="currentColor" opacity="0.3" stroke-width="1.5"/>
+    <!-- Parachoques inferior -->
+    <rect x="4" y="16.5" width="16" height="0.8" rx="0.4" fill="currentColor" opacity="0.7" stroke="none"/>
 
-    <!-- Estructura del chasis -->
-    <path d="M6 17 L8 13 L10 11" stroke-width="2" stroke-linecap="round"/>
-    <path d="M18 17 L16 13 L14 11" stroke-width="2" stroke-linecap="round"/>
-    <line x1="10" y1="11" x2="14" y2="11" stroke-width="2.5" stroke-linecap="round"/>
-
-    <!-- Asiento -->
-    <rect x="10" y="10" width="4" height="2" rx="1" fill="currentColor" opacity="0.5"/>
-
-    <!-- Manubrio -->
-    <path d="M13 11 L13.5 8" stroke-width="1.8" stroke-linecap="round"/>
-    <line x1="12" y1="8" x2="15" y2="8" stroke-width="2" stroke-linecap="round"/>
+    <!-- Detalles laterales -->
+    <line x1="5.5" y1="13" x2="18.5" y2="13" stroke="white" stroke-width="0.5" opacity="0.4"/>
   `,
 
-  // Paradero No Autorizado - Mototaxi con prohibición
+  // Paradero No Autorizado - Bus con señal de prohibición
   MOTO_NO_AUTORIZADO: `
-    <!-- Mototaxi simplificado -->
-    <circle cx="7" cy="16" r="2" fill="none" stroke-width="1.8"/>
-    <circle cx="17" cy="16" r="2" fill="none" stroke-width="1.8"/>
+    <!-- Bus amarillo/naranja de fondo -->
+    <!-- Cuerpo principal del bus -->
+    <rect x="5" y="9" width="14" height="8" rx="1.2" fill="#FFA726" opacity="0.9" stroke="#F57C00" stroke-width="1.5"/>
 
-    <!-- Cabina pequeña -->
-    <path d="M9 10 L10 8 L14 8 L15 10 L15 13 L9 13 Z" fill="currentColor" opacity="0.2" stroke-width="1.5"/>
-    <line x1="10" y1="13" x2="7" y2="16" stroke-width="1.8"/>
-    <line x1="14" y1="13" x2="17" y2="16" stroke-width="1.8"/>
+    <!-- Parabrisas frontal -->
+    <path d="M5 11 L6.5 9.5 L8 9.5 L8 11 Z" fill="white" opacity="0.5" stroke="none"/>
 
-    <!-- Señal de prohibición grande -->
-    <circle cx="12" cy="12" r="10" stroke-width="3"/>
-    <line x1="4.5" y1="4.5" x2="19.5" y2="19.5" stroke-width="3.5" stroke-linecap="round"/>
+    <!-- Ventanas del bus -->
+    <rect x="6.5" y="10" width="2" height="2.5" rx="0.2" fill="#90CAF9" opacity="0.6" stroke="none"/>
+    <rect x="9" y="10" width="2" height="2.5" rx="0.2" fill="#90CAF9" opacity="0.6" stroke="none"/>
+    <rect x="11.5" y="10" width="2" height="2.5" rx="0.2" fill="#90CAF9" opacity="0.6" stroke="none"/>
+    <rect x="14" y="10" width="2" height="2.5" rx="0.2" fill="#90CAF9" opacity="0.6" stroke="none"/>
+
+    <!-- Rueda trasera -->
+    <circle cx="8" cy="18" r="1.8" fill="#424242" stroke="#212121" stroke-width="1.5"/>
+    <circle cx="8" cy="18" r="0.6" fill="#757575"/>
+
+    <!-- Rueda delantera -->
+    <circle cx="16" cy="18" r="1.8" fill="#424242" stroke="#212121" stroke-width="1.5"/>
+    <circle cx="16" cy="18" r="0.6" fill="#757575"/>
+
+    <!-- Parachoques -->
+    <rect x="5" y="16.5" width="14" height="0.6" rx="0.3" fill="#F57C00" opacity="0.8" stroke="none"/>
+
+    <!-- Círculo rojo de prohibición grande -->
+    <circle cx="12" cy="12" r="10.5" fill="none" stroke="#D32F2F" stroke-width="2.8"/>
+
+    <!-- Barra diagonal de prohibición -->
+    <line x1="4" y1="4" x2="20" y2="20" stroke="#D32F2F" stroke-width="3.2" stroke-linecap="round"/>
   `,
 
-  // Defensa Civil - Edificio con escudo
+  // Defensa Civil - Escudo con cruz médica
   DEFENSA_CIVIL: `
-    <path d="M3 21h18"/>
-    <path d="M5 21V7l7-4 7 4v14"/>
-    <path d="M9 9h6v6H9z"/>
-    <path d="M12 3v3"/>
-    <path d="M12 15c-1.5 0-2.5-1-2.5-2.5S10.5 10 12 10s2.5 1 2.5 2.5S13.5 15 12 15z"/>
-    <circle cx="12" cy="12.5" r="0.5" fill="currentColor"/>
+    <!-- Escudo exterior -->
+    <path d="M12 2 L4 6 L4 11 C4 16 7 20 12 22 C17 20 20 16 20 11 L20 6 Z"
+          fill="currentColor"
+          opacity="0.85"
+          stroke="currentColor"
+          stroke-width="1.5"/>
+
+    <!-- Línea divisoria central vertical del escudo -->
+    <line x1="12" y1="3" x2="12" y2="21" stroke="white" stroke-width="1.2" opacity="0.5"/>
+
+    <!-- Cruz médica - barra horizontal -->
+    <rect x="7" y="10" width="10" height="3" rx="0.5" fill="white" stroke="none"/>
+
+    <!-- Cruz médica - barra vertical -->
+    <rect x="10.5" y="7.5" width="3" height="10" rx="0.5" fill="white" stroke="none"/>
+
+    <!-- Borde interior del escudo para más definición -->
+    <path d="M12 3.5 L5 7 L5 11 C5 15.5 7.5 19 12 20.8 C16.5 19 19 15.5 19 11 L19 7 Z"
+          fill="none"
+          stroke="white"
+          stroke-width="1.2"
+          opacity="0.6"/>
   `,
 
   // Residuos Sólidos - Basurero mejorado
@@ -193,30 +233,30 @@ export const SVG_PATHS = {
 export const createParaderoAutorizadoIcon = (size = 36) => {
   return createAdaptiveIcon({
     svgContent: SVG_PATHS.MOTO_AUTORIZADO,
-    color: '#28a745',
-    bgColor: '#d4edda',
+    color: '#1565C0',
+    bgColor: '#E3F2FD',
     baseSize: size,
     strokeWidth: 2.5,
-    borderWidth: 3,
+    borderWidth: 4,
   });
 };
 
 export const createParaderoNoAutorizadoIcon = (size = 36) => {
   return createAdaptiveIcon({
     svgContent: SVG_PATHS.MOTO_NO_AUTORIZADO,
-    color: '#dc3545',
-    bgColor: '#f8d7da',
+    color: '#616161',
+    bgColor: '#FAFAFA',
     baseSize: size,
     strokeWidth: 2.8,
-    borderWidth: 3,
+    borderWidth: 4,
   });
 };
 
 export const createDefensaCivilIcon = (size = 36) => {
   return createAdaptiveIcon({
     svgContent: SVG_PATHS.DEFENSA_CIVIL,
-    color: '#007bff',
-    bgColor: '#cfe2ff',
+    color: '#FF8C42',
+    bgColor: '#FFF3E0',
     baseSize: size,
     strokeWidth: 2.3,
     borderWidth: 3,

@@ -13,10 +13,9 @@ const CapaJurisdiccion = ({
   const geoJsonRef = useRef(null);
 
   // Jurisdicciones deben estar inactivas si:
-  // 1. El ubicador está activo
-  // 2. Una cámara tiene campo de visión activo
-  // 3. Una cámara está seleccionada desde la búsqueda
-  const esInactivo = ubicadorActivo || camaraConVision !== null || camaraSeleccionada !== null;
+  // 1. Una cámara tiene campo de visión activo
+  // 2. Una cámara está seleccionada desde la búsqueda
+  const esInactivo = camaraConVision !== null || camaraSeleccionada !== null;
 
   useEffect(() => {
     fetch('/data/juridiccion.geojson')
@@ -29,21 +28,21 @@ const CapaJurisdiccion = ({
     color: feature.properties.color || '#34b429',
     weight: 2,
     fillOpacity: esInactivo ? 0.1 : 0.2, // Menos opacidad cuando está inactivo
-    interactive: !esInactivo, // Control directo de interactividad
-    bubblingMouseEvents: esInactivo ? false : true, // Prevenir bubbling cuando inactivo
+    interactive: !esInactivo && !ubicadorActivo, // No interactivo si ubicador está activo o está inactivo
+    bubblingMouseEvents: esInactivo || ubicadorActivo ? false : true, // Prevenir bubbling cuando inactivo o ubicador activo
   });
 
   const popupJurisdiccion = (feature, layer) => {
     const nombre = feature.properties.name || 'Jurisdicción';
 
-    if (!esInactivo) {
+    if (!esInactivo && !ubicadorActivo) {
       layer.bindPopup(`<b>${nombre}</b>`);
 
       layer.on('click', function () {
         layer.openPopup();
       });
     } else {
-      // Cuando está inactivo (ubicador o cámara activa), remover completamente todos los eventos
+      // Cuando está inactivo o ubicador activo, remover completamente todos los eventos
       layer.off();
       layer.unbindPopup();
       layer.unbindTooltip();
@@ -67,14 +66,16 @@ const CapaJurisdiccion = ({
         ? `(Cámara ${camaraConVision} con visión)`
         : camaraSeleccionada
           ? `(Cámara ${camaraSeleccionada.name} seleccionada)`
-          : '';
-      logger.log(`🗺️ Jurisdicciones - ${esInactivo ? 'INACTIVAS' : 'ACTIVAS'}`, razon);
+          : ubicadorActivo
+            ? '(Herramienta activa)'
+            : '';
+      logger.log(`🗺️ Jurisdicciones - ${esInactivo || ubicadorActivo ? 'NO INTERACTIVAS' : 'INTERACTIVAS'}`, razon);
     }
-  }, [esInactivo, data, camaraConVision, camaraSeleccionada]);
+  }, [esInactivo, ubicadorActivo, data, camaraConVision, camaraSeleccionada]);
 
-  // Efecto para aplicar estilos CSS cuando esté inactivo
+  // Efecto para aplicar estilos CSS cuando esté inactivo o ubicador activo
   useEffect(() => {
-    if (esInactivo) {
+    if (esInactivo || ubicadorActivo) {
       // Hacer SOLO las jurisdicciones (paths/polygons) no clickeables, no todos los elementos interactivos
       const jurisdiccionElements = document.querySelectorAll('.leaflet-overlay-pane svg path.leaflet-interactive');
       jurisdiccionElements.forEach(el => {
