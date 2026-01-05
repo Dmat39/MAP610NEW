@@ -1,14 +1,24 @@
+import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { LogOut, MapPin } from 'lucide-react';
+import ConfirmModal from '../Modal/ConfirmModal';
 import './Header.css';
 
 const Header = () => {
   const { user, logout } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const handleLogout = async () => {
-    if (window.confirm('¿Estás seguro que deseas cerrar sesión?')) {
-      await logout();
-    }
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = async () => {
+    setShowLogoutModal(false);
+    await logout();
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
   };
 
   const getRoleLabel = role => {
@@ -60,12 +70,23 @@ const Header = () => {
               </div>
             </div>
 
-            <button onClick={handleLogout} className="logout-btn" title="Cerrar sesión">
+            <button onClick={handleLogoutClick} className="logout-btn" title="Cerrar sesión">
               <LogOut size={16} strokeWidth={2} />
             </button>
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        onConfirm={handleLogoutConfirm}
+        onCancel={handleLogoutCancel}
+        title="Cerrar Sesión"
+        message="¿Estás seguro que deseas cerrar sesión? Tendrás que volver a iniciar sesión para acceder al sistema."
+        confirmText="Sí, cerrar sesión"
+        cancelText="Cancelar"
+        type="logout"
+      />
     </header>
   );
 };

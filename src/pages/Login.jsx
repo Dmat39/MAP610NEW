@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { FaIdCard, FaLock, FaShieldAlt } from "react-icons/fa";
+import { FaIdCard, FaLock, FaShieldAlt, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import "./Login.css";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -35,18 +36,10 @@ export default function Login() {
 
   return (
     <div className="login-container">
-      {/* Partículas animadas de fondo */}
-      <div className="particles">
-        {[...Array(50)].map((_, i) => (
-          <div key={i} className="particle" style={{
-            left: `${Math.random() * 100}%`,
-            animationDelay: `${Math.random() * 8}s`,
-            animationDuration: `${6 + Math.random() * 8}s`
-          }} />
-        ))}
-      </div>
+      {/* Grid pattern de fondo */}
+      <div className="particles"></div>
 
-      {/* Ondas animadas de fondo */}
+      {/* Acentos sutiles de fondo */}
       <div className="waves">
         <div className="wave wave-1"></div>
         <div className="wave wave-2"></div>
@@ -97,13 +90,21 @@ export default function Login() {
               <FaLock className="input-icon" />
             </div>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Ingrese su contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
               required
             />
+            <button
+              type="button"
+              className="toggle-password-btn"
+              onClick={() => setShowPassword(!showPassword)}
+              tabIndex={-1}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
             <div className="input-border"></div>
           </div>
 

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { LogOut, MapPin, ChevronDown, Camera, Map, Video, Users } from 'lucide-react';
+import ConfirmModal from '../Modal/ConfirmModal';
 import './Sidebar.css';
 
 const Sidebar = () => {
@@ -9,14 +10,23 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const dropdownRef = useRef(null);
 
   const isAdmin = user?.role?.toLowerCase() === 'administrator' || user?.role?.toLowerCase() === 'admin';
 
-  const handleLogout = async () => {
-    if (window.confirm('¿Estás seguro que deseas cerrar sesión?')) {
-      await logout();
-    }
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+    setDropdownOpen(false);
+  };
+
+  const handleLogoutConfirm = async () => {
+    setShowLogoutModal(false);
+    await logout();
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
   };
 
   const getRoleLabel = role => {
@@ -99,13 +109,24 @@ const Sidebar = () => {
 
             <div className="dropdown-divider" />
 
-            <button onClick={handleLogout} className="dropdown-item logout-item">
+            <button onClick={handleLogoutClick} className="dropdown-item logout-item">
               <LogOut size={16} />
               <span>Cerrar sesión</span>
             </button>
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        onConfirm={handleLogoutConfirm}
+        onCancel={handleLogoutCancel}
+        title="Cerrar Sesión"
+        message="¿Estás seguro que deseas cerrar sesión? Tendrás que volver a iniciar sesión para acceder al sistema."
+        confirmText="Sí, cerrar sesión"
+        cancelText="Cancelar"
+        type="logout"
+      />
 
       {/* Navigation */}
       <nav className="sidebar-nav">
