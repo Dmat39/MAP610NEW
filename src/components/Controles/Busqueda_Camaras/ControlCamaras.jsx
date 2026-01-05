@@ -13,6 +13,7 @@ const ControlCamaras = ({
   onLimpiarSeguimiento,
   onLimpiarSeleccion,
   mapType = 'leaflet',
+  topPosition = 10,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [busqueda, setBusqueda] = useState('');
@@ -331,7 +332,10 @@ const ControlCamaras = ({
   if (!visible) return null;
 
   return (
-    <div className={`control-camaras ${mapType}-mode ${isCollapsed ? 'collapsed' : ''}`}>
+    <div
+      className={`control-camaras ${mapType}-mode ${isCollapsed ? 'collapsed' : ''}`}
+      style={{ top: `${topPosition}px` }}
+    >
       <div className="control-camaras-header" onClick={toggleCollapse}>
         <div className="header-content">
           <h3>📷 Búsqueda de Cámaras</h3>

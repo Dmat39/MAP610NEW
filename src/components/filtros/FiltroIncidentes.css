@@ -5,18 +5,19 @@
   width: 33%;
   max-width: 420px;
   z-index: 100;
-  background-color: rgba(255, 255, 255, 0.98);
+  background: linear-gradient(135deg, rgba(0, 29, 57, 0.92) 0%, rgba(10, 65, 116, 0.85) 100%);
   padding: 14px 16px;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 0 60px rgba(123, 189, 232, 0.15);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(189, 216, 233, 0.25);
 }
 
 /* Estado colapsado */
@@ -38,7 +39,7 @@
 }
 
 .filtros-header:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: rgba(110, 162, 179, 0.15);
   padding: 2px 8px;
 }
 
@@ -48,25 +49,25 @@
   gap: 6px;
   font-weight: bold;
   font-size: 15px;
-  color: #333;
+  color: #BDD8E9;
 }
 
 /* Botón de colapsar */
 .collapse-btn {
-  background: none;
+  background: rgba(189, 216, 233, 0.15);
   border: none;
   cursor: pointer;
   padding: 4px;
-  border-radius: 4px;
-  color: #666;
+  border-radius: 6px;
+  color: #BDD8E9;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
 }
 
 .collapse-btn:hover {
-  color: #333;
-  background-color: rgba(0, 0, 0, 0.1);
+  color: #7BBDE8;
+  background-color: rgba(189, 216, 233, 0.25);
 }
 
 /* Contenido que se puede colapsar */
@@ -92,11 +93,12 @@
 .contadores-panel {
   display: flex;
   justify-content: space-between;
-  background: linear-gradient(135deg, #37a4b7, #232a32);
-  padding: 10px;
-  border-radius: 10px;
+  background: linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%);
+  padding: 12px;
+  border-radius: 12px;
   color: white;
   gap: 10px;
+  box-shadow: 0 4px 12px rgba(78, 142, 162, 0.35);
 }
 
 .contador-item {
@@ -136,24 +138,31 @@
   display: flex;
   flex-direction: column;
   font-size: 13px;
-  color: #333;
+  color: #BDD8E9;
   min-width: 100px;
   flex: 1;
 }
 
 .filtros-row select {
-  padding: 5px 8px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  background: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 2px solid rgba(110, 162, 179, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  color: #BDD8E9;
   font-size: 13px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .filtros-row select:focus {
   outline: none;
-  border-color: #37a4b7;
-  box-shadow: 0 0 0 2px rgba(55, 164, 183, 0.2);
+  border-color: #6EA2B3;
+  box-shadow: 0 0 0 3px rgba(110, 162, 179, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.filtros-row select option {
+  background: #001D39;
+  color: #BDD8E9;
 }
 
 /* Acciones (botón limpiar) */
@@ -164,24 +173,25 @@
 
 /* Botón de limpiar */
 .reset-btn {
-  background: #c81521;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #BDD8E9;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 10px 16px;
+  border-radius: 8px;
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-weight: 500;
 }
 
 .reset-btn:hover {
-  background: #a01119;
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(200, 21, 33, 0.3);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .reset-btn:active {
@@ -202,35 +212,27 @@
   transform: translateX(-50%);
   width: 30px;
   height: 3px;
-  background: linear-gradient(90deg, #37a4b7, #232a32);
+  background: linear-gradient(90deg, #4E8EA2, #0A4174);
   border-radius: 2px;
   opacity: 0.7;
 }
 
-/* Responsive para pantallas pequeñas */
-@media screen and (max-width: 768px) {
+/* Responsive Tablets */
+@media screen and (max-width: 1024px) {
   .filtro-panel {
-    width: calc(100% - 20px);
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: none;
-  }
-
-  .filtros-row {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .filtros-row label {
-    min-width: auto;
+    width: 36%;
+    max-width: 380px;
+    left: calc(70px + 12px);
+    bottom: 10px;
   }
 
   .contadores-panel {
-    padding: 12px 8px;
+    padding: 10px;
+    gap: 8px;
   }
 
   .contador-item {
-    min-width: 70px;
+    min-width: 75px;
   }
 
   .contador-numero {
@@ -241,42 +243,164 @@
     font-size: 10px;
   }
 
-  /* En móvil, hacer el header más prominente */
+  .filtros-row label {
+    font-size: 12px;
+  }
+
+  .filtros-row select {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  .reset-btn {
+    padding: 9px 14px;
+    font-size: 11px;
+  }
+}
+
+/* Responsive Mobile */
+@media screen and (max-width: 768px) {
+  .filtro-panel {
+    width: calc(100% - 20px);
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    max-width: none;
+    padding: 12px 14px;
+    gap: 12px;
+  }
+
+  .filtro-panel.collapsed {
+    padding-bottom: 12px;
+  }
+
   .filtros-header {
-    padding: 4px 0;
+    padding: 3px 0;
   }
 
   .filtros-header:hover {
-    padding: 4px 8px;
+    padding: 3px 6px;
   }
 
   .filtros-titulo {
     font-size: 14px;
+    gap: 5px;
+  }
+
+  .collapse-btn {
+    padding: 4px;
+  }
+
+  .filtros-content {
+    gap: 12px;
+  }
+
+  .contadores-panel {
+    padding: 10px 8px;
+    gap: 8px;
+    border-radius: 10px;
+  }
+
+  .contador-item {
+    min-width: 65px;
+  }
+
+  .contador-item svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .contador-numero {
+    font-size: 18px;
+  }
+
+  .contador-label {
+    font-size: 10px;
+  }
+
+  .filtros-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .filtros-row label {
+    min-width: auto;
+    font-size: 12px;
+  }
+
+  .filtros-row select {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .filtros-actions {
+    justify-content: center;
+  }
+
+  .reset-btn {
+    padding: 9px 14px;
+    font-size: 11px;
   }
 }
 
-/* Para pantallas muy pequeñas */
+/* Responsive Small Mobile */
 @media screen and (max-width: 480px) {
   .filtro-panel {
     bottom: 5px;
-    left: 10px;
-    width: calc(100% - 20px);
-    padding: 12px;
+    left: 5px;
+    right: 5px;
+    width: auto;
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .filtros-header {
+    padding: 2px 0;
+  }
+
+  .filtros-header:hover {
+    padding: 2px 4px;
+  }
+
+  .filtros-titulo {
+    font-size: 13px;
+    gap: 4px;
+  }
+
+  .filtros-titulo svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .collapse-btn {
+    padding: 3px;
+  }
+
+  .collapse-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .filtros-content {
+    gap: 10px;
   }
 
   .contadores-panel {
     flex-direction: column;
-    gap: 8px;
-    align-items: center;
+    gap: 6px;
+    align-items: stretch;
+    padding: 8px;
   }
 
   .contador-item {
     width: 100%;
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    min-width: auto;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     flex-direction: row;
     justify-content: center;
-    gap: 12px;
+    align-items: center;
+    gap: 10px;
   }
 
   .contador-item:last-child {
@@ -285,10 +409,77 @@
 
   .contador-item svg {
     margin-bottom: 0;
+    width: 16px;
+    height: 16px;
   }
 
   .contador-numero {
-    font-size: 18px;
+    font-size: 16px;
+  }
+
+  .contador-label {
+    font-size: 9px;
+  }
+
+  .filtros-row {
+    gap: 8px;
+  }
+
+  .filtros-row label {
+    font-size: 11px;
+  }
+
+  .filtros-row select {
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+
+  .reset-btn {
+    padding: 8px 12px;
+    font-size: 10px;
+    gap: 4px;
+  }
+
+  .reset-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* Responsive Extra Small Mobile */
+@media screen and (max-width: 360px) {
+  .filtro-panel {
+    padding: 8px 10px;
+  }
+
+  .filtros-titulo {
+    font-size: 12px;
+  }
+
+  .contadores-panel {
+    padding: 6px;
+  }
+
+  .contador-item {
+    padding: 5px 0;
+  }
+
+  .contador-numero {
+    font-size: 15px;
+  }
+
+  .contador-label {
+    font-size: 8px;
+  }
+
+  .filtros-row select {
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+
+  .reset-btn {
+    padding: 7px 10px;
+    font-size: 9px;
   }
 }
 

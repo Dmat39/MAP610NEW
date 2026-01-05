@@ -3,16 +3,20 @@
   position: fixed;
   top: 10px;
   left: 85px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  background: linear-gradient(135deg, rgba(0, 29, 57, 0.92) 0%, rgba(10, 65, 116, 0.85) 100%);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 0 60px rgba(123, 189, 232, 0.15);
   z-index: 2000;
   width: 320px;
+  max-height: calc(100vh - 20px);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(189, 216, 233, 0.25);
+  display: flex;
+  flex-direction: column;
 }
 
 .control-camaras.google-mode {
@@ -29,8 +33,8 @@
   padding: 14px 18px;
   cursor: pointer;
   user-select: none;
-  background: linear-gradient(135deg, #37a4b7, #232a32);
-  border-radius: 12px 12px 0 0;
+  background: linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%);
+  border-radius: 16px 16px 0 0;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -62,14 +66,14 @@
 
 .header-content h3 {
   margin: 0;
-  font-size: 18px !important;
+  font-size: 16px !important;
   font-weight: 600;
-  color: white !important;
+  color: #BDD8E9 !important;
   letter-spacing: -0.02em;
 }
 
 .collapse-btn {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(189, 216, 233, 0.15);
   border: none;
   cursor: pointer;
   padding: 6px;
@@ -77,13 +81,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #BDD8E9;
   transition: all 0.2s ease;
   backdrop-filter: blur(10px);
 }
 
 .collapse-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(189, 216, 233, 0.25);
   transform: scale(1.05);
 }
 
@@ -91,6 +95,27 @@
 .control-camaras-content {
   padding: 20px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100vh - 82px);
+}
+
+.control-camaras-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.control-camaras-content::-webkit-scrollbar-track {
+  background: rgba(0, 29, 57, 0.3);
+  border-radius: 3px;
+}
+
+.control-camaras-content::-webkit-scrollbar-thumb {
+  background: rgba(110, 162, 179, 0.4);
+  border-radius: 3px;
+}
+
+.control-camaras-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(123, 189, 232, 0.6);
 }
 
 .control-camaras-content.hidden {
@@ -118,28 +143,28 @@
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #6b7280;
+  color: #6EA2B3;
   z-index: 1;
 }
 
 .busqueda-input {
   width: 100%;
   padding: 12px 16px 12px 35px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid rgba(110, 162, 179, 0.25);
   border-radius: 10px;
   font-size: 14px;
   font-weight: 500;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.05);
   transition: all 0.3s ease;
-  color: #374151 !important;
-  -webkit-text-fill-color: #374151 !important;
+  color: #BDD8E9 !important;
+  -webkit-text-fill-color: #BDD8E9 !important;
 }
 
 .busqueda-input:focus {
   outline: none;
-  border-color: #37a4b7;
-  box-shadow: 0 0 0 3px rgba(55, 164, 183, 0.1);
-  background: white;
+  border-color: #6EA2B3;
+  box-shadow: 0 0 0 3px rgba(110, 162, 179, 0.15);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .busqueda-input:disabled {
@@ -149,13 +174,13 @@
 }
 
 .busqueda-input::placeholder {
-  color: #9ca3af;
+  color: #8BA8B5;
   font-weight: 400;
 }
 
 .btn-buscar {
   padding: 12px;
-  background: 'linear-gradient(135deg, #37a4b7, #232a32)';
+  background: linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%);
   border: none;
   border-radius: 10px;
   color: white;
@@ -166,12 +191,12 @@
   justify-content: center;
   min-width: 35px;
   max-width: fit-content;
-  box-shadow: 0 4px 12px rgba(55, 164, 183, 0.3);
+  box-shadow: 0 4px 12px rgba(78, 142, 162, 0.35);
 }
 
 .btn-buscar:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(55, 164, 183, 0.4);
+  box-shadow: 0 6px 20px rgba(110, 162, 179, 0.45);
 }
 
 .btn-buscar:disabled {
@@ -184,7 +209,7 @@
 .ultima-busqueda {
   margin-top: 8px;
   padding: 8px 12px;
-  background: rgba(55, 164, 183, 0.05);
+  background: rgba(110, 162, 179, 0.15);
   border-radius: 8px;
   font-size: 12px;
   display: flex;
@@ -193,12 +218,12 @@
 }
 
 .busqueda-label {
-  color: #6b7280;
+  color: #6EA2B3;
   font-weight: 500;
 }
 
 .busqueda-valor {
-  color: #37a4b7;
+  color: #7BBDE8;
   font-weight: 600;
 }
 
@@ -215,7 +240,7 @@
   margin-bottom: 10px;
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: #BDD8E9;
 }
 
 .filtros-botones {
@@ -235,34 +260,34 @@
   justify-content: center;
   gap: 6px;
   padding: 10px 12px;
-  background: rgba(243, 244, 246, 0.8);
+  background: rgba(110, 162, 179, 0.15);
   border: 2px solid transparent;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: #BDD8E9;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
 }
 
 .filtro-btn:hover {
-  background: rgba(229, 231, 235, 0.8);
-  color: #374151;
+  background: rgba(110, 162, 179, 0.25);
+  border-color: rgba(123, 189, 232, 0.3);
 }
 
 .filtro-btn.activo {
-  background: rgba(55, 164, 183, 0.1);
-  border-color: #37a4b7;
-  color: #37a4b7;
-  box-shadow: 0 2px 8px rgba(55, 164, 183, 0.15);
+  background: linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%);
+  border-color: #6EA2B3;
+  color: white;
+  box-shadow: 0 4px 12px rgba(110, 162, 179, 0.35);
 }
 
 .filtro-count {
-  background: #37a4b7;
-  color: white;
+  background: #7BBDE8;
+  color: #001D39;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 2px 6px;
   border-radius: 10px;
   min-width: 18px;
@@ -271,26 +296,381 @@
 
 
 
-/* Responsive */
+/* Responsive Tablets */
+@media (max-width: 1024px) {
+  .control-camaras {
+    left: 75px;
+    width: 300px;
+    max-height: calc(100vh - 20px);
+  }
+
+  .control-camaras-header {
+    padding: 12px 16px;
+  }
+
+  .header-content h3 {
+    font-size: 15px !important;
+  }
+
+  .control-camaras-content {
+    padding: 18px;
+    max-height: calc(100vh - 78px);
+  }
+
+  .busqueda-input {
+    padding: 11px 15px 11px 34px;
+    font-size: 13px;
+  }
+
+  .btn-buscar {
+    padding: 11px;
+  }
+
+  .filtros-titulo {
+    font-size: 12px;
+  }
+
+  .filtro-btn {
+    padding: 9px 10px;
+    font-size: 11px;
+  }
+}
+
+/* Responsive Mobile */
 @media (max-width: 768px) {
   .control-camaras {
     left: 5px;
     right: 5px;
-    min-width: auto;
+    width: auto;
     max-width: none;
+    max-height: calc(100vh - 20px);
+    top: 10px;
   }
-  
+
+  .control-camaras-header {
+    padding: 10px 14px;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .header-content h3 {
+    font-size: 14px !important;
+  }
+
+  .collapse-btn {
+    padding: 5px;
+  }
+
+  .control-camaras-content {
+    padding: 14px;
+    gap: 12px;
+    max-height: calc(100vh - 74px);
+  }
+
+  .busqueda-principal {
+    margin-bottom: 14px;
+  }
+
+  .input-group {
+    gap: 6px;
+  }
+
+  .busqueda-input {
+    padding: 10px 14px 10px 32px;
+    font-size: 13px;
+  }
+
+  .search-icon {
+    left: 12px;
+  }
+
+  .btn-buscar {
+    padding: 10px;
+    min-width: 42px;
+  }
+
+  .ultima-busqueda {
+    padding: 7px 10px;
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  .filtros-compactos {
+    margin-bottom: 14px;
+  }
+
+  .filtros-compactos .filtros-titulo {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  .filtros-botones {
+    gap: 6px;
+  }
+
+  .filtro-btn {
+    padding: 8px 10px;
+    font-size: 11px;
+    gap: 5px;
+  }
+
+  .filtro-count {
+    font-size: 9px;
+    padding: 1px 5px;
+  }
+
+  .filtro-jurisdicciones {
+    margin-bottom: 14px;
+    padding-top: 10px;
+  }
+
+  .filtros-titulo {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  .collapse-jurisdicciones-btn {
+    min-width: 22px;
+    height: 22px;
+    padding: 3px;
+  }
+
+  .jurisdicciones-container {
+    max-height: 160px;
+    padding: 6px 0;
+    gap: 5px;
+  }
+
+  .jurisdiccion-checkbox {
+    padding: 7px 9px;
+    font-size: 12px;
+    gap: 8px;
+  }
+
+  .checkbox-custom {
+    width: 15px;
+    height: 15px;
+  }
+
+  .jurisdiccion-checkbox input[type="checkbox"]:checked + .checkbox-custom::after {
+    font-size: 10px;
+    left: 2px;
+  }
+
+  .jurisdiccion-count {
+    font-size: 10px;
+    padding: 1px 5px;
+  }
+
+  .stats-compactas {
+    gap: 10px;
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+
+  .stat-item {
+    padding: 6px;
+  }
+
+  .stat-numero {
+    font-size: 16px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+  }
+
+  .acciones-container {
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .btn-limpiar-todo,
+  .btn-seguimiento {
+    padding: 9px 14px;
+    font-size: 12px;
+  }
+
+  .btn-limpiar-seguimiento {
+    padding: 9px 14px;
+    font-size: 12px;
+  }
+
+  .mensaje-error {
+    padding: 10px 14px;
+    margin-bottom: 12px;
+  }
+
+  .error-texto {
+    font-size: 12px;
+  }
+
+  .estado-carga {
+    padding: 16px;
+    font-size: 13px;
+  }
+
   .estadisticas {
     grid-template-columns: 1fr;
   }
-  
+
   .camara-header {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .camara-caracteristicas {
     align-self: flex-start;
+  }
+}
+
+/* Responsive Small Mobile */
+@media (max-width: 480px) {
+  .control-camaras {
+    left: 5px;
+    right: 5px;
+    width: auto;
+    max-height: calc(100vh - 16px);
+    top: 8px;
+    border-radius: 12px;
+  }
+
+  .control-camaras-header {
+    padding: 8px 12px;
+  }
+
+  .header-content h3 {
+    font-size: 13px !important;
+  }
+
+  .collapse-btn {
+    padding: 4px;
+  }
+
+  .control-camaras-content {
+    padding: 12px;
+    max-height: calc(100vh - 68px);
+  }
+
+  .busqueda-principal {
+    margin-bottom: 12px;
+  }
+
+  .input-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .input-container {
+    width: 100%;
+  }
+
+  .busqueda-input {
+    width: 100%;
+    padding: 9px 12px 9px 30px;
+    font-size: 12px;
+  }
+
+  .search-icon {
+    left: 10px;
+  }
+
+  .btn-buscar {
+    width: 100%;
+    padding: 9px;
+    justify-content: center;
+  }
+
+  .ultima-busqueda {
+    padding: 6px 8px;
+    font-size: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .filtros-compactos {
+    margin-bottom: 12px;
+  }
+
+  .filtros-compactos .filtros-titulo {
+    font-size: 11px;
+  }
+
+  .filtros-botones {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .filtros-botones .filtro-btn:last-child:nth-child(odd) {
+    grid-column: 1;
+  }
+
+  .filtro-btn {
+    padding: 8px 12px;
+    font-size: 11px;
+    width: 100%;
+  }
+
+  .filtro-jurisdicciones {
+    margin-bottom: 12px;
+    padding-top: 8px;
+  }
+
+  .jurisdicciones-container {
+    max-height: 140px;
+  }
+
+  .jurisdiccion-checkbox {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  .checkbox-custom {
+    width: 14px;
+    height: 14px;
+  }
+
+  .stats-compactas {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .stat-item {
+    flex: 1 1 calc(50% - 3px);
+    min-width: calc(50% - 3px);
+    padding: 8px 4px;
+  }
+
+  .stat-numero {
+    font-size: 15px;
+  }
+
+  .stat-label {
+    font-size: 9px;
+  }
+
+  .acciones-container {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .btn-limpiar-todo,
+  .btn-seguimiento,
+  .btn-limpiar-seguimiento {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+
+  .mensaje-error {
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+
+  .estado-carga {
+    padding: 14px;
+    font-size: 12px;
   }
 }
 
@@ -372,8 +752,9 @@ Estados */
   gap: 12px;
   margin-bottom: 16px;
   padding: 12px;
-  background: rgba(243, 244, 246, 0.5);
+  background: rgba(0, 29, 57, 0.5);
   border-radius: 8px;
+  border: 1px solid rgba(123, 189, 232, 0.2);
 }
 
 .stat-item {
@@ -387,31 +768,31 @@ Estados */
 }
 
 .stat-item.activo {
-  background: rgba(55, 164, 183, 0.1);
-  border: 1px solid rgba(55, 164, 183, 0.2);
+  background: linear-gradient(135deg, rgba(78, 142, 162, 0.2) 0%, rgba(10, 65, 116, 0.15) 100%);
+  border: 1px solid rgba(123, 189, 232, 0.3);
 }
 
 .stat-numero {
   font-size: 18px;
   font-weight: 700;
-  color: #374151;
+  color: #BDD8E9;
   line-height: 1;
 }
 
 .stat-item.activo .stat-numero {
-  color: #37a4b7;
+  color: #7BBDE8;
 }
 
 .stat-label {
   font-size: 11px;
-  color: #6b7280;
+  color: #6EA2B3;
   font-weight: 500;
   text-align: center;
   margin-top: 2px;
 }
 
 .stat-item.activo .stat-label {
-  color: #37a4b7;
+  color: #7BBDE8;
 }
 
 /* Acciones Container */
@@ -424,10 +805,10 @@ Estados */
 .btn-limpiar-todo {
   flex: 1;
   padding: 10px 16px;
-  background: rgba(107, 114, 128, 0.1);
-  border: 1px solid rgba(107, 114, 128, 0.2);
+  background: rgba(110, 162, 179, 0.15);
+  border: 1px solid rgba(123, 189, 232, 0.3);
   border-radius: 8px;
-  color: #6b7280;
+  color: #BDD8E9;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -435,8 +816,8 @@ Estados */
 }
 
 .btn-limpiar-todo:hover {
-  background: rgba(107, 114, 128, 0.15);
-  color: #374151;
+  background: rgba(110, 162, 179, 0.25);
+  border-color: rgba(123, 189, 232, 0.4);
   transform: translateY(-1px);
 }
 
@@ -643,7 +1024,7 @@ Estados */
 .filtro-jurisdicciones {
   margin-bottom: 18px;
   padding-top: 12px;
-  border-top: 1px solid rgba(229, 231, 235, 0.8);
+  border-top: 1px solid rgba(123, 189, 232, 0.3);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -658,7 +1039,7 @@ Estados */
   margin-bottom: 10px;
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: #BDD8E9;
 }
 
 .titulo-left {
@@ -668,8 +1049,8 @@ Estados */
 }
 
 .collapse-jurisdicciones-btn {
-  background: rgba(243, 244, 246, 0.8);
-  border: 1px solid rgba(209, 213, 219, 0.5);
+  background: rgba(110, 162, 179, 0.15);
+  border: 1px solid rgba(123, 189, 232, 0.3);
   border-radius: 6px;
   padding: 4px;
   cursor: pointer;
@@ -677,16 +1058,16 @@ Estados */
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: #BDD8E9;
   min-width: 24px;
   height: 24px;
 }
 
 .collapse-jurisdicciones-btn:hover {
-  background: rgba(229, 231, 235, 0.8);
-  color: #374151;
+  background: rgba(110, 162, 179, 0.25);
+  color: #7BBDE8;
   transform: scale(1.05);
-  border-color: rgba(156, 163, 175, 0.8);
+  border-color: rgba(123, 189, 232, 0.4);
 }
 
 .collapse-jurisdicciones-btn:active {
@@ -714,21 +1095,21 @@ Estados */
 }
 
 .jurisdicciones-container::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 
 .jurisdicciones-container::-webkit-scrollbar-track {
-  background: rgba(243, 244, 246, 0.5);
-  border-radius: 2px;
+  background: rgba(0, 29, 57, 0.3);
+  border-radius: 3px;
 }
 
 .jurisdicciones-container::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.5);
-  border-radius: 2px;
+  background: rgba(110, 162, 179, 0.4);
+  border-radius: 3px;
 }
 
 .jurisdicciones-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.8);
+  background: rgba(123, 189, 232, 0.6);
 }
 
 .jurisdiccion-checkbox {
@@ -740,13 +1121,13 @@ Estados */
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 13px;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 29, 57, 0.3);
   border: 1px solid transparent;
 }
 
 .jurisdiccion-checkbox:hover {
-  background: rgba(243, 244, 246, 0.8);
-  border-color: rgba(209, 213, 219, 0.5);
+  background: rgba(110, 162, 179, 0.15);
+  border-color: rgba(123, 189, 232, 0.3);
   transform: translateX(2px);
 }
 
@@ -757,18 +1138,19 @@ Estados */
 .checkbox-custom {
   width: 16px;
   height: 16px;
-  border: 2px solid #d1d5db;
+  border: 2px solid rgba(189, 216, 233, 0.4);
   border-radius: 4px;
   position: relative;
   transition: all 0.2s ease;
   flex-shrink: 0;
-  background: white;
+  background: rgba(0, 29, 57, 0.5);
 }
 
 .jurisdiccion-checkbox input[type="checkbox"]:checked + .checkbox-custom {
-  background: #37a4b7;
-  border-color: #37a4b7;
+  background: linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%);
+  border-color: #6EA2B3;
   transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(110, 162, 179, 0.35);
 }
 
 .jurisdiccion-checkbox input[type="checkbox"]:checked + .checkbox-custom::after {
@@ -784,18 +1166,19 @@ Estados */
 .jurisdiccion-nombre {
   flex: 1;
   font-weight: 500;
-  color: #374151;
+  color: #BDD8E9;
 }
 
 .jurisdiccion-count {
-  color: #6b7280;
+  color: #7BBDE8;
   font-size: 11px;
-  font-weight: 500;
-  background: rgba(243, 244, 246, 0.8);
+  font-weight: 600;
+  background: rgba(0, 29, 57, 0.5);
   padding: 2px 6px;
   border-radius: 10px;
   min-width: 20px;
   text-align: center;
+  border: 1px solid rgba(123, 189, 232, 0.3);
 }
 
 /* Modo Google Maps para jurisdicciones */

@@ -3,7 +3,7 @@ import { ChevronUp, ChevronDown, Search, Trash2 } from 'lucide-react';
 import './ControlBusqueda.css';
 import { logger } from '../../../utils/logger.js';
 
-const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet' }) => {
+const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', topPosition = 10 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [cargando, setCargando] = useState(false);
@@ -140,7 +140,10 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet' }) 
   if (!visible) return null;
 
   return (
-    <div className={`control-busqueda ${mapType}-mode ${isCollapsed ? 'collapsed' : ''}`}>
+    <div
+      className={`control-busqueda ${mapType}-mode ${isCollapsed ? 'collapsed' : ''}`}
+      style={{ top: `${topPosition}px` }}
+    >
       <div className="control-busqueda-header" onClick={toggleCollapse}>
         <div className="header-content">
           <h3>Búsqueda en SJL</h3>

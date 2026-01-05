@@ -26,123 +26,74 @@ const crearIconoVecinal = (marca, modo) => {
 
   const config = configuracion[marca] || configuracion.DAHUA;
 
-  // Icono según el modo (FIXED, DOME, BOTH)
-  let iconoSvg = '';
-  if (modo === 'DOME') {
-    // Cámara tipo domo con contorno negro y brillo de color
-    iconoSvg = `
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <filter id="${config.filterId}" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
+  // Nuevo icono moderno de cámara de seguridad tipo domo/bala
+  const iconoSvg = `
+    <svg width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="${config.filterId}" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+        <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#e8edf2;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#c5d3e0;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="lensGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#4a5568;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#1a202c;stop-opacity:1" />
+        </linearGradient>
+      </defs>
 
-        <!-- Brillo de fondo -->
-        <ellipse cx="16" cy="17" rx="11" ry="10" fill="${config.glowColor}" opacity="${config.glowOpacity}" filter="url(#${config.filterId})"/>
+      <!-- Brillo de fondo -->
+      <ellipse cx="32" cy="32" rx="22" ry="20" fill="${config.glowColor}" opacity="${config.glowOpacity}" filter="url(#${config.filterId})"/>
 
-        <!-- Parte superior -->
-        <path d="M 8 11 L 8 14 L 24 14 L 24 11 C 24 10.5 23.5 10 23 10 L 9 10 C 8.5 10 8 10.5 8 11 Z" fill="#f5f5f5" stroke="#1f2937" stroke-width="1.5"/>
+      <!-- Base de montaje superior -->
+      <rect x="20" y="14" width="24" height="6" rx="2" fill="url(#bodyGradient)" stroke="#334155" stroke-width="1.5"/>
 
-        <!-- Líneas decorativas -->
-        <line x1="9" y1="12" x2="16" y2="12" stroke="#9ca3af" stroke-width="1"/>
-        <line x1="18" y1="12" x2="23" y2="12" stroke="#9ca3af" stroke-width="1"/>
+      <!-- Líneas de ventilación en la base -->
+      <line x1="24" y1="17" x2="26" y2="17" stroke="#64748b" stroke-width="0.8" stroke-linecap="round"/>
+      <line x1="29" y1="17" x2="31" y2="17" stroke="#64748b" stroke-width="0.8" stroke-linecap="round"/>
+      <line x1="34" y1="17" x2="36" y2="17" stroke="#64748b" stroke-width="0.8" stroke-linecap="round"/>
+      <line x1="39" y1="17" x2="41" y2="17" stroke="#64748b" stroke-width="0.8" stroke-linecap="round"/>
 
-        <!-- Base domo -->
-        <path d="M 8 14 L 8 19 C 8 22 11.5 24.5 16 24.5 C 20.5 24.5 24 22 24 19 L 24 14 Z" fill="#e5e7eb" stroke="#1f2937" stroke-width="1.5"/>
+      <!-- Cuerpo principal tipo domo -->
+      <path d="M 20 20 L 20 32 C 20 38 25 44 32 44 C 39 44 44 38 44 32 L 44 20 Z"
+            fill="url(#bodyGradient)"
+            stroke="#334155"
+            stroke-width="2"/>
 
-        <!-- Anillo del lente -->
-        <circle cx="16" cy="19" r="4" fill="#d1d5db" stroke="#1f2937" stroke-width="1.2"/>
+      <!-- Anillo decorativo del lente -->
+      <circle cx="32" cy="32" r="10" fill="#94a3b8" stroke="#334155" stroke-width="1.5"/>
 
-        <!-- Lente central -->
-        <circle cx="16" cy="19" r="2.5" fill="#374151" stroke="#1f2937" stroke-width="1"/>
+      <!-- Lente principal con gradiente -->
+      <circle cx="32" cy="32" r="8" fill="url(#lensGradient)" stroke="#1e293b" stroke-width="1.5"/>
 
-        <!-- Reflejo -->
-        <ellipse cx="17" cy="18" rx="0.8" ry="1" fill="#ffffff" opacity="0.7"/>
+      <!-- Reflejo del lente (círculo interior) -->
+      <circle cx="32" cy="32" r="5" fill="#0f172a"/>
 
-        <!-- Centro del lente -->
-        <circle cx="16" cy="19" r="1.3" fill="#111827"/>
-      </svg>
-    `;
-  } else if (modo === 'BOTH') {
-    // Cámara mixta (fixed + dome) con contorno negro y brillo de color
-    iconoSvg = `
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <filter id="${config.filterId}-both" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
+      <!-- Reflejo de luz en el lente -->
+      <ellipse cx="34" cy="30" rx="2.5" ry="3.5" fill="#ffffff" opacity="0.4"/>
+      <ellipse cx="35" cy="29" rx="1" ry="1.5" fill="#ffffff" opacity="0.7"/>
 
-        <!-- Brillo de fondo -->
-        <ellipse cx="16" cy="17" rx="11" ry="10" fill="${config.glowColor}" opacity="${config.glowOpacity}" filter="url(#${config.filterId}-both)"/>
+      <!-- Detalles laterales del cuerpo -->
+      <circle cx="24" cy="26" r="1.5" fill="#64748b" opacity="0.6"/>
+      <circle cx="40" cy="26" r="1.5" fill="#64748b" opacity="0.6"/>
 
-        <!-- Cámara fija superior -->
-        <rect x="10" y="8" width="12" height="6" rx="1" fill="#e5e7eb" stroke="#1f2937" stroke-width="1.5"/>
-        <rect x="13" y="10" width="6" height="2.5" rx="0.5" fill="#d1d5db" stroke="#1f2937" stroke-width="0.8"/>
-        <circle cx="16" cy="11" r="1" fill="#374151"/>
-
-        <!-- Base domo inferior -->
-        <path d="M 12 14 L 12 18 C 12 20 13.8 21.5 16 21.5 C 18.2 21.5 20 20 20 18 L 20 14 Z" fill="#e5e7eb" stroke="#1f2937" stroke-width="1.5"/>
-
-        <!-- Lente del domo -->
-        <circle cx="16" cy="17.5" r="2.5" fill="#d1d5db" stroke="#1f2937" stroke-width="1"/>
-        <circle cx="16" cy="17.5" r="1.5" fill="#374151"/>
-        <ellipse cx="16.5" cy="17" rx="0.5" ry="0.7" fill="#ffffff" opacity="0.7"/>
-      </svg>
-    `;
-  } else {
-    // Cámara tipo FIXED (por defecto) con contorno negro y brillo de color
-    iconoSvg = `
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <filter id="${config.filterId}-fixed" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-
-        <!-- Brillo de fondo -->
-        <ellipse cx="16" cy="16" rx="11" ry="9" fill="${config.glowColor}" opacity="${config.glowOpacity}" filter="url(#${config.filterId}-fixed)"/>
-
-        <!-- Cuerpo de la cámara -->
-        <rect x="8" y="10" width="16" height="12" rx="2" fill="#e5e7eb" stroke="#1f2937" stroke-width="1.5"/>
-
-        <!-- Pantalla/lente frontal -->
-        <rect x="11" y="13" width="10" height="6" rx="1" fill="#d1d5db" stroke="#1f2937" stroke-width="1"/>
-
-        <!-- Lente central -->
-        <circle cx="16" cy="16" r="2.5" fill="#374151" stroke="#1f2937" stroke-width="1"/>
-        <circle cx="16" cy="16" r="1.3" fill="#111827"/>
-
-        <!-- Reflejo del lente -->
-        <ellipse cx="16.8" cy="15.5" rx="0.6" ry="0.8" fill="#ffffff" opacity="0.7"/>
-
-        <!-- Soporte -->
-        <rect x="6" y="18" width="2" height="5" rx="1" fill="#9ca3af" stroke="#1f2937" stroke-width="1"/>
-
-        <!-- LED indicador -->
-        <circle cx="21" cy="13" r="0.8" fill="#22c55e" opacity="0.8"/>
-      </svg>
-    `;
-  }
+      <!-- LED indicador -->
+      <circle cx="22" cy="23" r="1.2" fill="#22c55e" opacity="0.9">
+        <animate attributeName="opacity" values="0.9;0.3;0.9" dur="2s" repeatCount="indefinite"/>
+      </circle>
+    </svg>
+  `;
 
   const html = `
     <div class="camara-vecinal-marker" style="
       position: relative;
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -154,9 +105,9 @@ const crearIconoVecinal = (marca, modo) => {
 
   return new L.DivIcon({
     html: html,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -18],
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -20],
     className: 'custom-camara-vecinal-icon'
   });
 };
