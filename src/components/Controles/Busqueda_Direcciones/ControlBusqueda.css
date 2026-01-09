@@ -1,9 +1,9 @@
 .control-busqueda {
   position: fixed;
-  top: 10px;
   left: 85px;
   z-index: 2000;
   width: 350px;
+  max-height: calc(100vh - 100px);
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 12px;
@@ -11,17 +11,18 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Posición para modo Leaflet (comportamiento por defecto) */
 .control-busqueda.leaflet-mode {
-  top: 10px;
   left: 85px;
 }
 
 /* Posición para modo Google Maps - evitar controles de Google */
 .control-busqueda.google-mode {
-  top: 85px;
   left: 10px;
   /* Alejado de los controles de zoom de Google Maps */
 }
@@ -98,7 +99,8 @@
 
 .control-busqueda-content {
   padding: 20px;
-  max-height: 600px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }

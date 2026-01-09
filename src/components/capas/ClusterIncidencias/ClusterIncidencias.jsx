@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { LayerGroup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { logger } from '../../../utils';
+import { useMapContext } from '../../../context/MapContext';
 
 // Límite máximo de registros por tipología para optimizar rendimiento
 const MAX_REGISTROS_POR_TIPOLOGIA = 2000;
@@ -184,7 +185,8 @@ const obtenerColorCluster = cantidad => {
   }
 };
 
-const ClusterIncidencias = ({ visible, radioCluster = 50, filtros = null }) => {
+const ClusterIncidencias = ({ visible, filtros = null }) => {
+  const { radioCluster, tiposIncidenciasCluster, fechasClusters } = useMapContext();
   const [loading, setLoading] = useState(false);
   const map = useMap();
   const circlesRef = useRef([]);
@@ -286,37 +288,17 @@ const ClusterIncidencias = ({ visible, radioCluster = 50, filtros = null }) => {
     const debounceTimer = setTimeout(() => {
       setLoading(true);
 
-      // Función para obtener fechas por defecto (últimos 30 días)
-      const getDefaultDates = () => {
-        const today = new Date();
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(today.getDate() - 30);
-
-        const formatDate = (date) => {
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-          return `${year}-${month}-${day}`;
-        };
-
-        return {
-          start: formatDate(thirtyDaysAgo),
-          end: formatDate(today)
-        };
-      };
-
       // Función para construir URL del endpoint (con límite de registros)
       const buildURL = (tipo) => {
         const API_URL = import.meta.env.VITE_API_URL;
         if (!API_URL) {
           throw new Error('VITE_API_URL no está configurada. Por favor, define la variable de entorno.');
         }
-        const defaultDates = getDefaultDates();
         const params = new URLSearchParams();
 
         params.append('type', tipo);
-        params.append('start', filtros?.fechaInicio || defaultDates.start);
-        params.append('end', filtros?.fechaFin || defaultDates.end);
+        params.append('start', filtros?.fechaInicio || fechasClusters.fechaInicio);
+        params.append('end', filtros?.fechaFin || fechasClusters.fechaFin);
 
         // Agregar filtros opcionales si existen
         if (filtros?.Turno) params.append('shift', filtros.Turno);
@@ -336,16 +318,19 @@ const ClusterIncidencias = ({ visible, radioCluster = 50, filtros = null }) => {
     }
 
     // Tipologías a obtener: 1=Robo, 2=Extorsion, 3=Homicidio, 4=Feminicidio, 5=Sicariato, 6=Secuestro, 7=Drogas, 8=Barras
-    const tipologias = [
-      { tipo: 1, nombre: 'Robo' },
-      { tipo: 2, nombre: 'Extorsión' },
-      { tipo: 3, nombre: 'Homicidio' },
-      { tipo: 4, nombre: 'Feminicidio' },
-      { tipo: 5, nombre: 'Sicariato' },
-      { tipo: 6, nombre: 'Secuestro' },
-      { tipo: 7, nombre: 'Drogas' },
-      { tipo: 8, nombre: 'Barras' }
+    const todasTipologias = [
+      { tipo: 1, nombre: 'Robo', key: 'robos' },
+      { tipo: 2, nombre: 'Extorsión', key: 'extorsiones' },
+      { tipo: 3, nombre: 'Homicidio', key: 'homicidios' },
+      { tipo: 4, nombre: 'Feminicidio', key: 'feminicidios' },
+      { tipo: 5, nombre: 'Sicariato', key: 'sicariatos' },
+      { tipo: 6, nombre: 'Secuestro', key: 'secuestros' },
+      { tipo: 7, nombre: 'Drogas', key: 'drogas' },
+      { tipo: 8, nombre: 'Barras', key: 'barras' }
     ];
+
+    // Filtrar tipologías según los tipos activos en el contexto
+    const tipologias = todasTipologias.filter(tipologia => tiposIncidenciasCluster[tipologia.key]);
 
     // Hacer peticiones para todas las tipologías en paralelo
     Promise.all(
@@ -449,7 +434,7 @@ const ClusterIncidencias = ({ visible, radioCluster = 50, filtros = null }) => {
 
     // Cleanup del debounce timer
     return () => clearTimeout(debounceTimer);
-  }, [visible, radioCluster, filtros]);
+  }, [visible, radioCluster, filtros, tiposIncidenciasCluster, fechasClusters]);
 
   if (!visible) return null;
 

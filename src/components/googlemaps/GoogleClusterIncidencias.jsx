@@ -10,6 +10,7 @@ import {
   useBarrasQuery
 } from '../../hooks/useIncidenciasQuery';
 import { logger } from '../../utils/logger';
+import { useMapContext } from '../../context/MapContext';
 
 // Función para calcular distancia entre dos puntos en metros usando fórmula de Haversine
 const calcularDistancia = (lat1, lon1, lat2, lon2) => {
@@ -153,10 +154,18 @@ const obtenerColorCluster = cantidad => {
   }
 };
 
-const GoogleClusterIncidencias = ({ visible, radioCluster = 50, map, google, filtros = null }) => {
+const GoogleClusterIncidencias = ({ visible, map, google, filtros = null }) => {
+  const { radioCluster, tiposIncidenciasCluster, fechasClusters } = useMapContext();
   const [loading, setLoading] = useState(false);
   const circlesRef = useRef([]);
   const [infoWindow, setInfoWindow] = useState(null);
+
+  // Combinar filtros con las fechas del contexto
+  const filtrosConFechas = {
+    ...filtros,
+    fechaInicio: filtros?.fechaInicio || fechasClusters.fechaInicio,
+    fechaFin: filtros?.fechaFin || fechasClusters.fechaFin
+  };
 
   // Crear InfoWindow una sola vez
   useEffect(() => {
@@ -317,14 +326,14 @@ const GoogleClusterIncidencias = ({ visible, radioCluster = 50, map, google, fil
   }, []);
 
   // Usar los hooks para obtener datos de todas las tipologías
-  const robosQuery = useRobosQuery(filtros, visible);
-  const extorsionesQuery = useExtorsionesQuery(filtros, visible);
-  const homicidiosQuery = useHomicidiosQuery(filtros, visible);
-  const feminicidiosQuery = useFeminicidiosQuery(filtros, visible);
-  const sicariatosQuery = useSicariatosQuery(filtros, visible);
-  const secuestrosQuery = useSecuestrosQuery(filtros, visible);
-  const drogasQuery = useDrogasQuery(filtros, visible);
-  const barrasQuery = useBarrasQuery(filtros, visible);
+  const robosQuery = useRobosQuery(filtrosConFechas, visible);
+  const extorsionesQuery = useExtorsionesQuery(filtrosConFechas, visible);
+  const homicidiosQuery = useHomicidiosQuery(filtrosConFechas, visible);
+  const feminicidiosQuery = useFeminicidiosQuery(filtrosConFechas, visible);
+  const sicariatosQuery = useSicariatosQuery(filtrosConFechas, visible);
+  const secuestrosQuery = useSecuestrosQuery(filtrosConFechas, visible);
+  const drogasQuery = useDrogasQuery(filtrosConFechas, visible);
+  const barrasQuery = useBarrasQuery(filtrosConFechas, visible);
 
   // Efecto para procesar los datos cuando cambien
   useEffect(() => {
@@ -383,16 +392,16 @@ const GoogleClusterIncidencias = ({ visible, radioCluster = 50, map, google, fil
       barras: datosBarras.length,
     });
 
-    // Combinar todos los tipos de datos
+    // Combinar todos los tipos de datos, filtrando según los tipos activos
     const todosLosDatos = [
-      ...datosRobos.map(item => ({ ...item, Tipo: 'Robo' })),
-      ...datosExtorsiones.map(item => ({ ...item, Tipo: 'Extorsión' })),
-      ...datosHomicidios.map(item => ({ ...item, Tipo: 'Homicidio' })),
-      ...datosFeminicidios.map(item => ({ ...item, Tipo: 'Feminicidio' })),
-      ...datosSicariatos.map(item => ({ ...item, Tipo: 'Sicariato' })),
-      ...datosSecuestros.map(item => ({ ...item, Tipo: 'Secuestro' })),
-      ...datosDrogas.map(item => ({ ...item, Tipo: 'Drogas' })),
-      ...datosBarras.map(item => ({ ...item, Tipo: 'Barras' })),
+      ...(tiposIncidenciasCluster.robos ? datosRobos.map(item => ({ ...item, Tipo: 'Robo' })) : []),
+      ...(tiposIncidenciasCluster.extorsiones ? datosExtorsiones.map(item => ({ ...item, Tipo: 'Extorsión' })) : []),
+      ...(tiposIncidenciasCluster.homicidios ? datosHomicidios.map(item => ({ ...item, Tipo: 'Homicidio' })) : []),
+      ...(tiposIncidenciasCluster.feminicidios ? datosFeminicidios.map(item => ({ ...item, Tipo: 'Feminicidio' })) : []),
+      ...(tiposIncidenciasCluster.sicariatos ? datosSicariatos.map(item => ({ ...item, Tipo: 'Sicariato' })) : []),
+      ...(tiposIncidenciasCluster.secuestros ? datosSecuestros.map(item => ({ ...item, Tipo: 'Secuestro' })) : []),
+      ...(tiposIncidenciasCluster.drogas ? datosDrogas.map(item => ({ ...item, Tipo: 'Drogas' })) : []),
+      ...(tiposIncidenciasCluster.barras ? datosBarras.map(item => ({ ...item, Tipo: 'Barras' })) : []),
     ];
 
     logger.log('📊 Total de datos combinados:', todosLosDatos.length, 'registros');
@@ -457,8 +466,10 @@ const GoogleClusterIncidencias = ({ visible, radioCluster = 50, map, google, fil
     radioCluster,
     map,
     google,
-    filtros,
+    filtrosConFechas,
     infoWindow,
+    tiposIncidenciasCluster,
+    fechasClusters,
     robosQuery.data,
     extorsionesQuery.data,
     homicidiosQuery.data,

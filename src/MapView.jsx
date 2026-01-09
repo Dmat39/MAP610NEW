@@ -45,6 +45,9 @@ import GoogleCapaResiduos from './components/googlemaps/GoogleCapaResiduos';
 import GoogleCapaBusquedaDirecciones from './components/googlemaps/GoogleCapaBusquedaDirecciones';
 import GoogleCapaUbicadorPunto from './components/googlemaps/GoogleCapaUbicadorPuntos/GoogleCapaUbicadorPunto';
 import LeyendaCamaras from './components/capas/LeyendaCamaras/LeyendaCamaras';
+import ClusterIncidencias from './components/capas/ClusterIncidencias/ClusterIncidencias';
+import GoogleClusterIncidencias from './components/googlemaps/GoogleClusterIncidencias';
+import ControlClusters from './components/Controles/Mapa_Clusters/ControlClusters';
 
 const MapView = () => {
   const { user } = useAuth();
@@ -71,6 +74,7 @@ const MapView = () => {
     busquedaDirecciones: false,
     ubicadorPunto: false,
     rutas: false,
+    clusters: false,
   });
 
   const [payloadFiltros, setPayloadFiltros] = useState(null);
@@ -219,6 +223,7 @@ const MapView = () => {
     { name: 'secuestros', label: 'Secuestros', visible: capasVisibles.secuestros, restrictedForOperator: true },
     { name: 'drogas', label: 'Drogas', visible: capasVisibles.drogas, restrictedForOperator: true },
     { name: 'barras', label: 'Barras', visible: capasVisibles.barras, restrictedForOperator: true },
+    { name: 'clusters', label: 'Clusters de Incidencias', visible: capasVisibles.clusters, restrictedForOperator: true },
     {
       name: 'busquedaDirecciones',
       label: 'Búsqueda de Direcciones',
@@ -308,7 +313,7 @@ const MapView = () => {
         onLimpiarRuta={handleLimpiarRuta}
         rutaInfo={rutaInfo}
         mapType={mapType}
-        topPosition={capasVisibles.busquedaDirecciones ? 440 : 10}
+        topPosition={capasVisibles.busquedaDirecciones ? 450 : 10}
       />
       <ControlCamaras
         visible={capasVisibles.camaras}
@@ -319,8 +324,18 @@ const MapView = () => {
         onLimpiarSeleccion={handleLimpiarSeleccion}
         mapType={mapType}
         topPosition={
-          (capasVisibles.busquedaDirecciones ? 440 : 0) +
-          (capasVisibles.rutas ? 400 : 0) +
+          (capasVisibles.busquedaDirecciones ? 450 : 0) +
+          (capasVisibles.rutas ? 280 : 0) +
+          10
+        }
+      />
+      <ControlClusters
+        visible={capasVisibles.clusters}
+        mapType={mapType}
+        topPosition={
+          (capasVisibles.busquedaDirecciones ? 450 : 0) +
+          (capasVisibles.rutas ? 280 : 0) +
+          (capasVisibles.camaras ? 100 : 0) +
           10
         }
       />
@@ -361,6 +376,7 @@ const MapView = () => {
               <CapaBarras visible={capasVisibles.barras} filtros={filtrosBarras} />
             </>
           )}
+          <ClusterIncidencias visible={capasVisibles.clusters} />
           <CapaResiduos visible={capasVisibles.residuos} />
           <CapaDefensaCivil visible={capasVisibles.defensaCivil} />
           <CapaSostenimiento visible={capasVisibles.sostenimiento} />
@@ -405,6 +421,7 @@ const MapView = () => {
               <GoogleCapaBarras visible={capasVisibles.barras} filtros={filtrosBarras} />
             </>
           )}
+          <GoogleClusterIncidencias visible={capasVisibles.clusters} />
           <GoogleCapaResiduos visible={capasVisibles.residuos} />
           <GoogleCapaBusquedaDirecciones
             visible={capasVisibles.busquedaDirecciones}

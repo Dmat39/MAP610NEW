@@ -51,8 +51,9 @@ const SearchInput = ({ placeholder = 'Buscar...' }) => {
 
 const styles = {
   container: {
-    width: '100%',
-    maxWidth: '300px',
+    width: '240px',
+    minWidth: '200px',
+    flexShrink: 0,
   },
   inputWrapper: {
     position: 'relative',
