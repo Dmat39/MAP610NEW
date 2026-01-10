@@ -1,7 +1,6 @@
 /* Control de Cámaras - Diseño Moderno y Compacto */
 .control-camaras {
   position: fixed;
-  top: 10px;
   left: 85px;
   background: linear-gradient(135deg, rgba(0, 29, 57, 0.92) 0%, rgba(10, 65, 116, 0.85) 100%);
   backdrop-filter: blur(30px) saturate(150%);
@@ -10,7 +9,7 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 0 60px rgba(123, 189, 232, 0.15);
   z-index: 2000;
   width: 320px;
-  max-height: calc(100vh - 20px);
+  max-height: calc(100vh - 100px);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
@@ -97,7 +96,8 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-y: auto;
   overflow-x: hidden;
-  max-height: calc(100vh - 82px);
+  flex: 1;
+  min-height: 0;
 }
 
 .control-camaras-content::-webkit-scrollbar {

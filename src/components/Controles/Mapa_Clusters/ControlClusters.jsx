@@ -1,14 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
+import { useMapContext } from '../../../context/MapContext';
 import './ControlClusters.css';
 
-const ControlClusters = ({ visible, radioCluster, onRadioChange, mapType = 'leaflet' }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
+  const {
+    radioCluster,
+    setRadioCluster,
+    tiposIncidenciasCluster,
+    handleToggleTipoIncidenciaCluster,
+    fechasClusters,
+    handleFechasClustersChange
+  } = useMapContext();
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [estadisticas, setEstadisticas] = useState({
     totalClusters: 0,
     totalPuntos: 0,
     puntosClusteados: 0
   });
+
+  // Formatear fechas para mostrar (dd/mm/yyyy)
+  const formatDateDisplay = (dateStr) => {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
+  // Resetear a últimos 30 días
+  const resetearFechas = () => {
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    handleFechasClustersChange({
+      fechaInicio: formatDate(thirtyDaysAgo),
+      fechaFin: formatDate(today)
+    });
+  };
 
   useEffect(() => {
     const handleClusterStats = (event) => {
@@ -41,8 +76,52 @@ const ControlClusters = ({ visible, radioCluster, onRadioChange, mapType = 'leaf
           </button>
         </div>
       </div>
-      
+
       <div className={`control-clusters-content ${isCollapsed ? 'hidden' : ''}`}>
+        <div className="periodo-info">
+          <div className="periodo-header">
+            <span className="periodo-icon">📅</span>
+            <span className="periodo-label">Período de datos</span>
+          </div>
+
+          <div className="fechas-inputs">
+            <div className="fecha-input-group">
+              <label htmlFor="fecha-inicio">Desde</label>
+              <input
+                type="date"
+                id="fecha-inicio"
+                value={fechasClusters.fechaInicio}
+                onChange={(e) => handleFechasClustersChange({
+                  ...fechasClusters,
+                  fechaInicio: e.target.value
+                })}
+                className="fecha-input"
+                max={fechasClusters.fechaFin}
+              />
+            </div>
+
+            <div className="fecha-input-group">
+              <label htmlFor="fecha-fin">Hasta</label>
+              <input
+                type="date"
+                id="fecha-fin"
+                value={fechasClusters.fechaFin}
+                onChange={(e) => handleFechasClustersChange({
+                  ...fechasClusters,
+                  fechaFin: e.target.value
+                })}
+                className="fecha-input"
+                min={fechasClusters.fechaInicio}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+          </div>
+
+          <button className="btn-resetear-fechas" onClick={resetearFechas}>
+            🔄 Últimos 30 días
+          </button>
+        </div>
+
         <div className="radio-control">
           <label htmlFor="radio-slider">
             <strong>Radio de Clustering:</strong>
@@ -54,10 +133,80 @@ const ControlClusters = ({ visible, radioCluster, onRadioChange, mapType = 'leaf
               min="10"
               max="100"
               value={radioCluster}
-              onChange={(e) => onRadioChange(Number(e.target.value))}
+              onChange={(e) => setRadioCluster(Number(e.target.value))}
               className="radio-slider"
             />
             <span className="radio-value">{radioCluster}m</span>
+          </div>
+        </div>
+
+        <div className="filtros-incidencias">
+          <h4>🔍 Tipos de Incidencias</h4>
+          <div className="filtros-grid">
+            <label className="filtro-checkbox">
+              <input
+                type="checkbox"
+                checked={tiposIncidenciasCluster.robos}
+                onChange={() => handleToggleTipoIncidenciaCluster('robos')}
+              />
+              <span>Robos</span>
+            </label>
+            <label className="filtro-checkbox">
+              <input
+                type="checkbox"
+                checked={tiposIncidenciasCluster.extorsiones}
+                onChange={() => handleToggleTipoIncidenciaCluster('extorsiones')}
+              />
+              <span>Extorsiones</span>
+            </label>
+            <label className="filtro-checkbox">
+              <input
+                type="checkbox"
+                checked={tiposIncidenciasCluster.homicidios}
+                onChange={() => handleToggleTipoIncidenciaCluster('homicidios')}
+              />
+              <span>Homicidios</span>
+            </label>
+            <label className="filtro-checkbox">
+              <input
+                type="checkbox"
+                checked={tiposIncidenciasCluster.feminicidios}
+                onChange={() => handleToggleTipoIncidenciaCluster('feminicidios')}
+              />
+              <span>Feminicidios</span>
+            </label>
+            <label className="filtro-checkbox">
+              <input
+                type="checkbox"
+                checked={tiposIncidenciasCluster.sicariatos}
+                onChange={() => handleToggleTipoIncidenciaCluster('sicariatos')}
+              />
+              <span>Sicariatos</span>
+            </label>
+            <label className="filtro-checkbox">
+              <input
+                type="checkbox"
+                checked={tiposIncidenciasCluster.secuestros}
+                onChange={() => handleToggleTipoIncidenciaCluster('secuestros')}
+              />
+              <span>Secuestros</span>
+            </label>
+            <label className="filtro-checkbox">
+              <input
+                type="checkbox"
+                checked={tiposIncidenciasCluster.drogas}
+                onChange={() => handleToggleTipoIncidenciaCluster('drogas')}
+              />
+              <span>Drogas</span>
+            </label>
+            <label className="filtro-checkbox">
+              <input
+                type="checkbox"
+                checked={tiposIncidenciasCluster.barras}
+                onChange={() => handleToggleTipoIncidenciaCluster('barras')}
+              />
+              <span>Barras</span>
+            </label>
           </div>
         </div>
 

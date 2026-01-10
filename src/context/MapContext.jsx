@@ -47,6 +47,51 @@ export const MapProvider = ({ children }) => {
   const [filtrosExtorsion, setFiltrosExtorsion] = useState(null);
   const [filtrosCamaras, setFiltrosCamaras] = useState(null);
 
+  // Filtro de marcas de cámaras
+  const [marcasCamarasVisibles, setMarcasCamarasVisibles] = useState({
+    HIKVISION: true,
+    DAHUA: true
+  });
+
+  // Conteo de cámaras vecinales por marca
+  const [conteoCamarasVecinales, setConteoCamarasVecinales] = useState({
+    HIKVISION: 0,
+    DAHUA: 0
+  });
+
+  // Filtros para tipos de incidencias en clusters - todos activos por defecto
+  const [tiposIncidenciasCluster, setTiposIncidenciasCluster] = useState({
+    robos: true,
+    extorsiones: true,
+    homicidios: true,
+    feminicidios: true,
+    sicariatos: true,
+    secuestros: true,
+    drogas: true,
+    barras: true
+  });
+
+  // Fechas para clusters - últimos 30 días por defecto
+  const getDefaultDates = () => {
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    return {
+      fechaInicio: formatDate(thirtyDaysAgo),
+      fechaFin: formatDate(today)
+    };
+  };
+
+  const [fechasClusters, setFechasClusters] = useState(getDefaultDates());
+
   // ==================== BÚSQUEDAS Y SELECCIONES ====================
   const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
   const [resultadoSeleccionado, setResultadoSeleccionado] = useState(null);
@@ -206,6 +251,33 @@ export const MapProvider = ({ children }) => {
     setFiltrosCamaras(null);
   }, []);
 
+  /**
+   * Toggle de marca de cámara
+   */
+  const handleToggleMarcaCamara = useCallback((marca) => {
+    setMarcasCamarasVisibles(prev => ({
+      ...prev,
+      [marca]: !prev[marca]
+    }));
+  }, []);
+
+  /**
+   * Toggle de tipo de incidencia en clusters
+   */
+  const handleToggleTipoIncidenciaCluster = useCallback((tipo) => {
+    setTiposIncidenciasCluster(prev => ({
+      ...prev,
+      [tipo]: !prev[tipo]
+    }));
+  }, []);
+
+  /**
+   * Actualizar fechas de clusters
+   */
+  const handleFechasClustersChange = useCallback((fechas) => {
+    setFechasClusters(fechas);
+  }, []);
+
   // ==================== VALOR DEL CONTEXT ====================
   const value = {
     // Estado
@@ -225,11 +297,16 @@ export const MapProvider = ({ children }) => {
     seguimientoCamara,
     limpiarSeguimiento,
     camaraConVision,
+    marcasCamarasVisibles,
+    conteoCamarasVecinales,
+    tiposIncidenciasCluster,
+    fechasClusters,
 
     // Setters directos (para casos especiales)
     setCapasVisibles,
     setRadioCluster,
     setCamaraConVision,
+    setConteoCamarasVecinales,
 
     // Funciones de control
     handleToggleCapa,
@@ -246,6 +323,9 @@ export const MapProvider = ({ children }) => {
     handleSeguimientoCamara,
     handleLimpiarSeguimiento,
     handleLimpiarSeleccion,
+    handleToggleMarcaCamara,
+    handleToggleTipoIncidenciaCluster,
+    handleFechasClustersChange,
   };
 
   return <MapContext.Provider value={value}>{children}</MapContext.Provider>;

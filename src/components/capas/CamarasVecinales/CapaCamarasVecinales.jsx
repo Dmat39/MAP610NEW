@@ -3,10 +3,165 @@ import { useEffect, useState } from "react";
 import { Marker, Popup, Tooltip, LayerGroup } from "react-leaflet";
 import L from "leaflet";
 import { useMapLocationCopy } from "../../../hooks/useMapLocationCopy";
+import { useMapContext } from "../../../context/MapContext";
 import { logger } from "../../../utils/logger.js";
 import camarasVecinalesService from "../../../services/camarasVecinalesService";
 import "../../../components/capas/CamarasMunicipales/LocationCopyPopup.css";
 import "./CapaCamarasVecinales.css";
+
+// Componente para el contenido del popup con credenciales ocultables
+const PopupContent = ({ camara }) => {
+  const [mostrarCredenciales, setMostrarCredenciales] = useState(false);
+
+  return (
+    <div style={{
+      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+      fontSize: "12px",
+      lineHeight: "1.4"
+    }}>
+      {/* Header compacto */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "6px",
+        marginBottom: "8px",
+        paddingBottom: "6px",
+        borderBottom: "1px solid #e5e7eb"
+      }}>
+        <span style={{ fontSize: "18px" }}>📹</span>
+        <div>
+          <div style={{
+            fontWeight: "700",
+            fontSize: "13px",
+            color: "#1f2937"
+          }}>
+            {camara.neighbor}
+          </div>
+        </div>
+      </div>
+
+      {/* Dirección compacta */}
+      <div style={{
+        fontSize: "11px",
+        color: "#374151",
+        marginBottom: "8px",
+        display: "flex",
+        gap: "4px",
+        alignItems: "start"
+      }}>
+        <span style={{ fontSize: "12px", marginTop: "1px" }}>📍</span>
+        <span>{camara.address}</span>
+      </div>
+
+      {/* Botón para mostrar credenciales */}
+      <button
+        onClick={() => setMostrarCredenciales(!mostrarCredenciales)}
+        style={{
+          width: "100%",
+          padding: "6px",
+          background: mostrarCredenciales ? "#f1f5f9" : "#3b82f6",
+          color: mostrarCredenciales ? "#475569" : "#fff",
+          border: "1px solid #cbd5e1",
+          borderRadius: "6px",
+          fontSize: "11px",
+          fontWeight: "600",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "4px",
+          transition: "all 0.2s"
+        }}
+      >
+        <span>{mostrarCredenciales ? "🔒" : "🔐"}</span>
+        {mostrarCredenciales ? "Ocultar Credenciales" : "Ver Credenciales"}
+      </button>
+
+      {/* Credenciales (solo visible si mostrarCredenciales es true) */}
+      {mostrarCredenciales && (
+        <div style={{
+          background: "#f1f5f9",
+          padding: "8px",
+          borderRadius: "6px",
+          border: "1px solid #cbd5e1",
+          marginTop: "8px"
+        }}>
+          {/* Usuario */}
+          <div style={{ marginBottom: "5px" }}>
+            <div style={{
+              fontSize: "9px",
+              fontWeight: "600",
+              color: "#64748b",
+              marginBottom: "2px"
+            }}>
+              Usuario
+            </div>
+            <div style={{
+              fontSize: "11px",
+              fontWeight: "600",
+              color: "#0f172a",
+              fontFamily: "monospace",
+              background: "#fff",
+              padding: "3px 6px",
+              borderRadius: "3px",
+              border: "1px solid #cbd5e1"
+            }}>
+              {camara.user || 'N/A'}
+            </div>
+          </div>
+
+          {/* Password */}
+          <div style={{ marginBottom: "5px" }}>
+            <div style={{
+              fontSize: "9px",
+              fontWeight: "600",
+              color: "#64748b",
+              marginBottom: "2px"
+            }}>
+              Contraseña
+            </div>
+            <div style={{
+              fontSize: "11px",
+              fontWeight: "600",
+              color: "#0f172a",
+              fontFamily: "monospace",
+              background: "#fff",
+              padding: "3px 6px",
+              borderRadius: "3px",
+              border: "1px solid #cbd5e1"
+            }}>
+              {camara.password || 'N/A'}
+            </div>
+          </div>
+
+          {/* Serial */}
+          <div>
+            <div style={{
+              fontSize: "9px",
+              fontWeight: "600",
+              color: "#64748b",
+              marginBottom: "2px"
+            }}>
+              Serial (SN)
+            </div>
+            <div style={{
+              fontSize: "11px",
+              fontWeight: "600",
+              color: "#0f172a",
+              fontFamily: "monospace",
+              background: "#fff",
+              padding: "3px 6px",
+              borderRadius: "3px",
+              border: "1px solid #cbd5e1"
+            }}>
+              {camara.serial || 'N/A'}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Función para crear icono personalizado según la marca
 const crearIconoVecinal = (marca, modo) => {
@@ -117,6 +272,9 @@ const CapaCamarasVecinales = ({ visible }) => {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
+  // Obtener el filtro de marcas del contexto
+  const { marcasCamarasVisibles, setConteoCamarasVecinales } = useMapContext();
+
   // Usar el hook para habilitar la copia de ubicaciones
   useMapLocationCopy();
 
@@ -146,6 +304,20 @@ const CapaCamarasVecinales = ({ visible }) => {
 
     cargarCamaras();
   }, []);
+
+  // Calcular y actualizar el conteo de cámaras por marca
+  useEffect(() => {
+    const conteo = camaras.reduce((acc, camara) => {
+      if (camara.brand === 'HIKVISION') {
+        acc.HIKVISION++;
+      } else if (camara.brand === 'DAHUA') {
+        acc.DAHUA++;
+      }
+      return acc;
+    }, { HIKVISION: 0, DAHUA: 0 });
+
+    setConteoCamarasVecinales(conteo);
+  }, [camaras, setConteoCamarasVecinales]);
 
   if (!visible) return null;
 
@@ -191,17 +363,19 @@ const CapaCamarasVecinales = ({ visible }) => {
     );
   }
 
+  // Filtrar cámaras por marca
+  const camarasFiltradas = camaras.filter(camara => {
+    // Si la marca de la cámara está visible en el filtro, mostrarla
+    return marcasCamarasVisibles[camara.brand];
+  });
+
   return (
     <LayerGroup>
-      {camaras.map((camara, idx) => {
+      {camarasFiltradas.map((camara, idx) => {
         const lat = camara.latitude;
         const lng = camara.longitude;
 
         if (!lat || !lng) return null;
-
-        // Determinar el color según la marca
-        const colorMarca = camara.brand === "HIKVISION" ? "#ef4444" : "#3b82f6";
-        const bgMarca = camara.brand === "HIKVISION" ? "#fef2f2" : "#eff6ff";
 
         return (
           <Marker
@@ -209,135 +383,8 @@ const CapaCamarasVecinales = ({ visible }) => {
             position={[lat, lng]}
             icon={crearIconoVecinal(camara.brand, camara.mode)}
           >
-            <Popup maxWidth={320} className="custom-popup-vecinal">
-              <div style={{
-                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-                fontSize: "14px",
-                lineHeight: "1.6"
-              }}>
-                {/* Header */}
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  marginBottom: "12px",
-                  paddingBottom: "10px",
-                  borderBottom: "2px solid #e5e7eb"
-                }}>
-                  <div style={{
-                    fontSize: "28px",
-                    filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
-                  }}>📹</div>
-                  <div>
-                    <div style={{
-                      fontWeight: "700",
-                      fontSize: "16px",
-                      color: "#1f2937",
-                      marginBottom: "2px"
-                    }}>
-                      Cámara Vecinal
-                    </div>
-                    <div style={{
-                      fontSize: "12px",
-                      color: "#6b7280",
-                      fontWeight: "500"
-                    }}>
-                      {camara.neighbor}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Información */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {/* Dirección */}
-                  <div style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "8px"
-                  }}>
-                    <span style={{ fontSize: "16px", marginTop: "2px" }}>📍</span>
-                    <div>
-                      <div style={{
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        color: "#6b7280",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px",
-                        marginBottom: "2px"
-                      }}>
-                        Dirección
-                      </div>
-                      <div style={{
-                        fontSize: "13px",
-                        color: "#374151",
-                        fontWeight: "500"
-                      }}>
-                        {camara.address}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Detalles técnicos */}
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "8px",
-                    marginTop: "4px"
-                  }}>
-                    {/* Marca */}
-                    <div style={{
-                      background: bgMarca,
-                      padding: "8px 10px",
-                      borderRadius: "8px",
-                      border: `1px solid ${colorMarca}20`
-                    }}>
-                      <div style={{
-                        fontSize: "10px",
-                        fontWeight: "600",
-                        color: "#6b7280",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px",
-                        marginBottom: "3px"
-                      }}>
-                        Marca
-                      </div>
-                      <div style={{
-                        fontSize: "13px",
-                        fontWeight: "700",
-                        color: colorMarca
-                      }}>
-                        {camara.brand}
-                      </div>
-                    </div>
-
-                    {/* Modo */}
-                    <div style={{
-                      background: "#f0fdf4",
-                      padding: "8px 10px",
-                      borderRadius: "8px",
-                      border: "1px solid #10b98120"
-                    }}>
-                      <div style={{
-                        fontSize: "10px",
-                        fontWeight: "600",
-                        color: "#6b7280",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px",
-                        marginBottom: "3px"
-                      }}>
-                        Modo
-                      </div>
-                      <div style={{
-                        fontSize: "13px",
-                        fontWeight: "700",
-                        color: "#10b981"
-                      }}>
-                        {camara.mode}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <Popup maxWidth={260} className="custom-popup-vecinal">
+              <PopupContent camara={camara} />
             </Popup>
           </Marker>
         );

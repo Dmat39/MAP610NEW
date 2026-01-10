@@ -1,0 +1,125 @@
+/* LeyendaCamarasMunicipales.css */
+.leyenda-camaras-municipales {
+  position: fixed;
+  bottom: 180px;
+  right: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  z-index: 1000;
+  min-width: 220px;
+  transition: right 0.3s ease, bottom 0.3s ease;
+}
+
+.leyenda-camaras-municipales.panel-expanded {
+  right: 310px;
+}
+
+.leyenda-municipales-header {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.leyenda-municipales-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.leyenda-municipales-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.leyenda-municipales-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.leyenda-municipales-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.leyenda-municipales-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #f9fafb;
+  transition: background 0.2s ease;
+}
+
+.leyenda-municipales-item:hover {
+  background: #f3f4f6;
+}
+
+.leyenda-municipales-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.leyenda-municipales-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.leyenda-municipales-tipo {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  line-height: 1.2;
+}
+
+.leyenda-municipales-desc {
+  font-size: 10px;
+  font-weight: 500;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .leyenda-camaras-municipales {
+    right: 10px;
+    bottom: 260px;
+    min-width: 180px;
+    padding: 12px;
+  }
+
+  .leyenda-camaras-municipales.panel-expanded {
+    right: 10px;
+    bottom: 260px;
+  }
+
+  .leyenda-municipales-header h4 {
+    font-size: 12px;
+  }
+
+  .leyenda-municipales-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .leyenda-municipales-tipo {
+    font-size: 11px;
+  }
+
+  .leyenda-municipales-desc {
+    font-size: 9px;
+  }
+}
