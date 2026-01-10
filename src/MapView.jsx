@@ -45,6 +45,7 @@ import GoogleCapaResiduos from './components/googlemaps/GoogleCapaResiduos';
 import GoogleCapaBusquedaDirecciones from './components/googlemaps/GoogleCapaBusquedaDirecciones';
 import GoogleCapaUbicadorPunto from './components/googlemaps/GoogleCapaUbicadorPuntos/GoogleCapaUbicadorPunto';
 import LeyendaCamaras from './components/capas/LeyendaCamaras/LeyendaCamaras';
+import LeyendaCamarasMunicipales from './components/capas/LeyendaCamarasMunicipales/LeyendaCamarasMunicipales';
 import ClusterIncidencias from './components/capas/ClusterIncidencias/ClusterIncidencias';
 import GoogleClusterIncidencias from './components/googlemaps/GoogleClusterIncidencias';
 import ControlClusters from './components/Controles/Mapa_Clusters/ControlClusters';
@@ -341,8 +342,17 @@ const MapView = () => {
       />
 
       {mapType === 'leaflet' ? (
-        <MapContainer center={mapCenter} zoom={mapZoom} style={mapStyle}>
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <MapContainer
+          center={mapCenter}
+          zoom={mapZoom}
+          style={mapStyle}
+          minZoom={5}
+          maxZoom={20}
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={20}
+          />
           <CapaJurisdiccion
             ubicadorActivo={
               capasVisibles.ubicadorPunto ||
@@ -440,10 +450,16 @@ const MapView = () => {
         </GoogleMapWrapper>
       )}
 
-          {/* Leyenda de Cámaras */}
+          {/* Leyenda de Cámaras Vecinales */}
           <LeyendaCamaras
             camarasVecinalesVisible={capasVisibles.camarasVecinales}
             camarasMunicipalesVisible={capasVisibles.camaras}
+            isPanelExpanded={isPanelExpanded}
+          />
+
+          {/* Leyenda de Cámaras Municipales */}
+          <LeyendaCamarasMunicipales
+            visible={capasVisibles.camaras}
             isPanelExpanded={isPanelExpanded}
           />
         </div>

@@ -4,10 +4,10 @@ import { useMapContext } from '../../../context/MapContext';
 import './LeyendaCamaras.css';
 
 const LeyendaCamaras = ({ camarasVecinalesVisible, camarasMunicipalesVisible, isPanelExpanded }) => {
-    const { marcasCamarasVisibles, handleToggleMarcaCamara } = useMapContext();
+    const { marcasCamarasVisibles, handleToggleMarcaCamara, conteoCamarasVecinales } = useMapContext();
 
-    // No mostrar la leyenda si las cámaras vecinales no están visibles
-    if (!camarasVecinalesVisible) {
+    // No mostrar la leyenda si ninguna capa de cámaras está visible
+    if (!camarasVecinalesVisible && !camarasMunicipalesVisible) {
         return null;
     }
 
@@ -28,9 +28,8 @@ const LeyendaCamaras = ({ camarasVecinalesVisible, camarasMunicipalesVisible, is
                                 checked={marcasCamarasVisibles.HIKVISION}
                                 onChange={() => handleToggleMarcaCamara('HIKVISION')}
                                 className="leyenda-checkbox"
-                                disabled={true}
                             />
-                            <label htmlFor="marca-hikvision" className="leyenda-item-label" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+                            <label htmlFor="marca-hikvision" className="leyenda-item-label">
                                 <div className="leyenda-color-badge" style={{
                                     background: '#fef2f2',
                                     border: '2px solid #ef4444',
@@ -42,7 +41,7 @@ const LeyendaCamaras = ({ camarasVecinalesVisible, camarasMunicipalesVisible, is
                                 }}>
                                     HIK
                                 </div>
-                                <span>HIKVISION</span>
+                                <span>HIKVISION ({conteoCamarasVecinales.HIKVISION})</span>
                             </label>
                         </div>
                         <div className="leyenda-item">
@@ -65,7 +64,7 @@ const LeyendaCamaras = ({ camarasVecinalesVisible, camarasMunicipalesVisible, is
                                 }}>
                                     DAH
                                 </div>
-                                <span>DAHUA</span>
+                                <span>DAHUA ({conteoCamarasVecinales.DAHUA})</span>
                             </label>
                         </div>
                     </div>

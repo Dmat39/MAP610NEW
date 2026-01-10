@@ -47,10 +47,16 @@ export const MapProvider = ({ children }) => {
   const [filtrosExtorsion, setFiltrosExtorsion] = useState(null);
   const [filtrosCamaras, setFiltrosCamaras] = useState(null);
 
-  // Filtro de marcas de cámaras - HIKVISION bloqueadas temporalmente
+  // Filtro de marcas de cámaras
   const [marcasCamarasVisibles, setMarcasCamarasVisibles] = useState({
-    HIKVISION: false,
+    HIKVISION: true,
     DAHUA: true
+  });
+
+  // Conteo de cámaras vecinales por marca
+  const [conteoCamarasVecinales, setConteoCamarasVecinales] = useState({
+    HIKVISION: 0,
+    DAHUA: 0
   });
 
   // Filtros para tipos de incidencias en clusters - todos activos por defecto
@@ -292,6 +298,7 @@ export const MapProvider = ({ children }) => {
     limpiarSeguimiento,
     camaraConVision,
     marcasCamarasVisibles,
+    conteoCamarasVecinales,
     tiposIncidenciasCluster,
     fechasClusters,
 
@@ -299,6 +306,7 @@ export const MapProvider = ({ children }) => {
     setCapasVisibles,
     setRadioCluster,
     setCamaraConVision,
+    setConteoCamarasVecinales,
 
     // Funciones de control
     handleToggleCapa,

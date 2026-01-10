@@ -142,7 +142,7 @@ const PopupContent = ({ camara }) => {
               color: "#64748b",
               marginBottom: "2px"
             }}>
-              Serial
+              Serial (SN)
             </div>
             <div style={{
               fontSize: "11px",
@@ -273,7 +273,7 @@ const CapaCamarasVecinales = ({ visible }) => {
   const [error, setError] = useState(null);
 
   // Obtener el filtro de marcas del contexto
-  const { marcasCamarasVisibles } = useMapContext();
+  const { marcasCamarasVisibles, setConteoCamarasVecinales } = useMapContext();
 
   // Usar el hook para habilitar la copia de ubicaciones
   useMapLocationCopy();
@@ -304,6 +304,20 @@ const CapaCamarasVecinales = ({ visible }) => {
 
     cargarCamaras();
   }, []);
+
+  // Calcular y actualizar el conteo de cámaras por marca
+  useEffect(() => {
+    const conteo = camaras.reduce((acc, camara) => {
+      if (camara.brand === 'HIKVISION') {
+        acc.HIKVISION++;
+      } else if (camara.brand === 'DAHUA') {
+        acc.DAHUA++;
+      }
+      return acc;
+    }, { HIKVISION: 0, DAHUA: 0 });
+
+    setConteoCamarasVecinales(conteo);
+  }, [camaras, setConteoCamarasVecinales]);
 
   if (!visible) return null;
 
