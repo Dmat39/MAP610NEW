@@ -298,7 +298,7 @@ export const createSostenimientoIcon = (size = 36) => {
   });
 };
 
-// CSS para animaciones (debe ser agregado globalmente)
+// CSS para estilos (debe ser agregado globalmente)
 export const ADAPTIVE_ICON_STYLES = `
   .custom-adaptive-marker {
     background: transparent !important;
@@ -308,18 +308,5 @@ export const ADAPTIVE_ICON_STYLES = `
   .adaptive-marker-container .marker-circle:hover {
     transform: scale(1.15);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-  }
-
-  .adaptive-marker-container {
-    animation: markerPulse 2s ease-in-out infinite;
-  }
-
-  @keyframes markerPulse {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-3px);
-    }
   }
 `;

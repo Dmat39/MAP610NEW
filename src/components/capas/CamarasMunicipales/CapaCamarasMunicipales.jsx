@@ -7,6 +7,7 @@ import { useMapLocationCopy } from '../../../hooks/useMapLocationCopy';
 import { getAngleFromCoords, isValidReferencia, parseReferencia, generateVisionField } from '../../../utils';
 import { logger } from '../../../utils/logger.js';
 import camarasService from '../../../services/camarasService';
+import { cargarJurisdicciones, obtenerJurisdiccion } from '../../../utils/jurisdiccionUtils';
 
 import L from 'leaflet';
 
@@ -147,9 +148,14 @@ const CapaCamarasMunicipales = ({
         setCargando(true);
         setError(null);
 
-        // Obtener TODAS las cámaras municipales (sin límite de paginación)
-        const resultado = await camarasService.getCamarasMunicipales();
+        // Cargar jurisdicciones y cámaras en paralelo
+        const [jurisdicciones, resultado] = await Promise.all([
+          cargarJurisdicciones(),
+          camarasService.getCamarasMunicipales()
+        ]);
+
         logger.log(`✅ ${resultado.camaras.length} cámaras municipales cargadas desde el backend (Total: ${resultado.count})`);
+        logger.log(`🗺️ ${jurisdicciones.length} jurisdicciones cargadas`);
 
         // Transformar los datos de la API al formato GeoJSON que espera el componente
         const camarasTransformadas = resultado.camaras.map(camara => {
@@ -173,6 +179,9 @@ const CapaCamarasMunicipales = ({
               anguloVision = '180';
           }
 
+          // Determinar la jurisdicción basándose en las coordenadas
+          const jurisdiccion = obtenerJurisdiccion(camara.latitude, camara.longitude, jurisdicciones);
+
           return {
             geometry: {
               coordinates: [camara.longitude, camara.latitude],
@@ -185,7 +194,7 @@ const CapaCamarasMunicipales = ({
               cameraModel: camara.camera, // Guardar el modelo original
               megafono: camara.megaphone,
               boton: camara.buttom,
-              jurisdiccion: 'Municipal',
+              jurisdiccion: jurisdiccion,
               // Coordenadas para generar el campo de visión
               latitude: camara.latitude,
               longitude: camara.longitude,

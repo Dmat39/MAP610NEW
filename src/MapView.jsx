@@ -453,7 +453,6 @@ const MapView = () => {
           {/* Leyenda de Cámaras Vecinales */}
           <LeyendaCamaras
             camarasVecinalesVisible={capasVisibles.camarasVecinales}
-            camarasMunicipalesVisible={capasVisibles.camaras}
             isPanelExpanded={isPanelExpanded}
           />
 
@@ -461,6 +460,7 @@ const MapView = () => {
           <LeyendaCamarasMunicipales
             visible={capasVisibles.camaras}
             isPanelExpanded={isPanelExpanded}
+            vecinalesVisible={capasVisibles.camarasVecinales}
           />
         </div>
       </div>

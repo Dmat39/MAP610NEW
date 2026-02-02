@@ -1,7 +1,7 @@
 /* LeyendaCamarasMunicipales.css */
 .leyenda-camaras-municipales {
   position: fixed;
-  bottom: 180px;
+  bottom: 20px;
   right: 20px;
   background: white;
   border-radius: 12px;
@@ -10,6 +10,11 @@
   z-index: 1000;
   min-width: 220px;
   transition: right 0.3s ease, bottom 0.3s ease;
+}
+
+/* Cuando hay dos leyendas, la de municipales sube */
+.leyenda-camaras-municipales.stacked {
+  bottom: 180px;
 }
 
 .leyenda-camaras-municipales.panel-expanded {
@@ -96,14 +101,17 @@
 @media (max-width: 768px) {
   .leyenda-camaras-municipales {
     right: 10px;
-    bottom: 260px;
+    bottom: 80px;
     min-width: 180px;
     padding: 12px;
   }
 
+  .leyenda-camaras-municipales.stacked {
+    bottom: 260px;
+  }
+
   .leyenda-camaras-municipales.panel-expanded {
     right: 10px;
-    bottom: 260px;
   }
 
   .leyenda-municipales-header h4 {

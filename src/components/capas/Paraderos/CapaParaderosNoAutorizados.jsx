@@ -1,30 +1,18 @@
 // CapaParaderosNoAutorizados.jsx
 import { useEffect, useState } from "react";
-import { Marker, Popup, Tooltip, LayerGroup, useMap } from "react-leaflet";
-import { createParaderoNoAutorizadoIcon, getIconSizeForZoom } from "../../../utils/adaptiveIcons";
+import { Marker, Popup, Tooltip, LayerGroup } from "react-leaflet";
+import { createParaderoNoAutorizadoIcon } from "../../../utils/adaptiveIcons";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+// Tamaño fijo del icono (evita re-renders por zoom)
+const ICON_SIZE = 38;
+
+// Caché del icono - se crea una sola vez
+const iconoParaderoNoAutorizado = createParaderoNoAutorizadoIcon(ICON_SIZE);
+
 const CapaParaderosNoAutorizados = ({ visible }) => {
   const [data, setData] = useState([]);
-  const [currentZoom, setCurrentZoom] = useState(13);
-  const map = useMap();
-
-  // Escuchar cambios de zoom
-  useEffect(() => {
-    if (!map) return;
-
-    const handleZoomEnd = () => {
-      setCurrentZoom(map.getZoom());
-    };
-
-    map.on('zoomend', handleZoomEnd);
-    setCurrentZoom(map.getZoom());
-
-    return () => {
-      map.off('zoomend', handleZoomEnd);
-    };
-  }, [map]);
 
   useEffect(() => {
     if (!visible) return;
@@ -48,7 +36,24 @@ const CapaParaderosNoAutorizados = ({ visible }) => {
           datos = responseData.data;
         }
 
-        setData(datos);
+        // Pre-procesar coordenadas al cargar
+        const datosProcesados = datos
+          .map((item, idx) => {
+            const lat = parseFloat(item.latitude || item.lat);
+            const lng = parseFloat(item.longitude || item.lng);
+
+            if (isNaN(lat) || isNaN(lng)) return null;
+
+            return {
+              ...item,
+              _lat: lat,
+              _lng: lng,
+              _id: item.id || `paradero-no-auth-${idx}`
+            };
+          })
+          .filter(Boolean);
+
+        setData(datosProcesados);
       })
       .catch((err) =>
         console.error("Error cargando paraderos no autorizados:", err)
@@ -57,63 +62,53 @@ const CapaParaderosNoAutorizados = ({ visible }) => {
 
   if (!visible) return null;
 
-  // Calcular tamaño del icono según el zoom
-  const iconSize = getIconSizeForZoom(currentZoom, 30, 46);
-
   return (
     <LayerGroup>
-      {data.map((item, idx) => {
-        const lat = parseFloat(item.latitude || item.lat);
-        const lng = parseFloat(item.longitude || item.lng);
-
-        if (isNaN(lat) || isNaN(lng)) return null;
-
-        return (
-          <Marker
-            key={item.id || idx}
-            position={[lat, lng]}
-            icon={createParaderoNoAutorizadoIcon(iconSize)}
-          >
-            <Popup>
-              <div style={{ fontSize: "14px", maxWidth: "280px" }}>
-                <div style={{
-                  borderBottom: "2px solid #dc3545",
-                  paddingBottom: "8px",
-                  marginBottom: "8px",
-                  fontWeight: "bold",
-                  color: "#dc3545"
-                }}>
-                  🚫 Paradero NO Autorizado
-                </div>
-                <div style={{ marginBottom: "6px" }}>
-                  <strong>ID:</strong> {item.name || "Sin nombre"}
-                </div>
-                <div style={{ marginBottom: "6px" }}>
-                  <strong>Descripción:</strong>
-                  <div style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
-                    {item.description || "Sin detalle"}
-                  </div>
-                </div>
-              </div>
-            </Popup>
-            <Tooltip
-              direction="top"
-              offset={[0, -(iconSize / 2 + 10)]}
-              opacity={0.95}
-              className="paradero-no-autorizado-tooltip"
-            >
+      {data.map((item) => (
+        <Marker
+          key={item._id}
+          position={[item._lat, item._lng]}
+          icon={iconoParaderoNoAutorizado}
+        >
+          <Popup>
+            <div style={{ fontSize: "14px", maxWidth: "280px" }}>
               <div style={{
-                fontSize: "12px",
-                fontWeight: "600",
-                color: "#dc3545",
-                textAlign: "center"
+                borderBottom: "2px solid #dc3545",
+                paddingBottom: "8px",
+                marginBottom: "8px",
+                fontWeight: "bold",
+                color: "#dc3545"
               }}>
-                {item.name || "Paradero NO Autorizado"}
+                🚫 Paradero NO Autorizado
               </div>
-            </Tooltip>
-          </Marker>
-        );
-      })}
+              <div style={{ marginBottom: "6px" }}>
+                <strong>ID:</strong> {item.name || "Sin nombre"}
+              </div>
+              <div style={{ marginBottom: "6px" }}>
+                <strong>Descripción:</strong>
+                <div style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+                  {item.description || "Sin detalle"}
+                </div>
+              </div>
+            </div>
+          </Popup>
+          <Tooltip
+            direction="top"
+            offset={[0, -28]}
+            opacity={0.95}
+            className="paradero-no-autorizado-tooltip"
+          >
+            <div style={{
+              fontSize: "12px",
+              fontWeight: "600",
+              color: "#dc3545",
+              textAlign: "center"
+            }}>
+              {item.name || "Paradero NO Autorizado"}
+            </div>
+          </Tooltip>
+        </Marker>
+      ))}
     </LayerGroup>
   );
 };

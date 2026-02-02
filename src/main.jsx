@@ -8,6 +8,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 import 'leaflet/dist/leaflet.css';
 import './index.css';
 
+
 // Configurar QueryClient con caché de 12 horas
 const queryClient = new QueryClient({
   defaultOptions: {

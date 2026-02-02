@@ -1,30 +1,18 @@
 // CapaParaderosAutorizados.jsx
 import { useEffect, useState } from "react";
-import { Marker, Popup, Tooltip, LayerGroup, useMap } from "react-leaflet";
-import { createParaderoAutorizadoIcon, getIconSizeForZoom } from "../../../utils/adaptiveIcons";
+import { Marker, Popup, Tooltip, LayerGroup } from "react-leaflet";
+import { createParaderoAutorizadoIcon } from "../../../utils/adaptiveIcons";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+// Tamaño fijo del icono (evita re-renders por zoom)
+const ICON_SIZE = 36;
+
+// Caché del icono - se crea una sola vez
+const iconoParaderoAutorizado = createParaderoAutorizadoIcon(ICON_SIZE);
+
 const CapaParaderosAutorizados = ({ visible }) => {
   const [data, setData] = useState([]);
-  const [currentZoom, setCurrentZoom] = useState(13);
-  const map = useMap();
-
-  // Escuchar cambios de zoom
-  useEffect(() => {
-    if (!map) return;
-
-    const handleZoomEnd = () => {
-      setCurrentZoom(map.getZoom());
-    };
-
-    map.on('zoomend', handleZoomEnd);
-    setCurrentZoom(map.getZoom());
-
-    return () => {
-      map.off('zoomend', handleZoomEnd);
-    };
-  }, [map]);
 
   useEffect(() => {
     if (!visible) return;
@@ -48,7 +36,24 @@ const CapaParaderosAutorizados = ({ visible }) => {
           datos = responseData.data;
         }
 
-        setData(datos);
+        // Pre-procesar coordenadas al cargar
+        const datosProcesados = datos
+          .map((item, idx) => {
+            const lat = parseFloat(item.latitude || item.lat);
+            const lng = parseFloat(item.longitude || item.lng);
+
+            if (isNaN(lat) || isNaN(lng)) return null;
+
+            return {
+              ...item,
+              _lat: lat,
+              _lng: lng,
+              _id: item.id || `paradero-auth-${idx}`
+            };
+          })
+          .filter(Boolean);
+
+        setData(datosProcesados);
       })
       .catch((err) =>
         console.error("Error cargando paraderos autorizados:", err)
@@ -57,63 +62,52 @@ const CapaParaderosAutorizados = ({ visible }) => {
 
   if (!visible) return null;
 
-  // Calcular tamaño del icono según el zoom
-  const iconSize = getIconSizeForZoom(currentZoom, 28, 44);
-
   return (
     <LayerGroup>
-      {data.map((item, idx) => {
-        // Adaptado para la estructura del backend
-        const lat = parseFloat(item.latitude || item.lat);
-        const lng = parseFloat(item.longitude || item.lng);
-
-        if (isNaN(lat) || isNaN(lng)) return null;
-
-        return (
-          <Marker
-            key={item.id || idx}
-            position={[lat, lng]}
-            icon={createParaderoAutorizadoIcon(iconSize)}
-          >
-            <Popup>
-              <div style={{ fontSize: "14px", maxWidth: "280px" }}>
-                <div style={{
-                  borderBottom: "2px solid #28a745",
-                  paddingBottom: "8px",
-                  marginBottom: "8px",
-                  fontWeight: "bold",
-                  color: "#28a745"
-                }}>
-                  🛵 Paradero Autorizado
-                </div>
-                <div style={{ marginBottom: "6px" }}>
-                  <strong>Nombre:</strong> {item.name || "Sin nombre"}
-                </div>
-                {item.description && (
-                  <div style={{ fontSize: "12px", color: "#666", marginTop: "6px" }}>
-                    {item.description}
-                  </div>
-                )}
-              </div>
-            </Popup>
-            <Tooltip
-              direction="top"
-              offset={[0, -(iconSize / 2 + 10)]}
-              opacity={0.95}
-              className="paradero-tooltip"
-            >
+      {data.map((item) => (
+        <Marker
+          key={item._id}
+          position={[item._lat, item._lng]}
+          icon={iconoParaderoAutorizado}
+        >
+          <Popup>
+            <div style={{ fontSize: "14px", maxWidth: "280px" }}>
               <div style={{
-                fontSize: "12px",
-                fontWeight: "600",
-                color: "#28a745",
-                textAlign: "center"
+                borderBottom: "2px solid #28a745",
+                paddingBottom: "8px",
+                marginBottom: "8px",
+                fontWeight: "bold",
+                color: "#28a745"
               }}>
-                {item.name || "Paradero Autorizado"}
+                🛵 Paradero Autorizado
               </div>
-            </Tooltip>
-          </Marker>
-        );
-      })}
+              <div style={{ marginBottom: "6px" }}>
+                <strong>Nombre:</strong> {item.name || "Sin nombre"}
+              </div>
+              {item.description && (
+                <div style={{ fontSize: "12px", color: "#666", marginTop: "6px" }}>
+                  {item.description}
+                </div>
+              )}
+            </div>
+          </Popup>
+          <Tooltip
+            direction="top"
+            offset={[0, -28]}
+            opacity={0.95}
+            className="paradero-tooltip"
+          >
+            <div style={{
+              fontSize: "12px",
+              fontWeight: "600",
+              color: "#28a745",
+              textAlign: "center"
+            }}>
+              {item.name || "Paradero Autorizado"}
+            </div>
+          </Tooltip>
+        </Marker>
+      ))}
     </LayerGroup>
   );
 };

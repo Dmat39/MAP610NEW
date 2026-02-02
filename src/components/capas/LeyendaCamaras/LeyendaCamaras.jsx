@@ -3,11 +3,11 @@ import React from 'react';
 import { useMapContext } from '../../../context/MapContext';
 import './LeyendaCamaras.css';
 
-const LeyendaCamaras = ({ camarasVecinalesVisible, camarasMunicipalesVisible, isPanelExpanded }) => {
+const LeyendaCamaras = ({ camarasVecinalesVisible, isPanelExpanded }) => {
     const { marcasCamarasVisibles, handleToggleMarcaCamara, conteoCamarasVecinales } = useMapContext();
 
-    // No mostrar la leyenda si ninguna capa de cámaras está visible
-    if (!camarasVecinalesVisible && !camarasMunicipalesVisible) {
+    // No mostrar la leyenda si las cámaras vecinales no están visibles
+    if (!camarasVecinalesVisible) {
         return null;
     }
 

@@ -2,14 +2,14 @@
 import React from 'react';
 import './LeyendaCamarasMunicipales.css';
 
-const LeyendaCamarasMunicipales = ({ visible, isPanelExpanded }) => {
+const LeyendaCamarasMunicipales = ({ visible, isPanelExpanded, vecinalesVisible }) => {
     // No mostrar la leyenda si las cámaras municipales no están visibles
     if (!visible) {
         return null;
     }
 
     return (
-        <div className={`leyenda-camaras-municipales ${isPanelExpanded ? 'panel-expanded' : ''}`}>
+        <div className={`leyenda-camaras-municipales ${isPanelExpanded ? 'panel-expanded' : ''} ${vecinalesVisible ? 'stacked' : ''}`}>
             <div className="leyenda-municipales-header">
                 <h4>Cámaras Municipales</h4>
             </div>
