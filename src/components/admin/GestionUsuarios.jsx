@@ -42,6 +42,7 @@ const GestionUsuarios = () => {
   const roles = [
     { value: 'ADMINISTRATOR', label: 'Administrador', color: '#ef4444' },
     { value: 'SUPERVISOR', label: 'Supervisor', color: '#f59e0b' },
+    { value: 'CODISEC', label: 'CODISEC', color: '#8b5cf6' },
     { value: 'OPERATOR', label: 'Operador', color: '#3b82f6' },
     { value: 'VIEWER', label: 'Visualizador', color: '#10b981' },
   ];

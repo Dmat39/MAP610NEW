@@ -20,6 +20,7 @@ import CapaDrogas from './components/capas/Incidencias/CapaDrogas';
 import CapaBarras from './components/capas/Incidencias/CapaBarras';
 import CapaResiduos from './components/capas/Residuos/CapaResiduos';
 import CapaSostenimiento from './components/capas/Sostenimiento/CapaSostenimiento';
+import CapaActividades from './components/capas/Actividades/CapaActividades';
 import FiltroGiro from './components/filtros/FiltroGiro';
 import CapaBusquedaDirecciones from './components/capas/BusquedaDirecciones/CapaBusquedaDirecciones';
 import CapaUbicadorPunto from './components/capas/UbicadorPuntos/CapaUbicadorPunto';
@@ -48,12 +49,14 @@ import LeyendaCamaras from './components/capas/LeyendaCamaras/LeyendaCamaras';
 import LeyendaCamarasMunicipales from './components/capas/LeyendaCamarasMunicipales/LeyendaCamarasMunicipales';
 import ClusterIncidencias from './components/capas/ClusterIncidencias/ClusterIncidencias';
 import GoogleClusterIncidencias from './components/googlemaps/GoogleClusterIncidencias';
+import GoogleCapaActividades from './components/googlemaps/GoogleCapaActividades';
 import ControlClusters from './components/Controles/Mapa_Clusters/ControlClusters';
 
 const MapView = () => {
   const { user } = useAuth();
   const userRole = user?.role;
   const isOperator = userRole === 'OPERATOR';
+  const isCodisec = userRole === 'CODISEC';
 
   const [mapType, setMapType] = useState('leaflet'); // 'leaflet' o 'google'
   const [capasVisibles, setCapasVisibles] = useState({
@@ -72,6 +75,7 @@ const MapView = () => {
     residuos: false,
     defensaCivil: false,
     sostenimiento: false,
+    actividades: false,
     busquedaDirecciones: false,
     ubicadorPunto: false,
     rutas: false,
@@ -245,12 +249,18 @@ const MapView = () => {
     },
     { name: 'residuos', label: 'Puntos Residuos Sólidos', visible: capasVisibles.residuos },
     { name: 'sostenimiento', label: 'Sostenimiento', visible: capasVisibles.sostenimiento },
+    { name: 'actividades', label: 'Actividades', visible: capasVisibles.actividades },
   ];
 
+  // Capas permitidas para CODISEC
+  const capasCodisec = ['camaras', 'camarasVecinales', 'actividades'];
+
   // Filtrar capas según el rol del usuario
-  const capas = isOperator
-    ? todasLasCapas.filter(capa => !capa.restrictedForOperator)
-    : todasLasCapas;
+  const capas = isCodisec
+    ? todasLasCapas.filter(capa => capasCodisec.includes(capa.name))
+    : isOperator
+      ? todasLasCapas.filter(capa => !capa.restrictedForOperator)
+      : todasLasCapas;
 
   const handleToggle = useCallback(nombre => {
     setCapasVisibles(prev => {
@@ -390,6 +400,7 @@ const MapView = () => {
           <CapaResiduos visible={capasVisibles.residuos} />
           <CapaDefensaCivil visible={capasVisibles.defensaCivil} />
           <CapaSostenimiento visible={capasVisibles.sostenimiento} />
+          <CapaActividades visible={capasVisibles.actividades} />
           <CapaBusquedaDirecciones
             visible={capasVisibles.busquedaDirecciones}
             resultados={resultadosBusqueda}
@@ -433,6 +444,7 @@ const MapView = () => {
           )}
           <GoogleClusterIncidencias visible={capasVisibles.clusters} />
           <GoogleCapaResiduos visible={capasVisibles.residuos} />
+          <GoogleCapaActividades visible={capasVisibles.actividades} />
           <GoogleCapaBusquedaDirecciones
             visible={capasVisibles.busquedaDirecciones}
             resultados={resultadosBusqueda}

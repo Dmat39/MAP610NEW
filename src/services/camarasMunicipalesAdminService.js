@@ -14,7 +14,7 @@ const camarasMunicipalesAdminService = {
       // Agregar filtros si existen
       if (filters.search) params.append('search', filters.search);
       if (filters.camera) params.append('camera', filters.camera);
-      if (filters.page) params.append('page', filters.page);
+      if (filters.page !== undefined && filters.page !== null) params.append('page', filters.page);
       if (filters.limit) params.append('limit', filters.limit);
 
       const queryString = params.toString();

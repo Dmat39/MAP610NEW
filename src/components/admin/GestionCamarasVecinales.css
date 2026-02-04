@@ -107,6 +107,34 @@
   transform: rotate(180deg);
 }
 
+.btn-camaras-excel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(16, 185, 129, 0.9);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-camaras-excel:hover {
+  background: rgba(16, 185, 129, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.btn-camaras-excel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .btn-icon-camaras {
   display: flex;
   align-items: center;
@@ -576,7 +604,8 @@
     justify-content: space-between;
   }
 
-  .btn-camaras-primary {
+  .btn-camaras-primary,
+  .btn-camaras-excel {
     flex: 1;
     justify-content: center;
     padding: 10px 16px;
@@ -704,7 +733,8 @@
     font-size: 12px;
   }
 
-  .btn-camaras-primary span {
+  .btn-camaras-primary span,
+  .btn-camaras-excel span {
     display: none;
   }
 

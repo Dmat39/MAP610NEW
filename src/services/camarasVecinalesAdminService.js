@@ -15,7 +15,7 @@ const camarasVecinalesAdminService = {
       if (filters.search) params.append('search', filters.search);
       if (filters.brand) params.append('brand', filters.brand);
       if (filters.mode) params.append('mode', filters.mode);
-      if (filters.page) params.append('page', filters.page);
+      if (filters.page !== undefined && filters.page !== null) params.append('page', filters.page);
       if (filters.limit) params.append('limit', filters.limit);
 
       const queryString = params.toString();

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, MapPin, ChevronDown, Camera, Map, Video, Users } from 'lucide-react';
+import { LogOut, MapPin, ChevronDown, Camera, Map, Video, Users, Calendar } from 'lucide-react';
 import ConfirmModal from '../Modal/ConfirmModal';
 import './Sidebar.css';
 
@@ -14,6 +14,7 @@ const Sidebar = () => {
   const dropdownRef = useRef(null);
 
   const isAdmin = user?.role?.toLowerCase() === 'administrator' || user?.role?.toLowerCase() === 'admin';
+  const isCodisec = user?.role?.toUpperCase() === 'CODISEC';
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
@@ -34,6 +35,7 @@ const Sidebar = () => {
       administrator: 'Administrador',
       admin: 'Administrador',
       supervisor: 'Supervisor',
+      codisec: 'CODISEC',
       ceplan: 'CEPLAN',
     };
     return roles[role?.toLowerCase()] || role;
@@ -49,6 +51,7 @@ const Sidebar = () => {
       administrator: '#ef4444',
       admin: '#ef4444',
       supervisor: '#f59e0b',
+      codisec: '#8b5cf6',
       ceplan: '#10b981',
     };
     return colors[role?.toLowerCase()] || '#6b7280';
@@ -137,6 +140,16 @@ const Sidebar = () => {
           <Map size={20} />
           <span>Mapa</span>
         </button>
+
+        {(isAdmin || isCodisec) && (
+          <button
+            onClick={() => navigate('/admin/actividades')}
+            className={`nav-item ${location.pathname === '/admin/actividades' ? 'active' : ''}`}
+          >
+            <Calendar size={20} />
+            <span>Actividades</span>
+          </button>
+        )}
 
         {isAdmin && (
           <>

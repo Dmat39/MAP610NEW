@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Eye, Camera } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Eye, Camera, Download } from 'lucide-react';
+import ExcelJS from 'exceljs';
 import camarasVecinalesAdminService from '../../services/camarasVecinalesAdminService';
 import authService from '../../services/authService';
 import UseUrlParamsManager from '../../hooks/UseUrlParamsManager';
@@ -191,6 +192,77 @@ const GestionCamarasVecinales = () => {
     }
   };
 
+  const exportarExcel = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Obtener todas las cámaras sin paginación
+      const response = await camarasVecinalesAdminService.getAll({ page: 0 });
+      const todasLasCamaras = response.data || [];
+
+      if (todasLasCamaras.length === 0) {
+        setError('No hay cámaras vecinales para exportar');
+        return;
+      }
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Cámaras Vecinales');
+
+      worksheet.columns = [
+        { header: '#', key: 'index', width: 6 },
+        { header: 'Dirección', key: 'address', width: 40 },
+        { header: 'Vecino', key: 'neighbor', width: 25 },
+        { header: 'Marca', key: 'brand', width: 15 },
+        { header: 'Modo', key: 'mode', width: 12 },
+        { header: 'Latitud', key: 'latitude', width: 15 },
+        { header: 'Longitud', key: 'longitude', width: 15 },
+      ];
+
+      // Estilo del encabezado
+      worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      worksheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF1E3A5F' },
+      };
+      worksheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
+
+      // Agregar datos
+      todasLasCamaras.forEach((camara, idx) => {
+        worksheet.addRow({
+          index: idx + 1,
+          address: camara.address || '',
+          neighbor: camara.neighbor || '',
+          brand: camara.brand || '',
+          mode: camara.mode || '',
+          latitude: camara.latitude || '',
+          longitude: camara.longitude || '',
+        });
+      });
+
+      // Generar y descargar
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `camaras_vecinales_${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+      setSuccess('Excel exportado exitosamente');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      console.error('Error al exportar Excel:', err);
+      setError('Error al generar el archivo Excel');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Inicializar mapa de previsualización con Leaflet
   useEffect(() => {
     if (showMapPreview && mapRef.current && !leafletMapRef.current) {
@@ -284,6 +356,10 @@ const GestionCamarasVecinales = () => {
         <div className="camaras-header-actions">
           <button onClick={refreshData} className="btn-camaras-refresh" title="Actualizar">
             <RefreshCw size={18} className={loading ? 'spinning' : ''} />
+          </button>
+          <button onClick={exportarExcel} className="btn-camaras-excel" disabled={loading} title="Descargar Excel">
+            <Download size={18} />
+            <span>Descargar Excel</span>
           </button>
           <button onClick={openCreateModal} className="btn-camaras-primary">
             <Plus size={18} />

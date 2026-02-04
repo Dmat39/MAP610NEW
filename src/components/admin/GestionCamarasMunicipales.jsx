@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Eye, Target, Video } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Eye, Target, Video, Download } from 'lucide-react';
+import ExcelJS from 'exceljs';
 import camarasMunicipalesAdminService from '../../services/camarasMunicipalesAdminService';
 import authService from '../../services/authService';
 import UseUrlParamsManager from '../../hooks/UseUrlParamsManager';
@@ -27,6 +28,7 @@ const GestionCamarasMunicipales = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedCamera, setSelectedCamera] = useState(null);
+  const [originalData, setOriginalData] = useState(null);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -146,6 +148,7 @@ const GestionCamarasMunicipales = () => {
     console.log('📋 Datos cargados en formulario:', editData);
 
     setFormData(editData);
+    setOriginalData({ ...editData });
     setGeometryJSON(camera.geometry ? JSON.stringify(camera.geometry, null, 2) : '');
     setShowGeometryEditor(false);
     setShowModal(true);
@@ -154,6 +157,7 @@ const GestionCamarasMunicipales = () => {
   const closeModal = () => {
     setShowModal(false);
     setSelectedCamera(null);
+    setOriginalData(null);
     setFormData({
       name: '',
       address: '',
@@ -491,30 +495,49 @@ const GestionCamarasMunicipales = () => {
         return;
       }
 
-      const dataToSend = {
-        name: formData.name,
-        address: formData.address,
-        camera: formData.camera,
-        latitude: parseFloat(formData.latitude),
-        longitude: parseFloat(formData.longitude),
-        angle: angle,
-        radius: radius,
-        arc: arc,
-        buttom: formData.buttom,
-        megaphone: formData.megaphone,
-        geometry: formData.geometry || null,
-      };
-
-      console.log('📤 Datos a enviar:', dataToSend);
-
       if (modalMode === 'create') {
+        const dataToSend = {
+          name: formData.name,
+          address: formData.address,
+          camera: formData.camera,
+          latitude: parseFloat(formData.latitude),
+          longitude: parseFloat(formData.longitude),
+          angle: angle,
+          radius: radius,
+          arc: arc,
+          buttom: formData.buttom,
+          megaphone: formData.megaphone,
+          geometry: formData.geometry || null,
+        };
+
         console.log('➕ Creando nueva cámara...');
         const result = await camarasMunicipalesAdminService.create(dataToSend);
         console.log('✅ Cámara creada:', result);
         setSuccess('Cámara municipal creada exitosamente');
       } else {
-        console.log('✏️ Actualizando cámara ID:', selectedCamera.id);
-        const result = await camarasMunicipalesAdminService.update(selectedCamera.id, dataToSend);
+        // PATCH: solo enviar campos que cambiaron
+        const changedFields = {};
+
+        if (formData.name !== originalData.name) changedFields.name = formData.name;
+        if (formData.address !== originalData.address) changedFields.address = formData.address;
+        if (formData.camera !== originalData.camera) changedFields.camera = formData.camera;
+        if (String(formData.latitude) !== String(originalData.latitude)) changedFields.latitude = parseFloat(formData.latitude);
+        if (String(formData.longitude) !== String(originalData.longitude)) changedFields.longitude = parseFloat(formData.longitude);
+        if (String(formData.angle) !== String(originalData.angle)) changedFields.angle = angle;
+        if (String(formData.radius) !== String(originalData.radius)) changedFields.radius = radius;
+        if (String(formData.arc) !== String(originalData.arc)) changedFields.arc = arc;
+        if (formData.buttom !== originalData.buttom) changedFields.buttom = formData.buttom;
+        if (formData.megaphone !== originalData.megaphone) changedFields.megaphone = formData.megaphone;
+        if (JSON.stringify(formData.geometry) !== JSON.stringify(originalData.geometry)) changedFields.geometry = formData.geometry || null;
+
+        if (Object.keys(changedFields).length === 0) {
+          setError('No se han realizado cambios');
+          setLoading(false);
+          return;
+        }
+
+        console.log('✏️ Actualizando cámara ID:', selectedCamera.id, 'Campos cambiados:', changedFields);
+        const result = await camarasMunicipalesAdminService.update(selectedCamera.id, changedFields);
         console.log('✅ Cámara actualizada:', result);
         setSuccess('Cámara municipal actualizada exitosamente');
       }
@@ -551,6 +574,85 @@ const GestionCamarasMunicipales = () => {
     }
   };
 
+  const exportarExcel = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Obtener todas las cámaras sin paginación
+      const response = await camarasMunicipalesAdminService.getAll({ page: 0 });
+      const todasLasCamaras = response.data || [];
+
+      if (todasLasCamaras.length === 0) {
+        setError('No hay cámaras municipales para exportar');
+        return;
+      }
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Cámaras Municipales');
+
+      worksheet.columns = [
+        { header: '#', key: 'index', width: 6 },
+        { header: 'Nombre', key: 'name', width: 15 },
+        { header: 'Dirección', key: 'address', width: 40 },
+        { header: 'Tipo', key: 'camera', width: 12 },
+        { header: 'Latitud', key: 'latitude', width: 15 },
+        { header: 'Longitud', key: 'longitude', width: 15 },
+        { header: 'Ángulo', key: 'angle', width: 10 },
+        { header: 'Radio', key: 'radius', width: 10 },
+        { header: 'Amplitud', key: 'arc', width: 10 },
+        { header: 'Botón Pánico', key: 'buttom', width: 14 },
+        { header: 'Megáfono', key: 'megaphone', width: 12 },
+      ];
+
+      // Estilo del encabezado
+      worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      worksheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF0A4174' },
+      };
+      worksheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
+
+      // Agregar datos
+      todasLasCamaras.forEach((camara, idx) => {
+        worksheet.addRow({
+          index: idx + 1,
+          name: camara.name || '',
+          address: camara.address || '',
+          camera: camara.camera || '',
+          latitude: camara.latitude || '',
+          longitude: camara.longitude || '',
+          angle: camara.angle ?? '',
+          radius: camara.radius ?? '',
+          arc: camara.arc ?? '',
+          buttom: camara.buttom ? 'Sí' : 'No',
+          megaphone: camara.megaphone ? 'Sí' : 'No',
+        });
+      });
+
+      // Generar y descargar
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `camaras_municipales_${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+      setSuccess('Excel exportado exitosamente');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      console.error('Error al exportar Excel:', err);
+      setError('Error al generar el archivo Excel');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isAdmin) {
     return (
       <div className="gestion-municipales-container">
@@ -575,6 +677,10 @@ const GestionCamarasMunicipales = () => {
         <div className="municipales-header-actions">
           <button onClick={refreshData} className="btn-municipales-refresh" title="Actualizar">
             <RefreshCw size={18} className={loading ? 'spinning' : ''} />
+          </button>
+          <button onClick={exportarExcel} className="btn-municipales-excel" disabled={loading} title="Descargar Excel">
+            <Download size={18} />
+            <span>Descargar Excel</span>
           </button>
           <button onClick={openCreateModal} className="btn-municipales-primary">
             <Plus size={18} />
