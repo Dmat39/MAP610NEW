@@ -50,13 +50,17 @@ import LeyendaCamarasMunicipales from './components/capas/LeyendaCamarasMunicipa
 import ClusterIncidencias from './components/capas/ClusterIncidencias/ClusterIncidencias';
 import GoogleClusterIncidencias from './components/googlemaps/GoogleClusterIncidencias';
 import GoogleCapaActividades from './components/googlemaps/GoogleCapaActividades';
+import CapaJurisdiccionCodisec from './components/capas/Jurisdiccion/CapaJurisdiccionCodisec';
+import GoogleCapaJurisdiccionCodisec from './components/googlemaps/GoogleCapaJurisdiccionCodisec';
 import ControlClusters from './components/Controles/Mapa_Clusters/ControlClusters';
 
 const MapView = () => {
   const { user } = useAuth();
   const userRole = user?.role;
   const isOperator = userRole === 'OPERATOR';
+  const isSupervisor = userRole === 'SUPERVISOR';
   const isCodisec = userRole === 'CODISEC';
+  const isViewer = userRole === 'VIEWER';
 
   const [mapType, setMapType] = useState('leaflet'); // 'leaflet' o 'google'
   const [capasVisibles, setCapasVisibles] = useState({
@@ -80,6 +84,7 @@ const MapView = () => {
     ubicadorPunto: false,
     rutas: false,
     clusters: false,
+    zonasCodisec: false,
   });
 
   const [payloadFiltros, setPayloadFiltros] = useState(null);
@@ -250,17 +255,20 @@ const MapView = () => {
     { name: 'residuos', label: 'Puntos Residuos Sólidos', visible: capasVisibles.residuos },
     { name: 'sostenimiento', label: 'Sostenimiento', visible: capasVisibles.sostenimiento },
     { name: 'actividades', label: 'Actividades', visible: capasVisibles.actividades },
+    { name: 'zonasCodisec', label: 'Comunas', visible: capasVisibles.zonasCodisec, codisecOnly: true },
   ];
 
   // Capas permitidas para CODISEC
-  const capasCodisec = ['camaras', 'camarasVecinales', 'actividades'];
+  const capasCodisec = ['camaras', 'camarasVecinales', 'actividades', 'zonasCodisec'];
 
   // Filtrar capas según el rol del usuario
   const capas = isCodisec
     ? todasLasCapas.filter(capa => capasCodisec.includes(capa.name))
-    : isOperator
-      ? todasLasCapas.filter(capa => !capa.restrictedForOperator)
-      : todasLasCapas;
+    : isViewer
+      ? todasLasCapas.filter(capa => !capa.restrictedForOperator && !capa.codisecOnly)
+      : (isOperator || isSupervisor)
+        ? todasLasCapas.filter(capa => !capa.restrictedForOperator && !capa.codisecOnly)
+        : todasLasCapas;
 
   const handleToggle = useCallback(nombre => {
     setCapasVisibles(prev => {
@@ -363,15 +371,17 @@ const MapView = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             maxZoom={20}
           />
-          <CapaJurisdiccion
-            ubicadorActivo={
-              capasVisibles.ubicadorPunto ||
-              capasVisibles.busquedaDirecciones ||
-              capasVisibles.rutas
-            }
-            camaraConVision={camaraConVision}
-            camaraSeleccionada={camaraSeleccionada}
-          />
+          {!capasVisibles.zonasCodisec && (
+            <CapaJurisdiccion
+              ubicadorActivo={
+                capasVisibles.ubicadorPunto ||
+                capasVisibles.busquedaDirecciones ||
+                capasVisibles.rutas
+              }
+              camaraConVision={camaraConVision}
+              camaraSeleccionada={camaraSeleccionada}
+            />
+          )}
           <CapaCamarasMunicipales
             visible={capasVisibles.camaras}
             camaraSeleccionada={camaraSeleccionada}
@@ -401,6 +411,16 @@ const MapView = () => {
           <CapaDefensaCivil visible={capasVisibles.defensaCivil} />
           <CapaSostenimiento visible={capasVisibles.sostenimiento} />
           <CapaActividades visible={capasVisibles.actividades} />
+          <CapaJurisdiccionCodisec
+            visible={capasVisibles.zonasCodisec}
+            ubicadorActivo={
+              capasVisibles.ubicadorPunto ||
+              capasVisibles.busquedaDirecciones ||
+              capasVisibles.rutas
+            }
+            camaraConVision={camaraConVision}
+            camaraSeleccionada={camaraSeleccionada}
+          />
           <CapaBusquedaDirecciones
             visible={capasVisibles.busquedaDirecciones}
             resultados={resultadosBusqueda}
@@ -411,15 +431,17 @@ const MapView = () => {
         </MapContainer>
       ) : (
         <GoogleMapWrapper center={mapCenter} zoom={mapZoom} style={mapStyle}>
-          <GoogleCapaJurisdiccion
-            ubicadorActivo={
-              capasVisibles.ubicadorPunto ||
-              capasVisibles.busquedaDirecciones ||
-              capasVisibles.rutas
-            }
-            camaraConVision={camaraConVision}
-            camaraSeleccionada={camaraSeleccionada}
-          />
+          {!capasVisibles.zonasCodisec && (
+            <GoogleCapaJurisdiccion
+              ubicadorActivo={
+                capasVisibles.ubicadorPunto ||
+                capasVisibles.busquedaDirecciones ||
+                capasVisibles.rutas
+              }
+              camaraConVision={camaraConVision}
+              camaraSeleccionada={camaraSeleccionada}
+            />
+          )}
           <GoogleCapaCamarasMunicipales
             visible={capasVisibles.camaras}
             camaraSeleccionada={camaraSeleccionada}
@@ -445,6 +467,16 @@ const MapView = () => {
           <GoogleClusterIncidencias visible={capasVisibles.clusters} />
           <GoogleCapaResiduos visible={capasVisibles.residuos} />
           <GoogleCapaActividades visible={capasVisibles.actividades} />
+          <GoogleCapaJurisdiccionCodisec
+            visible={capasVisibles.zonasCodisec}
+            ubicadorActivo={
+              capasVisibles.ubicadorPunto ||
+              capasVisibles.busquedaDirecciones ||
+              capasVisibles.rutas
+            }
+            camaraConVision={camaraConVision}
+            camaraSeleccionada={camaraSeleccionada}
+          />
           <GoogleCapaBusquedaDirecciones
             visible={capasVisibles.busquedaDirecciones}
             resultados={resultadosBusqueda}

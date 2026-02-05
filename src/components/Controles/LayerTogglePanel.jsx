@@ -10,6 +10,7 @@ const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange, onExpandC
     incidents: false,
     infrastructure: false,
     tools: false,
+    zonas: true,
   });
 
   // Obtener el rol del usuario
@@ -33,6 +34,10 @@ const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange, onExpandC
     tools: {
       title: 'Herramientas',
       layers: ['clusters', 'busquedaDirecciones', 'ubicadorPunto', 'rutas']
+    },
+    zonas: {
+      title: 'Zonas Geográficas',
+      layers: ['zonasCodisec']
     }
   };
 

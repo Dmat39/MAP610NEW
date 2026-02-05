@@ -28,6 +28,9 @@ const GestionCamarasVecinales = () => {
   const [modalMode, setModalMode] = useState('create');
   const [selectedCamera, setSelectedCamera] = useState(null);
 
+  // Datos originales para comparación en edición
+  const [originalData, setOriginalData] = useState(null);
+
   // Form data
   const [formData, setFormData] = useState({
     address: '',
@@ -99,23 +102,39 @@ const GestionCamarasVecinales = () => {
     setShowModal(true);
   };
 
-  const openEditModal = camera => {
-    setModalMode('edit');
-    setSelectedCamera(camera);
-    setFormData({
-      address: camera.address || '',
-      brand: camera.brand || 'DAHUA',
-      mode: camera.mode || 'FIXED',
-      neighbor: camera.neighbor || '',
-      latitude: camera.latitude || '',
-      longitude: camera.longitude || '',
-    });
-    setShowModal(true);
+  const openEditModal = async (camera) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setModalMode('edit');
+      setSelectedCamera(camera);
+
+      // Obtener datos completos de la cámara
+      const fullData = await camarasVecinalesAdminService.getById(camera.id);
+
+      const editData = {
+        address: fullData.address || '',
+        brand: fullData.brand || 'DAHUA',
+        mode: fullData.mode || 'FIXED',
+        neighbor: fullData.neighbor || '',
+        latitude: fullData.latitude !== undefined && fullData.latitude !== null ? fullData.latitude : '',
+        longitude: fullData.longitude !== undefined && fullData.longitude !== null ? fullData.longitude : '',
+      };
+
+      setFormData(editData);
+      setOriginalData({ ...editData });
+      setShowModal(true);
+    } catch (err) {
+      setError(err.message || 'Error al cargar datos de la cámara');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const closeModal = () => {
     setShowModal(false);
     setSelectedCamera(null);
+    setOriginalData(null);
     setFormData({
       address: '',
       brand: 'DAHUA',
@@ -147,17 +166,45 @@ const GestionCamarasVecinales = () => {
     try {
       setLoading(true);
 
-      const dataToSend = {
-        ...formData,
-        latitude: parseFloat(formData.latitude),
-        longitude: parseFloat(formData.longitude),
-      };
-
       if (modalMode === 'create') {
+        const dataToSend = {
+          ...formData,
+          latitude: parseFloat(formData.latitude),
+          longitude: parseFloat(formData.longitude),
+        };
         await camarasVecinalesAdminService.create(dataToSend);
         setSuccess('Cámara vecinal creada exitosamente');
       } else {
-        await camarasVecinalesAdminService.update(selectedCamera.id, dataToSend);
+        // Detectar solo los campos que cambiaron
+        const changedFields = {};
+
+        if (formData.address !== originalData.address) {
+          changedFields.address = formData.address;
+        }
+        if (formData.brand !== originalData.brand) {
+          changedFields.brand = formData.brand;
+        }
+        if (formData.mode !== originalData.mode) {
+          changedFields.mode = formData.mode;
+        }
+        if (formData.neighbor !== originalData.neighbor) {
+          changedFields.neighbor = formData.neighbor;
+        }
+        if (String(formData.latitude) !== String(originalData.latitude)) {
+          changedFields.latitude = parseFloat(formData.latitude);
+        }
+        if (String(formData.longitude) !== String(originalData.longitude)) {
+          changedFields.longitude = parseFloat(formData.longitude);
+        }
+
+        if (Object.keys(changedFields).length === 0) {
+          setError('No se han realizado cambios');
+          setLoading(false);
+          return;
+        }
+
+        console.log('Datos enviados al PATCH:', JSON.stringify(changedFields, null, 2));
+        await camarasVecinalesAdminService.update(selectedCamera.id, changedFields);
         setSuccess('Cámara vecinal actualizada exitosamente');
       }
 

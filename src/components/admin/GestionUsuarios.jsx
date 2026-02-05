@@ -26,6 +26,9 @@ const GestionUsuarios = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Datos originales para comparación en edición
+  const [originalData, setOriginalData] = useState(null);
+
   // Form data
   const [formData, setFormData] = useState({
     name: '',
@@ -104,26 +107,43 @@ const GestionUsuarios = () => {
     setShowPassword(false);
   };
 
-  const openEditModal = (usuario) => {
-    setModalMode('edit');
-    setFormData({
-      name: usuario.name || '',
-      lastname: usuario.lastname || '',
-      username: usuario.username || '',
-      email: usuario.email || '',
-      dni: usuario.dni || '',
-      phone: usuario.phone || '',
-      password: '',
-      rol: usuario.rol || 'OPERATOR',
-    });
-    setSelectedUser(usuario);
-    setShowModal(true);
-    setShowPassword(false);
+  const openEditModal = async (usuario) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setModalMode('edit');
+      setSelectedUser(usuario);
+
+      // Obtener datos completos del usuario
+      const response = await usuariosService.getById(usuario.id);
+      const fullData = response.data || response;
+
+      const editData = {
+        name: fullData.name || '',
+        lastname: fullData.lastname || '',
+        username: fullData.username || '',
+        email: fullData.email || '',
+        dni: fullData.dni || '',
+        phone: fullData.phone || '',
+        password: '',
+        rol: fullData.rol || 'OPERATOR',
+      };
+
+      setFormData(editData);
+      setOriginalData({ ...editData });
+      setShowModal(true);
+      setShowPassword(false);
+    } catch (err) {
+      setError(err.message || 'Error al cargar datos del usuario');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const closeModal = () => {
     setShowModal(false);
     setSelectedUser(null);
+    setOriginalData(null);
     setFormData({
       name: '',
       lastname: '',
@@ -156,7 +176,40 @@ const GestionUsuarios = () => {
         await usuariosService.create(formData);
         setSuccess('Usuario creado exitosamente');
       } else {
-        await usuariosService.update(selectedUser.id, formData);
+        // Detectar solo los campos que cambiaron
+        const changedFields = {};
+
+        if (formData.name !== originalData.name) {
+          changedFields.name = formData.name;
+        }
+        if (formData.lastname !== originalData.lastname) {
+          changedFields.lastname = formData.lastname;
+        }
+        if (formData.email !== originalData.email) {
+          changedFields.email = formData.email;
+        }
+        if (formData.dni !== originalData.dni) {
+          changedFields.dni = formData.dni;
+        }
+        if (formData.phone !== originalData.phone) {
+          changedFields.phone = formData.phone;
+        }
+        if (formData.rol !== originalData.rol) {
+          changedFields.rol = formData.rol;
+        }
+        // Password: solo incluir si el usuario escribió una nueva
+        if (formData.password && formData.password.trim() !== '') {
+          changedFields.password = formData.password;
+        }
+
+        if (Object.keys(changedFields).length === 0) {
+          setError('No se han realizado cambios');
+          setLoading(false);
+          return;
+        }
+
+        console.log('Datos enviados al PATCH:', JSON.stringify(changedFields, null, 2));
+        await usuariosService.update(selectedUser.id, changedFields);
         setSuccess('Usuario actualizado exitosamente');
       }
 
