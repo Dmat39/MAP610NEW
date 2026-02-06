@@ -261,11 +261,14 @@ const MapView = () => {
   // Capas permitidas para CODISEC
   const capasCodisec = ['camaras', 'camarasVecinales', 'actividades', 'zonasCodisec'];
 
+  // Capas permitidas para VIEWER
+  const capasViewer = ['camaras', 'camarasVecinales'];
+
   // Filtrar capas según el rol del usuario
   const capas = isCodisec
     ? todasLasCapas.filter(capa => capasCodisec.includes(capa.name))
     : isViewer
-      ? todasLasCapas.filter(capa => !capa.restrictedForOperator && !capa.codisecOnly)
+      ? todasLasCapas.filter(capa => capasViewer.includes(capa.name))
       : (isOperator || isSupervisor)
         ? todasLasCapas.filter(capa => !capa.restrictedForOperator && !capa.codisecOnly)
         : todasLasCapas;
@@ -342,6 +345,7 @@ const MapView = () => {
         onLimpiarSeguimiento={handleLimpiarSeguimiento}
         onLimpiarSeleccion={handleLimpiarSeleccion}
         mapType={mapType}
+        isViewer={isViewer}
         topPosition={
           (capasVisibles.busquedaDirecciones ? 450 : 0) +
           (capasVisibles.rutas ? 280 : 0) +
@@ -390,6 +394,7 @@ const MapView = () => {
             limpiarSeguimiento={limpiarSeguimiento}
             camaraConVision={camaraConVision}
             setCamaraConVision={setCamaraConVision}
+            isViewer={isViewer}
           />
           <CapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
           <CapaParaderosAutorizados visible={capasVisibles.paraderosAutorizados} />
@@ -450,6 +455,7 @@ const MapView = () => {
             limpiarSeguimiento={limpiarSeguimiento}
             camaraConVision={camaraConVision}
             setCamaraConVision={setCamaraConVision}
+            isViewer={isViewer}
           />
           <GoogleCapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
           {!isOperator && (
@@ -501,11 +507,13 @@ const MapView = () => {
           />
 
           {/* Leyenda de Cámaras Municipales */}
-          <LeyendaCamarasMunicipales
-            visible={capasVisibles.camaras}
-            isPanelExpanded={isPanelExpanded}
-            vecinalesVisible={capasVisibles.camarasVecinales}
-          />
+          {!isViewer && (
+            <LeyendaCamarasMunicipales
+              visible={capasVisibles.camaras}
+              isPanelExpanded={isPanelExpanded}
+              vecinalesVisible={capasVisibles.camarasVecinales}
+            />
+          )}
         </div>
       </div>
   );

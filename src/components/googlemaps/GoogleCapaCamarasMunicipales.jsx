@@ -125,7 +125,8 @@ const GoogleCapaCamarasMunicipales = ({
   seguimientoCamara,
   limpiarSeguimiento,
   camaraConVision,
-  setCamaraConVision
+  setCamaraConVision,
+  isViewer = false,
 }) => {
   const [camaras, setCamaras] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -796,15 +797,16 @@ const GoogleCapaCamarasMunicipales = ({
       const infoWindow = new google.maps.InfoWindow({
         content: `
           <div id="${infoWindowId}" style="font-size: 13px; position: relative; min-width: 250px;">
-            
+
             <div style="padding-right: 15px;">
               <strong>📍 ${props.name}${infoDistancia}</strong><br />
               Dirección: ${props.direccion}<br />
+              Jurisdicción: ${props.jurisdiccion}
+              ${isViewer ? '' : `<br />
               Tipo: ${props.tipo}<br />
-              Jurisdicción: ${props.jurisdiccion}<br />
               Megáfono: ${props.megafono ? "✅" : "❌"}<br />
               Botón de pánico: ${props.boton ? "✅" : "❌"}
-              
+
               ${esSeleccionada ? `
                 <br /><br />
                 <div style="
@@ -819,7 +821,7 @@ const GoogleCapaCamarasMunicipales = ({
                   🎯 CÁMARA SELECCIONADA
                 </div>
               ` : ''}
-              
+
               ${enSeguimiento ? `
                 <br /><br />
                 <div style="
@@ -840,7 +842,7 @@ const GoogleCapaCamarasMunicipales = ({
                   <div style="font-size: 10px; opacity: 0.9;">Nuevo círculo de seguimiento</div>
                   <div style="font-size: 8px; opacity: 0.7; margin-top: 2px;">Mantén Ctrl presionado y haz clic aquí</div>
                 </div>
-              ` : ''}
+              ` : ''}`}
             </div>
           </div>
         `

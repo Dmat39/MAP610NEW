@@ -13,6 +13,7 @@ const ControlCamaras = ({
   onLimpiarSeguimiento,
   onLimpiarSeleccion,
   mapType = 'leaflet',
+  isViewer = false,
   topPosition = 10,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
@@ -380,49 +381,51 @@ const ControlCamaras = ({
         </div>
 
         {/* Filtros compactos */}
-        <div className="filtros-compactos">
-          <div className="filtros-titulo">
-            <Filter size={14} />
-            <span>Filtros rápidos</span>
-          </div>
-          <div className="filtros-botones">
-            <button
-              className={`filtro-btn ${filtros.megafono ? 'activo' : ''}`}
-              onClick={() => toggleFiltro('megafono')}
-              title="Mostrar solo cámaras con megáfono"
-            >
-              <Zap size={14} />
-              <span>Megáfono</span>
-              {filtros.megafono && (
-                <span className="filtro-count">{camaras.filter(c => c.megafono).length}</span>
-              )}
-            </button>
+        {!isViewer && (
+          <div className="filtros-compactos">
+            <div className="filtros-titulo">
+              <Filter size={14} />
+              <span>Filtros rápidos</span>
+            </div>
+            <div className="filtros-botones">
+              <button
+                className={`filtro-btn ${filtros.megafono ? 'activo' : ''}`}
+                onClick={() => toggleFiltro('megafono')}
+                title="Mostrar solo cámaras con megáfono"
+              >
+                <Zap size={14} />
+                <span>Megáfono</span>
+                {filtros.megafono && (
+                  <span className="filtro-count">{camaras.filter(c => c.megafono).length}</span>
+                )}
+              </button>
 
-            <button
-              className={`filtro-btn ${filtros.boton ? 'activo' : ''}`}
-              onClick={() => toggleFiltro('boton')}
-              title="Mostrar solo cámaras con botón de pánico"
-            >
-              <AlertTriangle size={14} />
-              <span>Botón Pánico</span>
-              {filtros.boton && (
-                <span className="filtro-count">{camaras.filter(c => c.boton).length}</span>
-              )}
-            </button>
+              <button
+                className={`filtro-btn ${filtros.boton ? 'activo' : ''}`}
+                onClick={() => toggleFiltro('boton')}
+                title="Mostrar solo cámaras con botón de pánico"
+              >
+                <AlertTriangle size={14} />
+                <span>Botón Pánico</span>
+                {filtros.boton && (
+                  <span className="filtro-count">{camaras.filter(c => c.boton).length}</span>
+                )}
+              </button>
 
-            <button
-              className={`filtro-btn ${filtros.lpr ? 'activo' : ''}`}
-              onClick={() => toggleFiltro('lpr')}
-              title="Mostrar solo cámaras LPR (Tipo III)"
-            >
-              <Camera size={14} />
-              <span>LPR</span>
-              {filtros.lpr && (
-                <span className="filtro-count">{camaras.filter(c => c.tipo === 'TIPO III').length}</span>
-              )}
-            </button>
+              <button
+                className={`filtro-btn ${filtros.lpr ? 'activo' : ''}`}
+                onClick={() => toggleFiltro('lpr')}
+                title="Mostrar solo cámaras LPR (Tipo III)"
+              >
+                <Camera size={14} />
+                <span>LPR</span>
+                {filtros.lpr && (
+                  <span className="filtro-count">{camaras.filter(c => c.tipo === 'TIPO III').length}</span>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Filtro por Jurisdicciones */}
         <div className={`filtro-jurisdicciones ${jurisdiccionesCollapsed ? 'collapsed' : ''}`}>
