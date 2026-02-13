@@ -247,9 +247,14 @@ const MapView = () => {
     { name: 'sostenimiento', label: 'Sostenimiento', visible: capasVisibles.sostenimiento },
   ];
 
+  const isCeplan = userRole === 'CEPLAN' || user?.username === 'ceplan';
+
   // Filtrar capas según el rol del usuario
-  const capas = isOperator
-    ? todasLasCapas.filter(capa => !capa.restrictedForOperator)
+  const capas = (isOperator || isCeplan)
+    ? todasLasCapas.filter(capa => {
+        if (isCeplan && capa.name === 'clusters') return true;
+        return !capa.restrictedForOperator;
+      })
     : todasLasCapas;
 
   const handleToggle = useCallback(nombre => {
