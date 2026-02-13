@@ -50,8 +50,7 @@ export default function Login() {
       <div className={`top-title ${mounted ? 'visible' : ''}`}>
         <div className="shield-icon">
           <FaShieldAlt />
-        </div>
-        <h1 className="cecom">CECOM</h1>
+        </div> 
         <h2 className="sjl">SAN JUAN DE LURIGANCHO</h2>
         <div className="title-underline"></div>
       </div>

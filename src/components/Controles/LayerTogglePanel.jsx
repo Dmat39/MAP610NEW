@@ -10,6 +10,7 @@ const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange, onExpandC
     incidents: false,
     infrastructure: false,
     tools: false,
+    zonas: true,
   });
 
   // Obtener el rol del usuario
@@ -28,11 +29,15 @@ const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange, onExpandC
     },
     infrastructure: {
       title: 'Puntos Estratégicos',
-      layers: ['paraderosAutorizados', 'defensaCivil', 'paraderosNoAutorizados', 'residuos', 'sostenimiento']
+      layers: ['paraderosAutorizados', 'defensaCivil', 'paraderosNoAutorizados', 'residuos', 'sostenimiento', 'actividades']
     },
     tools: {
       title: 'Herramientas',
       layers: ['clusters', 'busquedaDirecciones', 'ubicadorPunto', 'rutas']
+    },
+    zonas: {
+      title: 'Zonas Geográficas',
+      layers: ['zonasCodisec']
     }
   };
 
@@ -70,9 +75,14 @@ const LayerTogglePanel = ({ capas, onToggle, mapType, onMapTypeChange, onExpandC
 
       <div className="panel-controls">
         {Object.entries(categories)
-          .filter(([categoryKey]) => {
+          .filter(([categoryKey, category]) => {
             // Ocultar incidencias delictivas si el usuario es OPERADOR
             if (categoryKey === 'incidents' && isOperator) {
+              return false;
+            }
+            // Ocultar categorías sin capas disponibles (ej: CODISEC)
+            const availableLayers = category.layers.map(getCapaByName).filter(Boolean);
+            if (availableLayers.length === 0) {
               return false;
             }
             return true;

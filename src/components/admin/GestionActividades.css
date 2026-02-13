@@ -1,7 +1,7 @@
-/* Gestión de Cámaras Municipales - Modern Styles */
+/* Gestión de Actividades - Modern Styles */
 
 /* Container Principal */
-.gestion-municipales-container {
+.gestion-actividades-container {
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -16,7 +16,7 @@
 }
 
 /* Header */
-.municipales-header {
+.actividades-header {
   background: linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%);
   border-radius: 16px;
   padding: 18px 24px;
@@ -27,27 +27,27 @@
   border: 1px solid rgba(189, 216, 233, 0.2);
 }
 
-.municipales-header-content {
+.actividades-header-content {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
-.municipales-header-text h1 {
+.actividades-header-text h1 {
   font-size: 22px;
   font-weight: bold;
   margin: 0 0 4px 0;
   color: white;
 }
 
-.municipales-header-text p {
+.actividades-header-text p {
   font-size: 13px;
   margin: 0;
   opacity: 0.95;
   color: rgba(255, 255, 255, 0.9);
 }
 
-.municipales-header-actions {
+.actividades-header-actions {
   display: flex;
   gap: 12px;
   margin-top: 14px;
@@ -55,7 +55,7 @@
 }
 
 /* Botones */
-.btn-municipales-primary {
+.btn-actividades-primary {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -71,13 +71,13 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.btn-municipales-primary:hover {
+.btn-actividades-primary:hover {
   background: white;
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
-.btn-municipales-refresh {
+.btn-actividades-refresh {
   padding: 10px;
   background: rgba(255, 255, 255, 0.15);
   color: white;
@@ -92,13 +92,13 @@
   height: 42px;
 }
 
-.btn-municipales-refresh:hover {
+.btn-actividades-refresh:hover {
   background: rgba(255, 255, 255, 0.25);
   border-color: rgba(255, 255, 255, 0.4);
   transform: scale(1.05);
 }
 
-.btn-municipales-excel {
+.btn-actividades-excel {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -114,19 +114,19 @@
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
-.btn-municipales-excel:hover {
+.btn-actividades-excel:hover {
   background: rgba(16, 185, 129, 1);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
 }
 
-.btn-municipales-excel:disabled {
+.btn-actividades-excel:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
 }
 
-.btn-municipales-secondary {
+.btn-actividades-secondary {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -141,14 +141,14 @@
   font-weight: 500;
 }
 
-.btn-municipales-secondary:hover {
+.btn-actividades-secondary:hover {
   background: rgba(239, 68, 68, 0.25);
   border-color: rgba(239, 68, 68, 0.5);
   transform: translateY(-1px);
 }
 
 /* Alerts */
-.municipales-alert {
+.actividades-alert {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -157,22 +157,22 @@
   margin-bottom: 16px;
   font-size: 13px;
   position: relative;
-  animation: slideInDown 0.3s ease;
+  animation: actividades-slideInDown 0.3s ease;
 }
 
-.municipales-alert-error {
+.actividades-alert-error {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
   color: #991b1b;
 }
 
-.municipales-alert-success {
+.actividades-alert-success {
   background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.3);
   color: #065f46;
 }
 
-.municipales-alert-close {
+.actividades-alert-close {
   margin-left: auto;
   padding: 4px;
   background: transparent;
@@ -185,12 +185,12 @@
   align-items: center;
 }
 
-.municipales-alert-close:hover {
+.actividades-alert-close:hover {
   opacity: 1;
 }
 
 /* Toolbar */
-.municipales-toolbar {
+.actividades-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -203,7 +203,7 @@
   flex-wrap: wrap;
 }
 
-.municipales-toolbar-left {
+.actividades-toolbar-left {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -211,54 +211,34 @@
   flex: 1;
 }
 
-.municipales-toolbar-right {
+.actividades-toolbar-right {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
 }
 
-.municipales-filters-group {
+.actividades-filters-group {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
 }
 
-.municipales-filter-select {
-  padding: 9px 14px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 13px;
-  background: white;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  color: #374151;
-  min-width: 160px;
-  width: 160px;
-  flex-shrink: 0;
-}
-
-.municipales-filter-select:focus {
-  outline: none;
-  border-color: #6EA2B3;
-  box-shadow: 0 0 0 3px rgba(110, 162, 179, 0.15);
-}
-
-.municipales-count-text {
+.actividades-count-text {
   font-size: 14px;
   color: #374151;
   font-weight: 500;
 }
 
-.municipales-count-number {
+.actividades-count-number {
   font-weight: 700;
   color: #0A4174;
   font-size: 16px;
 }
 
 /* Content */
-.municipales-content {
+.actividades-content {
   flex: 1;
   background: white;
   border-radius: 12px;
@@ -269,8 +249,8 @@
 }
 
 /* Loading & Empty States */
-.municipales-loading-state,
-.municipales-empty-state {
+.actividades-loading-state,
+.actividades-empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -281,39 +261,39 @@
   gap: 16px;
 }
 
-.municipales-empty-state h3 {
+.actividades-empty-state h3 {
   font-size: 18px;
   color: #374151;
   margin: 0;
 }
 
-.municipales-empty-state p {
+.actividades-empty-state p {
   font-size: 14px;
   color: #6b7280;
   margin: 0;
 }
 
 /* Table */
-.municipales-table-wrapper {
+.actividades-table-wrapper {
   flex: 1;
   overflow-y: auto;
   overflow-x: auto;
 }
 
-.municipales-table {
+.actividades-table {
   width: 100%;
   border-collapse: collapse;
   min-width: 900px;
 }
 
-.municipales-table thead {
+.actividades-table thead {
   background: linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%);
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
-.municipales-table th {
+.actividades-table th {
   padding: 14px 16px;
   text-align: left;
   font-size: 12px;
@@ -324,23 +304,23 @@
   white-space: nowrap;
 }
 
-.municipales-table tbody tr {
+.actividades-table tbody tr {
   border-bottom: 1px solid #e5e7eb;
   transition: background-color 0.2s ease;
 }
 
-.municipales-table tbody tr:hover {
+.actividades-table tbody tr:hover {
   background-color: rgba(78, 142, 162, 0.05);
 }
 
-.municipales-table td {
+.actividades-table td {
   padding: 14px 16px;
   font-size: 13px;
   color: #374151;
 }
 
 /* Table Cells */
-.municipales-address-cell {
+.actividades-address-cell {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -349,7 +329,7 @@
 }
 
 /* Badges */
-.municipales-badge {
+.actividades-badge {
   display: inline-block;
   padding: 5px 10px;
   border-radius: 6px;
@@ -359,31 +339,31 @@
   letter-spacing: 0.3px;
 }
 
-.municipales-badge-type {
+.actividades-badge-type {
   background: rgba(59, 130, 246, 0.15);
-  color: #1e40af;
+  color: #0A4174;
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
-.municipales-badge-success {
+.actividades-badge-success {
   background: rgba(16, 185, 129, 0.15);
   color: #065f46;
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-.municipales-badge-gray {
+.actividades-badge-gray {
   background: rgba(107, 114, 128, 0.15);
   color: #4b5563;
   border: 1px solid rgba(107, 114, 128, 0.3);
 }
 
 /* Action Buttons */
-.municipales-action-buttons {
+.actividades-action-buttons {
   display: flex;
   gap: 8px;
 }
 
-.btn-icon-municipales {
+.btn-icon-actividades {
   padding: 8px;
   border: none;
   border-radius: 6px;
@@ -394,28 +374,28 @@
   transition: all 0.2s ease;
 }
 
-.btn-edit {
+.btn-icon-actividades.btn-edit {
   background: rgba(59, 130, 246, 0.1);
   color: #2563eb;
 }
 
-.btn-edit:hover {
+.btn-icon-actividades.btn-edit:hover {
   background: rgba(59, 130, 246, 0.2);
   transform: scale(1.1);
 }
 
-.btn-delete {
+.btn-icon-actividades.btn-delete {
   background: rgba(239, 68, 68, 0.1);
   color: #dc2626;
 }
 
-.btn-delete:hover {
+.btn-icon-actividades.btn-delete:hover {
   background: rgba(239, 68, 68, 0.2);
   transform: scale(1.1);
 }
 
 /* Modal */
-.municipales-modal-overlay {
+.actividades-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -427,10 +407,10 @@
   justify-content: center;
   z-index: 9999;
   padding: 20px;
-  animation: fadeIn 0.2s ease;
+  animation: actividades-fadeIn 0.2s ease;
 }
 
-.municipales-modal-content {
+.actividades-modal-content {
   background: white;
   border-radius: 16px;
   max-width: 800px;
@@ -438,10 +418,10 @@
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: slideInUp 0.3s ease;
+  animation: actividades-slideInUp 0.3s ease;
 }
 
-.municipales-modal-header {
+.actividades-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -454,7 +434,7 @@
   z-index: 10;
 }
 
-.municipales-modal-header h2 {
+.actividades-modal-header h2 {
   font-size: 19px;
   font-weight: 600;
   color: #0A4174;
@@ -465,16 +445,16 @@
 }
 
 /* Form */
-.municipales-modal-body {
+.actividades-modal-body {
   padding: 24px;
 }
 
-.municipales-form-group {
+.actividades-form-group {
   margin-bottom: 18px;
   flex: 1;
 }
 
-.municipales-form-group label {
+.actividades-form-group label {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -484,16 +464,9 @@
   margin-bottom: 8px;
 }
 
-.municipales-form-hint {
-  font-size: 11px;
-  color: #9ca3af;
-  margin-left: 4px;
-  font-weight: 400;
-}
-
-.municipales-form-group input,
-.municipales-form-group select,
-.municipales-form-group textarea {
+.actividades-form-group input,
+.actividades-form-group select,
+.actividades-form-group textarea {
   width: 100%;
   padding: 11px 14px;
   border: 2px solid #e5e7eb;
@@ -505,193 +478,26 @@
   color: #374151;
 }
 
-.municipales-form-group input:focus,
-.municipales-form-group select:focus,
-.municipales-form-group textarea:focus {
+.actividades-form-group input:focus,
+.actividades-form-group select:focus,
+.actividades-form-group textarea:focus {
   outline: none;
   border-color: #6EA2B3;
   box-shadow: 0 0 0 3px rgba(110, 162, 179, 0.15);
 }
 
-.municipales-coordinates-group {
+.actividades-coordinates-group {
   display: flex;
   gap: 14px;
   margin-bottom: 18px;
-}
-
-.municipales-checkbox-group {
-  display: flex;
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
-.municipales-checkbox-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: rgba(78, 142, 162, 0.08);
-  border: 2px solid rgba(110, 162, 179, 0.2);
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  flex: 1;
-}
-
-.municipales-checkbox-item:hover {
-  background: rgba(78, 142, 162, 0.12);
-  border-color: rgba(110, 162, 179, 0.4);
-}
-
-.municipales-checkbox-item input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: #4E8EA2;
-}
-
-.municipales-checkbox-item label {
-  font-size: 14px;
-  color: #374151;
-  cursor: pointer;
-  font-weight: 500;
-  margin: 0;
-}
-
-/* Geometry Editor */
-.municipales-geometry-section {
-  margin: 24px 0;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.municipales-geometry-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 18px;
-  background: rgba(78, 142, 162, 0.08);
-  border-bottom: 1px solid #e5e7eb;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.municipales-geometry-header:hover {
-  background: rgba(78, 142, 162, 0.12);
-}
-
-.municipales-geometry-toggle {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: transparent;
-  border: none;
-  font-size: 14px;
-  font-weight: 600;
-  color: #0A4174;
-  cursor: pointer;
-  flex: 1;
-  padding: 0;
-}
-
-.municipales-geometry-status {
-  padding: 5px 12px;
-  background: rgba(16, 185, 129, 0.15);
-  color: #065f46;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.municipales-geometry-content {
-  padding: 20px;
-  background: white;
-}
-
-.municipales-geometry-help {
-  font-size: 13px;
-  color: #6b7280;
-  margin: 0 0 12px 0;
-}
-
-.municipales-geometry-example {
-  background: #f9fafb;
-  padding: 14px;
-  border-radius: 8px;
-  font-size: 12px;
-  color: #374151;
-  overflow-x: auto;
-  margin-bottom: 14px;
-  border: 1px solid #e5e7eb;
-  font-family: 'Courier New', monospace;
-}
-
-.municipales-geometry-textarea {
-  width: 100%;
-  padding: 14px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 13px;
-  font-family: 'Courier New', monospace;
-  resize: vertical;
-  box-sizing: border-box;
-  background: white;
-  transition: all 0.3s ease;
-}
-
-.municipales-geometry-textarea:focus {
-  outline: none;
-  border-color: #6EA2B3;
-  box-shadow: 0 0 0 3px rgba(110, 162, 179, 0.15);
-}
-
-.municipales-geometry-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.municipales-geometry-clear {
-  padding: 9px 16px;
-  background: rgba(107, 114, 128, 0.1);
-  color: #4b5563;
-  border: 1px solid rgba(107, 114, 128, 0.3);
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.municipales-geometry-clear:hover {
-  background: rgba(107, 114, 128, 0.2);
-}
-
-.municipales-geometry-apply {
-  padding: 9px 16px;
-  background: #10b981;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.municipales-geometry-apply:hover {
-  background: #059669;
 }
 
 /* Map Preview */
-.municipales-map-section {
+.actividades-map-section {
   margin: 20px 0;
 }
 
-.municipales-map-toggle-button {
+.actividades-map-toggle-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -708,12 +514,12 @@
   transition: all 0.3s ease;
 }
 
-.municipales-map-toggle-button:hover {
+.actividades-map-toggle-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(78, 142, 162, 0.3);
 }
 
-.municipales-map-preview {
+.actividades-map-preview {
   margin-top: 16px;
   border: 2px solid #4E8EA2;
   border-radius: 12px;
@@ -722,7 +528,7 @@
   height: 350px;
 }
 
-.municipales-map-hint {
+.actividades-map-hint {
   padding: 12px 16px;
   background: rgba(78, 142, 162, 0.08);
   border-top: 1px solid #4E8EA2;
@@ -731,64 +537,12 @@
   text-align: center;
 }
 
-.municipales-map-hint strong {
+.actividades-map-hint strong {
   color: #047857;
 }
 
-/* Vision Field Preview */
-.municipales-vision-toggle-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 20px;
-  background: #10b981;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  width: 100%;
-  transition: all 0.3s ease;
-}
-
-.municipales-vision-toggle-button:hover {
-  background: #059669;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
-}
-
-.municipales-vision-preview {
-  margin-top: 16px;
-  border: 2px solid #10b981;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
-  height: 400px;
-}
-
-.municipales-vision-hint {
-  padding: 14px 18px;
-  background: #f0fdf4;
-  border-top: 1px solid #10b981;
-}
-
-.municipales-vision-hint p {
-  margin: 0 0 6px 0;
-  font-size: 13px;
-  color: #065f46;
-  font-weight: 500;
-}
-
-.municipales-vision-hint p:last-child {
-  margin-bottom: 0;
-  font-size: 12px;
-  font-style: italic;
-}
-
 /* Modal Footer */
-.municipales-modal-footer {
+.actividades-modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -797,7 +551,7 @@
   border-top: 1px solid #e5e7eb;
 }
 
-.municipales-modal-footer button {
+.actividades-modal-footer button {
   padding: 11px 20px;
   border-radius: 10px;
   font-size: 14px;
@@ -809,35 +563,35 @@
   gap: 8px;
 }
 
-.municipales-modal-footer .btn-cancel {
+.actividades-modal-footer .btn-cancel {
   background: rgba(107, 114, 128, 0.1);
   color: #4b5563;
   border: 1px solid rgba(107, 114, 128, 0.3);
 }
 
-.municipales-modal-footer .btn-cancel:hover {
+.actividades-modal-footer .btn-cancel:hover {
   background: rgba(107, 114, 128, 0.2);
 }
 
-.municipales-modal-footer .btn-save {
+.actividades-modal-footer .btn-save {
   background: linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%);
   color: white;
   border: none;
 }
 
-.municipales-modal-footer .btn-save:hover {
+.actividades-modal-footer .btn-save:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(78, 142, 162, 0.3);
 }
 
-.municipales-modal-footer .btn-save:disabled {
+.actividades-modal-footer .btn-save:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
 }
 
 /* Animations */
-@keyframes fadeIn {
+@keyframes actividades-fadeIn {
   from {
     opacity: 0;
   }
@@ -846,7 +600,7 @@
   }
 }
 
-@keyframes slideInUp {
+@keyframes actividades-slideInUp {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -857,7 +611,7 @@
   }
 }
 
-@keyframes slideInDown {
+@keyframes actividades-slideInDown {
   from {
     opacity: 0;
     transform: translateY(-10px);
@@ -869,10 +623,10 @@
 }
 
 .spinning {
-  animation: spin 1s linear infinite;
+  animation: actividades-spin 1s linear infinite;
 }
 
-@keyframes spin {
+@keyframes actividades-spin {
   from {
     transform: rotate(0deg);
   }
@@ -883,32 +637,32 @@
 
 /* Responsive Tablets */
 @media (max-width: 1024px) {
-  .gestion-municipales-container {
+  .gestion-actividades-container {
     padding: 16px;
   }
 
-  .municipales-header {
+  .actividades-header {
     padding: 16px 20px;
   }
 
-  .municipales-header-text h1 {
+  .actividades-header-text h1 {
     font-size: 20px;
   }
 
-  .municipales-header-text p {
+  .actividades-header-text p {
     font-size: 12px;
   }
 
-  .municipales-toolbar {
+  .actividades-toolbar {
     padding: 14px;
   }
 
-  .municipales-table th {
+  .actividades-table th {
     padding: 12px 14px;
     font-size: 11px;
   }
 
-  .municipales-table td {
+  .actividades-table td {
     padding: 12px 14px;
     font-size: 12px;
   }
@@ -916,105 +670,105 @@
 
 /* Responsive Mobile */
 @media (max-width: 768px) {
-  .gestion-municipales-container {
+  .gestion-actividades-container {
     padding: 12px;
   }
 
-  .municipales-header {
+  .actividades-header {
     padding: 14px 18px;
     border-radius: 12px;
   }
 
-  .municipales-header-content {
+  .actividades-header-content {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
 
-  .municipales-header-text h1 {
+  .actividades-header-text h1 {
     font-size: 18px;
   }
 
-  .municipales-header-text p {
+  .actividades-header-text p {
     font-size: 12px;
   }
 
-  .municipales-header-actions {
+  .actividades-header-actions {
     width: 100%;
     flex-direction: row;
     justify-content: space-between;
   }
 
-  .btn-municipales-primary,
-  .btn-municipales-excel {
+  .btn-actividades-primary,
+  .btn-actividades-excel {
     flex: 1;
     justify-content: center;
     padding: 10px 16px;
     font-size: 13px;
   }
 
-  .btn-municipales-refresh {
+  .btn-actividades-refresh {
     width: 44px;
     height: 44px;
   }
 
-  .municipales-toolbar {
+  .actividades-toolbar {
     padding: 12px;
     gap: 12px;
   }
 
-  .municipales-toolbar-left {
+  .actividades-toolbar-left {
     flex-wrap: nowrap;
   }
 
-  .municipales-toolbar-right {
+  .actividades-toolbar-right {
     width: auto;
   }
 
-  .municipales-filters-group {
+  .actividades-filters-group {
     flex-wrap: nowrap;
   }
 
-  .municipales-table-wrapper {
+  .actividades-table-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
-  .municipales-table th {
+  .actividades-table th {
     padding: 10px 12px;
     font-size: 10px;
   }
 
-  .municipales-table td {
+  .actividades-table td {
     padding: 10px 12px;
     font-size: 12px;
   }
 
-  .municipales-modal-overlay {
+  .actividades-modal-overlay {
     padding: 0;
   }
 
-  .municipales-modal-content {
+  .actividades-modal-content {
     max-height: 100vh;
     height: 100vh;
     border-radius: 0;
     max-width: 100%;
   }
 
-  .municipales-modal-header {
+  .actividades-modal-header {
     padding: 16px 20px;
     border-radius: 0;
   }
 
-  .municipales-modal-header h2 {
+  .actividades-modal-header h2 {
     font-size: 17px;
   }
 
-  .municipales-modal-body {
+  .actividades-modal-body {
     padding: 20px;
   }
 
-  .municipales-modal-footer {
+  .actividades-modal-footer {
     padding: 14px 20px;
     position: sticky;
     bottom: 0;
@@ -1022,104 +776,94 @@
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
   }
 
-  .municipales-coordinates-group {
-    flex-direction: column;
-  }
-
-  .municipales-checkbox-group {
+  .actividades-coordinates-group {
     flex-direction: column;
   }
 }
 
 /* Responsive Small Mobile */
 @media (max-width: 480px) {
-  .gestion-municipales-container {
+  .gestion-actividades-container {
     padding: 8px;
   }
 
-  .municipales-header {
+  .actividades-header {
     padding: 12px;
     border-radius: 10px;
   }
 
-  .municipales-header-text h1 {
+  .actividades-header-text h1 {
     font-size: 16px;
   }
 
-  .municipales-header-text p {
+  .actividades-header-text p {
     display: none;
   }
 
-  .btn-municipales-primary span,
-  .btn-municipales-excel span {
+  .btn-actividades-primary span,
+  .btn-actividades-excel span {
     display: none;
   }
 
-  .btn-municipales-refresh {
+  .btn-actividades-refresh {
     width: 40px;
     height: 40px;
   }
 
-  .municipales-toolbar {
+  .actividades-toolbar {
     padding: 10px;
     flex-direction: column;
     align-items: stretch;
   }
 
-  .municipales-toolbar-left {
+  .actividades-toolbar-left {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
   }
 
-  .municipales-toolbar-left > div {
+  .actividades-toolbar-left > div {
     width: 100% !important;
     min-width: unset !important;
   }
 
-  .municipales-toolbar-right {
+  .actividades-toolbar-right {
     width: 100%;
   }
 
-  .municipales-filters-group {
+  .actividades-filters-group {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
   }
 
-  .municipales-filter-select {
-    width: 100%;
-    min-width: unset;
-  }
-
-  .municipales-table th,
-  .municipales-table td {
+  .actividades-table th,
+  .actividades-table td {
     padding: 8px 10px;
     font-size: 11px;
   }
 
-  .municipales-modal-header h2 {
+  .actividades-modal-header h2 {
     font-size: 15px;
   }
 
-  .municipales-modal-body {
+  .actividades-modal-body {
     padding: 16px;
   }
 
-  .municipales-modal-footer {
+  .actividades-modal-footer {
     flex-direction: column;
     gap: 8px;
     padding: 12px 16px;
   }
 
-  .municipales-modal-footer button {
+  .actividades-modal-footer button {
     width: 100%;
     justify-content: center;
   }
 
-  .municipales-map-preview,
-  .municipales-vision-preview {
+  .actividades-map-preview {
     height: 250px;
   }
 }

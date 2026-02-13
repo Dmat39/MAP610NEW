@@ -101,6 +101,7 @@ const CapaCamarasMunicipales = ({
   limpiarSeguimiento,
   camaraConVision,
   setCamaraConVision,
+  isViewer = false,
 }) => {
   const [camaras, setCamaras] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -632,14 +633,18 @@ const CapaCamarasMunicipales = ({
                   <br />
                   Dirección: {props.direccion}
                   <br />
-                  Tipo: {props.tipo}
-                  <br />
                   Jurisdicción: {props.jurisdiccion}
-                  <br />
-                  Megáfono: {props.megafono ? '✅' : '❌'}
-                  <br />
-                  Botón de pánico: {props.boton ? '✅' : '❌'}
-                  {enSeguimiento && (
+                  {!isViewer && (
+                    <>
+                      <br />
+                      Tipo: {props.tipo}
+                      <br />
+                      Megáfono: {props.megafono ? '✅' : '❌'}
+                      <br />
+                      Botón de pánico: {props.boton ? '✅' : '❌'}
+                    </>
+                  )}
+                  {!isViewer && enSeguimiento && (
                     <>
                       <br />
                       <br />
@@ -658,7 +663,7 @@ const CapaCamarasMunicipales = ({
                       </div>
                     </>
                   )}
-                  {esSeleccionada && !enSeguimiento && (
+                  {!isViewer && esSeleccionada && !enSeguimiento && (
                     <>
                       <br />
                       <br />
