@@ -53,6 +53,19 @@ const PopupContent = ({ camara }) => {
         <span>{camara.address}</span>
       </div>
 
+      {/* Teléfono */}
+      <div style={{
+        fontSize: "11px",
+        color: "#374151",
+        marginBottom: "8px",
+        display: "flex",
+        gap: "4px",
+        alignItems: "center"
+      }}>
+        <span style={{ fontSize: "12px" }}>📞</span>
+        <span>{camara.phone || 'N/A'}</span>
+      </div>
+
       {/* Botón para mostrar credenciales */}
       <button
         onClick={() => setMostrarCredenciales(!mostrarCredenciales)}
@@ -77,7 +90,7 @@ const PopupContent = ({ camara }) => {
         {mostrarCredenciales ? "Ocultar Credenciales" : "Ver Credenciales"}
       </button>
 
-      {/* Credenciales (solo visible si mostrarCredenciales es true) */}
+      {/* Credenciales */}
       {mostrarCredenciales && (
         <div style={{
           background: "#f1f5f9",
