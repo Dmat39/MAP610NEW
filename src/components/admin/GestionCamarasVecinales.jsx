@@ -37,6 +37,7 @@ const GestionCamarasVecinales = () => {
     brand: 'DAHUA',
     mode: 'FIXED',
     neighbor: '',
+    phone: '',
     latitude: '',
     longitude: '',
   });
@@ -96,6 +97,7 @@ const GestionCamarasVecinales = () => {
       brand: 'DAHUA',
       mode: 'FIXED',
       neighbor: '',
+      phone: '',      
       latitude: '',
       longitude: '',
     });
@@ -117,6 +119,7 @@ const GestionCamarasVecinales = () => {
         brand: fullData.brand || 'DAHUA',
         mode: fullData.mode || 'FIXED',
         neighbor: fullData.neighbor || '',
+        phone: fullData.phone || '',
         latitude: fullData.latitude !== undefined && fullData.latitude !== null ? fullData.latitude : '',
         longitude: fullData.longitude !== undefined && fullData.longitude !== null ? fullData.longitude : '',
       };
@@ -140,6 +143,7 @@ const GestionCamarasVecinales = () => {
       brand: 'DAHUA',
       mode: 'FIXED',
       neighbor: '',
+      phone: '',
       latitude: '',
       longitude: '',
     });
@@ -507,6 +511,7 @@ const GestionCamarasVecinales = () => {
                     <th>#</th>
                     <th>Dirección</th>
                     <th>Vecino</th>
+                    <th>Teléfono</th>
                     <th>Marca</th>
                     <th>Modo</th>
                     <th>Coordenadas</th>
@@ -529,6 +534,7 @@ const GestionCamarasVecinales = () => {
                           </div>
                         </td>
                         <td>{camera.neighbor}</td>
+                        <td>{camera.phone || 'N/A'}</td>
                         <td>
                           <span className="camaras-badge camaras-badge-brand">{camera.brand}</span>
                         </td>
@@ -630,7 +636,19 @@ const GestionCamarasVecinales = () => {
                   placeholder="Juan Pérez"
                 />
               </div>
-
+              <div className="camaras-form-group">
+                <label>
+                  <Camera size={16} />
+                  <span>Teléfono</span>
+                </label>
+                <input
+                  type="text"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleFormChange}
+                  placeholder="999999999"
+                />
+              </div>
               <div className="camaras-coordinates-group">
                 <div className="camaras-form-group">
                   <label>
