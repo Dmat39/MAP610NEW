@@ -36,10 +36,10 @@ const CapaJurisdiccion = ({
     const nombre = feature.properties.name || 'Jurisdicción';
 
     if (!esInactivo && !ubicadorActivo) {
-      layer.bindPopup(`<b>${nombre}</b>`);
+      layer.bindPopup(`<b>${nombre}</b>`, { autoPan: false });
 
-      layer.on('click', function () {
-        layer.openPopup();
+      layer.on('click', function (e) {
+        layer.openPopup(e.latlng);
       });
     } else {
       // Cuando está inactivo o ubicador activo, remover completamente todos los eventos

@@ -28,6 +28,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -67,6 +68,32 @@
 
 .panel-header svg {
   color: white;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Mejora 1: Badge de capas activas en header colapsado */
+.active-badge {
+  background: #4E8EA2;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  line-height: 1.4;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 .chevron-icon {
@@ -209,21 +236,6 @@
 .layer-toggle-panel.expanded .layer-checkbox:nth-child(8) { animation-delay: 0.26s; }
 .layer-toggle-panel.expanded .layer-checkbox:nth-child(9) { animation-delay: 0.29s; }
 
-/* Contador de capas activas */
-.panel-header::after {
-  content: attr(data-active-count);
-  position: absolute;
-  top: 8px;
-  right: 40px;
-  background: rgba(255, 255, 255, 0.25);
-  color: white;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-  z-index: 1;
-}
 
 /* Scrollbar personalizada */
 .panel-controls::-webkit-scrollbar {
@@ -256,20 +268,42 @@
 .category-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
   padding: 10px 12px;
   background: linear-gradient(135deg, rgba(110, 162, 179, 0.15) 0%, rgba(78, 142, 162, 0.1) 100%);
   border-radius: 8px;
-  cursor: pointer;
   user-select: none;
   transition: all 0.2s ease;
   border: 1px solid rgba(123, 189, 232, 0.2);
 }
 
+/* Mejora 4: Resaltar categorías con capas activas */
+.category-header.has-active {
+  border-color: rgba(78, 142, 162, 0.6);
+  background: linear-gradient(135deg, rgba(78, 142, 162, 0.2) 0%, rgba(10, 65, 116, 0.15) 100%);
+}
+
 .category-header:hover {
   background: linear-gradient(135deg, rgba(110, 162, 179, 0.25) 0%, rgba(78, 142, 162, 0.15) 100%);
   border-color: rgba(123, 189, 232, 0.4);
-  transform: translateX(2px);
+}
+
+/* Lado izquierdo clickeable para colapsar */
+.category-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  cursor: pointer;
+  min-width: 0;
+}
+
+/* Lado derecho: contador + toggle-all */
+.category-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .category-chevron {
@@ -291,6 +325,7 @@
   letter-spacing: -0.01em;
 }
 
+/* Mejora 2: Contador activas/total */
 .category-count {
   font-size: 11px;
   color: #7BBDE8;
@@ -299,6 +334,51 @@
   border-radius: 10px;
   font-weight: 600;
   border: 1px solid rgba(123, 189, 232, 0.3);
+  transition: all 0.2s ease;
+}
+
+.category-count.has-active {
+  color: #fff;
+  background: rgba(78, 142, 162, 0.5);
+  border-color: #6EA2B3;
+}
+
+/* Mejora 3: Botón toggle-all por categoría */
+.category-toggle-all {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 1px solid rgba(123, 189, 232, 0.4);
+  background: rgba(0, 29, 57, 0.5);
+  color: #7BBDE8;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.category-toggle-all:hover {
+  background: rgba(78, 142, 162, 0.4);
+  border-color: #6EA2B3;
+  color: white;
+  transform: scale(1.1);
+}
+
+.category-toggle-all.all-active {
+  background: linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%);
+  border-color: #6EA2B3;
+  color: white;
+}
+
+.category-toggle-all.partial {
+  border-color: rgba(123, 189, 232, 0.6);
+  color: #BDD8E9;
 }
 
 .category-layers {

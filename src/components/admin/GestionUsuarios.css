@@ -421,6 +421,7 @@
   padding: 24px;
   overflow-y: auto;
   flex: 1;
+  background: white;
 }
 
 .modal-footer {
@@ -458,6 +459,7 @@
   font-family: inherit;
   transition: all 0.3s ease;
   color: #001D39;
+  background: white;
 }
 
 .form-group input:focus,
@@ -468,7 +470,9 @@
   box-shadow: 0 0 0 3px rgba(110, 162, 179, 0.15);
 }
 
-.form-group input.disabled {
+.form-group input:disabled,
+.form-group select:disabled,
+.form-group textarea:disabled {
   background: #f3f4f6;
   color: #6b7280;
   cursor: not-allowed;

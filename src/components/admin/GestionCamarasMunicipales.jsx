@@ -123,7 +123,6 @@ const GestionCamarasMunicipales = () => {
     setModalMode('edit');
     setSelectedCamera(camera);
 
-    console.log('📸 Cámara seleccionada para editar:', camera);
 
     // Determinar arc por defecto según el tipo de cámara
     let defaultArc = 180;
@@ -145,7 +144,6 @@ const GestionCamarasMunicipales = () => {
       geometry: camera.geometry || null,
     };
 
-    console.log('📋 Datos cargados en formulario:', editData);
 
     setFormData(editData);
     setOriginalData({ ...editData });
@@ -463,13 +461,23 @@ const GestionCamarasMunicipales = () => {
     setError(null);
     setSuccess(null);
 
-    console.log('💾 Iniciando guardado...');
-    console.log('🔧 Modo:', modalMode);
-    console.log('📝 FormData actual:', formData);
-    console.log('🎯 Cámara seleccionada:', selectedCamera);
 
     try {
       setLoading(true);
+
+      // Validar latitud y longitud
+      const latitude = parseFloat(formData.latitude);
+      const longitude = parseFloat(formData.longitude);
+      if (isNaN(latitude) || latitude < -90 || latitude > 90) {
+        setError('La latitud debe ser un número válido entre -90 y 90');
+        setLoading(false);
+        return;
+      }
+      if (isNaN(longitude) || longitude < -180 || longitude > 180) {
+        setError('La longitud debe ser un número válido entre -180 y 180');
+        setLoading(false);
+        return;
+      }
 
       // Validar angle (0-360)
       const angle = parseFloat(formData.angle);
@@ -487,7 +495,7 @@ const GestionCamarasMunicipales = () => {
         return;
       }
 
-      // Validar arc (0-360)
+      // Validar arc (1-360)
       const arc = parseFloat(formData.arc);
       if (isNaN(arc) || arc <= 0 || arc > 360) {
         setError('La amplitud debe estar entre 1 y 360 grados');
@@ -500,32 +508,31 @@ const GestionCamarasMunicipales = () => {
           name: formData.name,
           address: formData.address,
           camera: formData.camera,
-          latitude: parseFloat(formData.latitude),
-          longitude: parseFloat(formData.longitude),
-          angle: angle,
-          radius: radius,
-          arc: arc,
+          latitude,
+          longitude,
+          angle,
+          radius,
+          arc,
           buttom: formData.buttom,
           megaphone: formData.megaphone,
           geometry: formData.geometry || null,
         };
 
-        console.log('➕ Creando nueva cámara...');
-        const result = await camarasMunicipalesAdminService.create(dataToSend);
-        console.log('✅ Cámara creada:', result);
+        await camarasMunicipalesAdminService.create(dataToSend);
         setSuccess('Cámara municipal creada exitosamente');
       } else {
         // PATCH: solo enviar campos que cambiaron
+        // Usar parseFloat para comparar números y evitar falsos positivos por precisión de string
         const changedFields = {};
 
         if (formData.name !== originalData.name) changedFields.name = formData.name;
         if (formData.address !== originalData.address) changedFields.address = formData.address;
         if (formData.camera !== originalData.camera) changedFields.camera = formData.camera;
-        if (String(formData.latitude) !== String(originalData.latitude)) changedFields.latitude = parseFloat(formData.latitude);
-        if (String(formData.longitude) !== String(originalData.longitude)) changedFields.longitude = parseFloat(formData.longitude);
-        if (String(formData.angle) !== String(originalData.angle)) changedFields.angle = angle;
-        if (String(formData.radius) !== String(originalData.radius)) changedFields.radius = radius;
-        if (String(formData.arc) !== String(originalData.arc)) changedFields.arc = arc;
+        if (latitude !== parseFloat(originalData.latitude)) changedFields.latitude = latitude;
+        if (longitude !== parseFloat(originalData.longitude)) changedFields.longitude = longitude;
+        if (angle !== parseFloat(originalData.angle)) changedFields.angle = angle;
+        if (radius !== parseFloat(originalData.radius)) changedFields.radius = radius;
+        if (arc !== parseFloat(originalData.arc)) changedFields.arc = arc;
         if (formData.buttom !== originalData.buttom) changedFields.buttom = formData.buttom;
         if (formData.megaphone !== originalData.megaphone) changedFields.megaphone = formData.megaphone;
         if (JSON.stringify(formData.geometry) !== JSON.stringify(originalData.geometry)) changedFields.geometry = formData.geometry || null;
@@ -536,9 +543,7 @@ const GestionCamarasMunicipales = () => {
           return;
         }
 
-        console.log('✏️ Actualizando cámara ID:', selectedCamera.id, 'Campos cambiados:', changedFields);
-        const result = await camarasMunicipalesAdminService.update(selectedCamera.id, changedFields);
-        console.log('✅ Cámara actualizada:', result);
+        await camarasMunicipalesAdminService.update(selectedCamera.id, changedFields);
         setSuccess('Cámara municipal actualizada exitosamente');
       }
 
@@ -547,7 +552,6 @@ const GestionCamarasMunicipales = () => {
 
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      console.error('❌ Error al guardar:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -646,7 +650,6 @@ const GestionCamarasMunicipales = () => {
       setSuccess('Excel exportado exitosamente');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      console.error('Error al exportar Excel:', err);
       setError('Error al generar el archivo Excel');
     } finally {
       setLoading(false);
@@ -800,7 +803,7 @@ const GestionCamarasMunicipales = () => {
                         <td>
                           <div className="municipales-address-cell">
                             <MapPin size={14} />
-                            {camera.latitude?.toFixed(6)}, {camera.longitude?.toFixed(6)}
+                            {parseFloat(camera.latitude)?.toFixed(6)}, {parseFloat(camera.longitude)?.toFixed(6)}
                           </div>
                         </td>
                         <td>

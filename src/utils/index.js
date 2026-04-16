@@ -26,3 +26,6 @@ export { default as logger } from './logger.js';
 
 // Exportar validaciones
 export * from './validation.js';
+
+// Exportar utilidades de clustering
+export * from './clustering.utils.js';
