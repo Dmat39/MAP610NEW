@@ -89,11 +89,14 @@ const getDefaultDates = () => {
 };
 
 // Función para construir parámetros de consulta para el nuevo endpoint /incidence
-const buildQueryParams = (filtros, tipo) => {
+const buildQueryParams = (filtros, tipo, subtipo) => {
   const params = new URLSearchParams();
 
   // Parámetro obligatorio type (tipología)
   params.append('type', tipo);
+
+  // Parámetro opcional subtype (subtipología específica)
+  if (subtipo) params.append('subtype', subtipo);
 
   // Parámetros de fecha - usar fechas por defecto si no se proporcionan o están vacías
   const defaultDates = getDefaultDates();
@@ -128,24 +131,21 @@ const buildQueryParams = (filtros, tipo) => {
 
 // Nombres de tipologías para logging
 const tipologiaNombres = {
-  1: 'Robo',
-  2: 'Extorsión',
-  3: 'Homicidio',
-  4: 'Feminicidio',
-  5: 'Sicariato',
-  6: 'Secuestro',
-  7: 'Drogas',
-  8: 'Barras',
+  1: 'Homicidio/Feminicidio/Sicariato',
+  2: 'Secuestro/Extorsión',
+  3: 'Robo/Patrimonio',
+  5: 'Drogas',
+  7: 'Barras/Tranquilidad',
 };
 
 // Función para hacer la petición a la API con timeout
-const fetchIncidencias = async (filtros, tipo) => {
+const fetchIncidencias = async (filtros, tipo, subtipo) => {
   const API_URL = import.meta.env.VITE_API_URL;
   if (!API_URL) {
     throw new Error('VITE_API_URL no está configurada. Por favor, define la variable de entorno.');
   }
   const TOKEN = localStorage.getItem('token'); // Obtener token del localStorage
-  const queryString = buildQueryParams(filtros, tipo);
+  const queryString = buildQueryParams(filtros, tipo, subtipo);
   const url = `${API_URL}incidence?${queryString}`;
 
   logger.log(`Fetching ${tipologiaNombres[tipo] || `tipo ${tipo}`} from API:`, url);
@@ -239,16 +239,16 @@ const applyAdditionalFilters = (data, filtros) => {
 };
 
 // Hook genérico para cualquier tipología
-const useTypologyQuery = (tipo, nombreEvento, filtros, enabled = true) => {
+const useTypologyQuery = (tipo, subtipo, nombreEvento, filtros, enabled = true) => {
   const queryKey = [nombreEvento, filtros];
 
   const query = useQuery({
     queryKey,
-    queryFn: () => fetchIncidencias(filtros, tipo),
+    queryFn: () => fetchIncidencias(filtros, tipo, subtipo),
     enabled: enabled && filtros !== null,
     select: data => {
       const filteredData = applyAdditionalFilters(data, filtros);
-      logger.log(`${tipologiaNombres[tipo]} procesados:`, filteredData.length);
+      logger.log(`${nombreEvento} procesados:`, filteredData.length);
       return filteredData;
     },
     staleTime: 30 * 60 * 1000, // 30 minutos (más apropiado para datos de incidencias)
@@ -279,44 +279,44 @@ const useTypologyQuery = (tipo, nombreEvento, filtros, enabled = true) => {
   return query;
 };
 
-// Hook para consultas de robos (tipo 1)
+// Hook para consultas de robos (tipo 3 = PATRIMONIO, subtipos 10-16 = robos)
 export const useRobosQuery = (filtros, enabled = true) => {
-  return useTypologyQuery(1, 'robosTotal', filtros, enabled);
+  return useTypologyQuery(3, null, 'robosTotal', filtros, enabled);
 };
 
-// Hook para consultas de extorsiones (tipo 2)
+// Hook para consultas de extorsiones (tipo 3 = PATRIMONIO, subtipo 24 = extorsión/chantaje)
 export const useExtorsionesQuery = (filtros, enabled = true) => {
-  return useTypologyQuery(2, 'extorsionTotal', filtros, enabled);
+  return useTypologyQuery(3, 24, 'extorsionTotal', filtros, enabled);
 };
 
-// Hook para consultas de homicidios (tipo 3)
+// Hook para consultas de homicidios (tipo 1 = VIDA, subtipo 1 = homicidio)
 export const useHomicidiosQuery = (filtros, enabled = true) => {
-  return useTypologyQuery(3, 'homicidiosTotal', filtros, enabled);
+  return useTypologyQuery(1, 1, 'homicidiosTotal', filtros, enabled);
 };
 
-// Hook para consultas de feminicidios (tipo 4)
+// Hook para consultas de feminicidios (tipo 1 = VIDA, subtipo 2 = feminicidio)
 export const useFeminicidiosQuery = (filtros, enabled = true) => {
-  return useTypologyQuery(4, 'feminicidiosTotal', filtros, enabled);
+  return useTypologyQuery(1, 2, 'feminicidiosTotal', filtros, enabled);
 };
 
-// Hook para consultas de sicariatos (tipo 5)
+// Hook para consultas de sicariatos (tipo 1 = VIDA, subtipo 3 = sicariato)
 export const useSicariatosQuery = (filtros, enabled = true) => {
-  return useTypologyQuery(5, 'sicariatosTotal', filtros, enabled);
+  return useTypologyQuery(1, 3, 'sicariatosTotal', filtros, enabled);
 };
 
-// Hook para consultas de secuestros (tipo 6)
+// Hook para consultas de secuestros (tipo 2 = LIBERTAD, subtipo 6 = secuestro)
 export const useSecuestrosQuery = (filtros, enabled = true) => {
-  return useTypologyQuery(6, 'secuestrosTotal', filtros, enabled);
+  return useTypologyQuery(2, 6, 'secuestrosTotal', filtros, enabled);
 };
 
-// Hook para consultas de drogas (tipo 7)
+// Hook para consultas de drogas (tipo 5 = SALUD PÚBLICA, subtipo 28 = tráfico ilícito)
 export const useDrogasQuery = (filtros, enabled = true) => {
-  return useTypologyQuery(7, 'drogasTotal', filtros, enabled);
+  return useTypologyQuery(5, 28, 'drogasTotal', filtros, enabled);
 };
 
-// Hook para consultas de barras (tipo 8)
+// Hook para consultas de barras (tipo 7 = TRANQUILIDAD PÚB., subtipo 31 = bandas/barras)
 export const useBarrasQuery = (filtros, enabled = true) => {
-  return useTypologyQuery(8, 'barrasTotal', filtros, enabled);
+  return useTypologyQuery(7, 31, 'barrasTotal', filtros, enabled);
 };
 
 // Hook personalizado para invalidar caché manualmente si es necesario
