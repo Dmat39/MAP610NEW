@@ -1,7 +1,7 @@
 .control-mapa-calor {
   position: fixed;
   top: 10px;
-  left: 95px;
+  left: calc(var(--sidebar-width, 70px) + 25px);
   width: 280px;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;

@@ -107,8 +107,6 @@ const MapView = () => {
   const [seguimientoCamara, setSeguimientoCamara] = useState(null);
   const [limpiarSeguimiento, setLimpiarSeguimiento] = useState(null);
   const [camaraConVision, setCamaraConVision] = useState(null); // Track camera with vision field active
-  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
-
   const payloadVacio = {
     Año: '',
     Mes: '',
@@ -316,14 +314,11 @@ const MapView = () => {
           capasVisibles.drogas || capasVisibles.barras) && (
           <FiltroIncidentes onFiltrar={handleFiltrar} onLimpiar={handleLimpiar} />
         )}
-        <div className="main-content">
+        <div className="map-view-inner">
           <LayerTogglePanel
-        capas={capas}
-        onToggle={handleToggle}
-        mapType={mapType}
-        onMapTypeChange={setMapType}
-        onExpandChange={setIsPanelExpanded}
-      />
+            capas={capas}
+            onToggle={handleToggle}
+          />
       <ControlBusqueda
         visible={capasVisibles.busquedaDirecciones}
         onBusquedaRealizada={handleBusquedaRealizada}
@@ -503,14 +498,14 @@ const MapView = () => {
           {/* Leyenda de Cámaras Vecinales */}
           <LeyendaCamaras
             camarasVecinalesVisible={capasVisibles.camarasVecinales}
-            isPanelExpanded={isPanelExpanded}
+            isPanelExpanded={false}
           />
 
           {/* Leyenda de Cámaras Municipales */}
           {!isViewer && (
             <LeyendaCamarasMunicipales
               visible={capasVisibles.camaras}
-              isPanelExpanded={isPanelExpanded}
+              isPanelExpanded={false}
               vecinalesVisible={capasVisibles.camarasVecinales}
             />
           )}
