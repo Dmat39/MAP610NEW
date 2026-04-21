@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Eye, Camera, Download } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Eye, Camera, Download, Lock, User, Hash } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import camarasVecinalesAdminService from '../../services/camarasVecinalesAdminService';
 import authService from '../../services/authService';
@@ -38,6 +38,9 @@ const GestionCamarasVecinales = () => {
     mode: 'FIXED',
     neighbor: '',
     phone: '',
+    user: '',
+    password: '',
+    serial: '',
     latitude: '',
     longitude: '',
   });
@@ -63,7 +66,6 @@ const GestionCamarasVecinales = () => {
       setLoading(true);
       setError(null);
 
-      // Construir filtros desde params de URL
       const filters = {
         search: params.search || '',
         brand: params.brand || '',
@@ -74,7 +76,6 @@ const GestionCamarasVecinales = () => {
 
       const response = await camarasVecinalesAdminService.getAll(filters);
 
-      // Asegurarse de que siempre sea un array
       setCamaras(Array.isArray(response.data) ? response.data : []);
       setCount(response.count || response.data?.length || 0);
     } catch (err) {
@@ -97,7 +98,10 @@ const GestionCamarasVecinales = () => {
       brand: 'DAHUA',
       mode: 'FIXED',
       neighbor: '',
-      phone: '',      
+      phone: '',
+      user: '',
+      password: '',
+      serial: '',
       latitude: '',
       longitude: '',
     });
@@ -111,7 +115,6 @@ const GestionCamarasVecinales = () => {
       setModalMode('edit');
       setSelectedCamera(camera);
 
-      // Obtener datos completos de la cámara
       const fullData = await camarasVecinalesAdminService.getById(camera.id);
 
       const editData = {
@@ -120,6 +123,9 @@ const GestionCamarasVecinales = () => {
         mode: fullData.mode || 'FIXED',
         neighbor: fullData.neighbor || '',
         phone: fullData.phone || '',
+        user: fullData.user || '',
+        password: fullData.password || '',
+        serial: fullData.serial || '',
         latitude: fullData.latitude !== undefined && fullData.latitude !== null ? fullData.latitude : '',
         longitude: fullData.longitude !== undefined && fullData.longitude !== null ? fullData.longitude : '',
       };
@@ -144,12 +150,14 @@ const GestionCamarasVecinales = () => {
       mode: 'FIXED',
       neighbor: '',
       phone: '',
+      user: '',
+      password: '',
+      serial: '',
       latitude: '',
       longitude: '',
     });
     setShowMapPreview(false);
 
-    // Limpiar referencias del mapa
     if (leafletMapRef.current) {
       leafletMapRef.current.remove();
       leafletMapRef.current = null;
@@ -179,27 +187,18 @@ const GestionCamarasVecinales = () => {
         await camarasVecinalesAdminService.create(dataToSend);
         setSuccess('Cámara vecinal creada exitosamente');
       } else {
-        // Detectar solo los campos que cambiaron
         const changedFields = {};
 
-        if (formData.address !== originalData.address) {
-          changedFields.address = formData.address;
-        }
-        if (formData.brand !== originalData.brand) {
-          changedFields.brand = formData.brand;
-        }
-        if (formData.mode !== originalData.mode) {
-          changedFields.mode = formData.mode;
-        }
-        if (formData.neighbor !== originalData.neighbor) {
-          changedFields.neighbor = formData.neighbor;
-        }
-        if (String(formData.latitude) !== String(originalData.latitude)) {
-          changedFields.latitude = parseFloat(formData.latitude);
-        }
-        if (String(formData.longitude) !== String(originalData.longitude)) {
-          changedFields.longitude = parseFloat(formData.longitude);
-        }
+        if (formData.address !== originalData.address)     changedFields.address   = formData.address;
+        if (formData.brand !== originalData.brand)         changedFields.brand     = formData.brand;
+        if (formData.mode !== originalData.mode)           changedFields.mode      = formData.mode;
+        if (formData.neighbor !== originalData.neighbor)   changedFields.neighbor  = formData.neighbor;
+        if (formData.phone !== originalData.phone)         changedFields.phone     = formData.phone;
+        if (formData.user !== originalData.user)   changedFields.user  = formData.user;
+        if (formData.password !== originalData.password)   changedFields.password  = formData.password;
+        if (formData.serial !== originalData.serial)       changedFields.serial    = formData.serial;
+        if (String(formData.latitude) !== String(originalData.latitude))   changedFields.latitude  = parseFloat(formData.latitude);
+        if (String(formData.longitude) !== String(originalData.longitude)) changedFields.longitude = parseFloat(formData.longitude);
 
         if (Object.keys(changedFields).length === 0) {
           setError('No se han realizado cambios');
@@ -248,7 +247,6 @@ const GestionCamarasVecinales = () => {
       setLoading(true);
       setError(null);
 
-      // Obtener todas las cámaras sin paginación
       const response = await camarasVecinalesAdminService.getAll({ page: 0 });
       const todasLasCamaras = response.data || [];
 
@@ -270,7 +268,6 @@ const GestionCamarasVecinales = () => {
         { header: 'Longitud', key: 'longitude', width: 15 },
       ];
 
-      // Estilo del encabezado
       worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
       worksheet.getRow(1).fill = {
         type: 'pattern',
@@ -279,7 +276,6 @@ const GestionCamarasVecinales = () => {
       };
       worksheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
 
-      // Agregar datos
       todasLasCamaras.forEach((camara, idx) => {
         worksheet.addRow({
           index: idx + 1,
@@ -292,7 +288,6 @@ const GestionCamarasVecinales = () => {
         });
       });
 
-      // Generar y descargar
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -320,21 +315,18 @@ const GestionCamarasVecinales = () => {
       const lat = parseFloat(formData.latitude) || -12.027257;
       const lng = parseFloat(formData.longitude) || -76.999918;
 
-      // Crear mapa Leaflet
       leafletMapRef.current = L.map(mapRef.current, {
         center: [lat, lng],
         zoom: 17,
         zoomControl: true,
         attributionControl: false,
-        doubleClickZoom: false, // Deshabilitar zoom en doble clic
+        doubleClickZoom: false,
       });
 
-      // Agregar capa de OpenStreetMap
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
       }).addTo(leafletMapRef.current);
 
-      // Crear icono personalizado para la cámara
       const cameraIcon = L.divIcon({
         className: 'custom-camera-marker',
         html: '<div style="background-color: #10b981; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
@@ -342,13 +334,11 @@ const GestionCamarasVecinales = () => {
         iconAnchor: [8, 8],
       });
 
-      // Agregar marcador de la cámara
       markerRef.current = L.marker([lat, lng], {
         icon: cameraIcon,
         title: formData.address || 'Cámara Vecinal',
       }).addTo(leafletMapRef.current);
 
-      // Agregar evento de doble clic para actualizar coordenadas
       leafletMapRef.current.on('dblclick', (e) => {
         const { lat, lng } = e.latlng;
         setFormData(prev => ({
@@ -361,7 +351,6 @@ const GestionCamarasVecinales = () => {
       });
     }
 
-    // Cleanup al desmontar o cerrar
     return () => {
       if (!showMapPreview && leafletMapRef.current) {
         leafletMapRef.current.remove();
@@ -440,12 +429,11 @@ const GestionCamarasVecinales = () => {
         </div>
       )}
 
-      {/* Toolbar con búsqueda, filtros y acciones */}
+      {/* Toolbar */}
       <div className="camaras-toolbar">
         <div className="camaras-toolbar-left">
           <SearchInput placeholder="Buscar por dirección..." />
 
-          {/* Filtros */}
           <div className="camaras-filters-group">
             <Filter size={16} style={{ color: '#6b7280' }} />
             <select
@@ -485,7 +473,7 @@ const GestionCamarasVecinales = () => {
         </div>
       </div>
 
-      {/* CONTENEDOR DE TABLA */}
+      {/* Tabla */}
       <div className="camaras-content">
         {loading ? (
           <div className="camaras-loading-state">
@@ -607,6 +595,7 @@ const GestionCamarasVecinales = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="camaras-modal-body">
+              {/* Dirección */}
               <div className="camaras-form-group">
                 <label>
                   <MapPin size={16} />
@@ -622,6 +611,7 @@ const GestionCamarasVecinales = () => {
                 />
               </div>
 
+              {/* Vecino */}
               <div className="camaras-form-group">
                 <label>
                   <Camera size={16} />
@@ -636,6 +626,8 @@ const GestionCamarasVecinales = () => {
                   placeholder="Juan Pérez"
                 />
               </div>
+
+              {/* Teléfono */}
               <div className="camaras-form-group">
                 <label>
                   <Camera size={16} />
@@ -649,6 +641,59 @@ const GestionCamarasVecinales = () => {
                   placeholder="999999999"
                 />
               </div>
+
+              {/* Username y Password */}
+              <div className="camaras-coordinates-group">
+                <div className="camaras-form-group">
+                  <label>
+                    <User size={16} />
+                    <span>Usuario *</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="user"
+                    value={formData.user}
+                    onChange={handleFormChange}
+                    required
+                    placeholder="admin"
+                    autoComplete="off"
+                  />
+                </div>
+
+                <div className="camaras-form-group">
+                  <label>
+                    <Lock size={16} />
+                    <span>Contraseña *</span>
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleFormChange}
+                    required
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                  />
+                </div>
+              </div>
+
+              {/* Serial */}
+              <div className="camaras-form-group">
+                <label>
+                  <Hash size={16} />
+                  <span>Serial *</span>
+                </label>
+                <input
+                  type="text"
+                  name="serial"
+                  value={formData.serial}
+                  onChange={handleFormChange}
+                  required
+                  placeholder="2C09B9PAG..."
+                />
+              </div>
+
+              {/* Marca y Modo */}
               <div className="camaras-coordinates-group">
                 <div className="camaras-form-group">
                   <label>
@@ -684,6 +729,7 @@ const GestionCamarasVecinales = () => {
                 </div>
               </div>
 
+              {/* Latitud y Longitud */}
               <div className="camaras-coordinates-group">
                 <div className="camaras-form-group">
                   <label>
@@ -718,7 +764,7 @@ const GestionCamarasVecinales = () => {
                 </div>
               </div>
 
-              {/* Previsualización del Mapa */}
+              {/* Mapa */}
               <div className="camaras-form-group">
                 <button
                   type="button"
