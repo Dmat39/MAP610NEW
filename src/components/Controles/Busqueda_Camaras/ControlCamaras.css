@@ -1,7 +1,7 @@
 /* Control de Cámaras - Diseño Moderno y Compacto */
 .control-camaras {
   position: fixed;
-  left: 85px;
+  left: calc(var(--sidebar-width, 70px) + 15px);
   background: linear-gradient(135deg, rgba(0, 29, 57, 0.92) 0%, rgba(10, 65, 116, 0.85) 100%);
   backdrop-filter: blur(30px) saturate(150%);
   -webkit-backdrop-filter: blur(30px) saturate(150%);

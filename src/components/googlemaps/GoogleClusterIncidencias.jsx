@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   useRobosQuery,
   useExtorsionesQuery,
@@ -7,152 +7,15 @@ import {
   useSicariatosQuery,
   useSecuestrosQuery,
   useDrogasQuery,
-  useBarrasQuery
+  useBarrasQuery,
 } from '../../hooks/useIncidenciasQuery';
 import { logger } from '../../utils/logger';
 import { useMapContext } from '../../context/MapContext';
-
-// Función para calcular distancia entre dos puntos en metros usando fórmula de Haversine
-const calcularDistancia = (lat1, lon1, lat2, lon2) => {
-  const R = 6371000; // Radio de la Tierra en metros
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
-
-// Función para calcular el centroide de un conjunto de puntos
-const calcularCentroide = puntos => {
-  if (puntos.length === 0) return { lat: 0, lng: 0 };
-
-  const sumLat = puntos.reduce((sum, punto) => sum + punto.Latitud, 0);
-  const sumLng = puntos.reduce((sum, punto) => sum + punto.Longitud, 0);
-
-  return {
-    lat: sumLat / puntos.length,
-    lng: sumLng / puntos.length,
-  };
-};
-
-// Función para calcular el radio del cluster basado en la dispersión de puntos
-const calcularRadioCluster = (puntos, centroide) => {
-  if (puntos.length === 0) return 50;
-
-  const distanciasAlCentroide = puntos.map(punto =>
-    calcularDistancia(centroide.lat, centroide.lng, punto.Latitud, punto.Longitud)
-  );
-
-  const maxDistancia = Math.max(...distanciasAlCentroide);
-  // Añadir un pequeño buffer para asegurar que todos los puntos estén dentro
-  return Math.max(maxDistancia + 10, 30); // Mínimo 30 metros
-};
-
-// Algoritmo de clustering basado en densidad (DBSCAN mejorado)
-const realizarClustering = (puntos, radioMaximo = 50) => {
-  logger.log('🔧 Iniciando algoritmo de clustering...', {
-    puntos: puntos.length,
-    radio: radioMaximo,
-  });
-  const clusters = [];
-  const visitados = new Set();
-
-  for (let i = 0; i < puntos.length; i++) {
-    if (visitados.has(i)) continue;
-
-    const puntoActual = puntos[i];
-    const cluster = [puntoActual];
-    visitados.add(i);
-
-    // Buscar todos los puntos cercanos al punto actual
-    const cola = [i];
-
-    while (cola.length > 0) {
-      const indiceActual = cola.shift();
-      const puntoBase = puntos[indiceActual];
-
-      // Buscar vecinos del punto base
-      for (let j = 0; j < puntos.length; j++) {
-        if (visitados.has(j)) continue;
-
-        const distancia = calcularDistancia(
-          puntoBase.Latitud,
-          puntoBase.Longitud,
-          puntos[j].Latitud,
-          puntos[j].Longitud
-        );
-
-        if (distancia <= radioMaximo) {
-          cluster.push(puntos[j]);
-          visitados.add(j);
-          cola.push(j); // Agregar a la cola para expandir desde este punto
-        }
-      }
-    }
-
-    // Solo crear cluster si tiene al menos 2 puntos
-    if (cluster.length >= 2) {
-      const centroide = calcularCentroide(cluster);
-      const radio = calcularRadioCluster(cluster, centroide);
-
-      clusters.push({
-        id: clusters.length + 1,
-        puntos: cluster,
-        centroide,
-        radio,
-        cantidad: cluster.length,
-      });
-
-      logger.log(`📍 Cluster ${clusters.length} creado:`, {
-        puntos: cluster.length,
-        centroide: `${centroide.lat.toFixed(6)}, ${centroide.lng.toFixed(6)}`,
-        radio: Math.round(radio),
-      });
-    }
-  }
-
-  logger.log('🎯 Clustering completado:', clusters.length, 'clusters creados');
-  return clusters;
-};
-
-// Función para obtener color según la cantidad de incidencias
-const obtenerColorCluster = cantidad => {
-  logger.log('🎨 Calculando color para cluster con cantidad:', cantidad);
-
-  if (cantidad <= 3) {
-    logger.log('→ Asignando color AMARILLO (cantidad <= 3)');
-    return {
-      strokeColor: '#FFB000', // Amarillo más intenso
-      fillColor: '#FFD700',
-      fillOpacity: 0.3,
-    };
-  } else if (cantidad <= 6) {
-    logger.log('→ Asignando color NARANJA (cantidad <= 6)');
-    return {
-      strokeColor: '#FF6600', // Naranja más intenso
-      fillColor: '#FF8C00',
-      fillOpacity: 0.4,
-    };
-  } else if (cantidad >= 7) {
-    logger.log('→ Asignando color ROJO (cantidad > 6)');
-    return {
-      strokeColor: '#CC0000', // Rojo más intenso
-      fillColor: '#FF4500',
-      fillOpacity: 0.5,
-    };
-  } else {
-    return {
-      strokeColor: '#FFB000', // Amarillo más intenso
-      fillColor: '#FFD700',
-      fillOpacity: 0.3,
-    };
-  }
-};
+import {
+  realizarClustering,
+  obtenerColorCluster,
+  contarTiposPorCluster,
+} from '../../utils/clustering.utils.js';
 
 const GoogleClusterIncidencias = ({ visible, map, google, filtros = null }) => {
   const { radioCluster, tiposIncidenciasCluster, fechasClusters } = useMapContext();
@@ -160,259 +23,180 @@ const GoogleClusterIncidencias = ({ visible, map, google, filtros = null }) => {
   const circlesRef = useRef([]);
   const [infoWindow, setInfoWindow] = useState(null);
 
-  // Combinar filtros con las fechas del contexto
-  const filtrosConFechas = {
+  const filtrosConFechas = useMemo(() => ({
     ...filtros,
     fechaInicio: filtros?.fechaInicio || fechasClusters.fechaInicio,
-    fechaFin: filtros?.fechaFin || fechasClusters.fechaFin
-  };
+    fechaFin: filtros?.fechaFin || fechasClusters.fechaFin,
+  }), [filtros, fechasClusters]);
 
   // Crear InfoWindow una sola vez
   useEffect(() => {
     if (!map || !google || infoWindow) return;
-
     const newInfoWindow = new google.maps.InfoWindow({
       disableAutoPan: false,
       maxWidth: 300,
       pixelOffset: new google.maps.Size(0, -30),
     });
-
     setInfoWindow(newInfoWindow);
-
-    return () => {
-      if (newInfoWindow) {
-        newInfoWindow.close();
-      }
-    };
+    return () => newInfoWindow.close();
   }, [map, google, infoWindow]);
 
-  // Función para limpiar círculos existentes
   const limpiarCirculos = () => {
-    circlesRef.current.forEach(circle => {
-      if (circle && circle.setMap) {
-        circle.setMap(null);
-      }
-    });
+    circlesRef.current.forEach(circle => circle?.setMap?.(null));
     circlesRef.current = [];
   };
 
-  // Función para crear círculos usando Google Maps Circle
-  const crearCirculosCluster = clustersData => {
+  const crearCirculosCluster = (clustersData) => {
     if (!map || !google || !infoWindow) return;
-
     limpiarCirculos();
 
     clustersData.forEach(cluster => {
-      logger.log(`🖼️ Creando círculo Google Maps para cluster ${cluster.id}:`, {
-        cantidad: cluster.cantidad,
-        puntos: cluster.puntos?.length,
-        centroide: cluster.centroide,
-      });
-
       const colores = obtenerColorCluster(cluster.cantidad);
 
-      // Crear el círculo usando Google Maps Circle
       const circle = new google.maps.Circle({
-        strokeColor: colores.strokeColor,
+        strokeColor: colores.color,
         strokeOpacity: 1,
         strokeWeight: 3,
         fillColor: colores.fillColor,
         fillOpacity: colores.fillOpacity,
-        map: map,
+        map,
         center: { lat: cluster.centroide.lat, lng: cluster.centroide.lng },
-        radius: cluster.radio, // Radio en metros
+        radius: cluster.radio,
         clickable: true,
-        zIndex: 900, // Prioridad alta pero menor que los marcadores individuales
+        zIndex: 900,
       });
 
-      // Agregar evento click al círculo para mostrar info en el InfoWindow compartido
       circle.addListener('click', event => {
-        // Cerrar InfoWindow anterior si está abierto
         infoWindow.close();
 
-        // Crear contenido del popup/InfoWindow
-        const tiposIncidencias = Object.entries(
-          cluster.puntos.reduce((tipos, punto) => {
-            tipos[punto.Tipo] = (tipos[punto.Tipo] || 0) + 1;
-            return tipos;
-          }, {})
-        )
+        const tiposStr = Object.entries(contarTiposPorCluster(cluster.puntos))
           .map(([tipo, cantidad]) => `${tipo}: ${cantidad}`)
           .join(' | ');
 
-        // Configurar contenido para este cluster específico
         infoWindow.setContent(`
           <div style="font-size: 13px; max-width: 260px; position: relative;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
               <strong style="color: #333;">🎯 Cluster de Incidencias</strong>
-              <button id="close-tooltip-btn" style="
-                background: none; 
-                border: none; 
-                font-size: 16px; 
-                cursor: pointer; 
-                color: #666; 
-                padding: 0; 
-                margin: 0; 
-                width: 20px; 
-                height: 20px; 
-                display: flex; 
-                align-items: center; 
-                justify-content: center;
-                border-radius: 3px;
-                transition: all 0.2s ease;
-              " title="Cerrar">×</button>
+              <button id="close-tooltip-btn" style="background:none;border:none;font-size:16px;cursor:pointer;color:#666;padding:0;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:3px;" title="Cerrar">×</button>
             </div>
             <div>
-              <strong>ID:</strong> ${cluster.id}<br/>
               <strong>Cantidad:</strong> ${cluster.cantidad} incidencias<br/>
               <strong>Radio:</strong> ${Math.round(cluster.radio)} metros<br/>
-              <strong>Centroide:</strong><br/>
-              <div style="margin: 5px 0; padding: 5px; background-color: #f8f9fa; border-radius: 3px; font-size: 12px;">
+              <strong>Centroide:</strong>
+              <div style="margin:5px 0;padding:5px;background:#f8f9fa;border-radius:3px;font-size:12px;">
                 Lat: ${cluster.centroide.lat.toFixed(6)}<br/>
                 Lng: ${cluster.centroide.lng.toFixed(6)}
               </div>
-              <strong>Tipos de incidencias:</strong><br/>
-              <div style="margin: 5px 0; padding: 5px; background-color: #f8f9fa; border-radius: 3px; font-size: 12px;">
-                ${tiposIncidencias}
+              <strong>Tipos:</strong>
+              <div style="margin:5px 0;padding:5px;background:#f8f9fa;border-radius:3px;font-size:12px;">
+                ${tiposStr}
               </div>
             </div>
           </div>
         `);
 
-        // Posicionar y abrir InfoWindow
         infoWindow.setPosition(event.latLng);
         infoWindow.open(map);
 
-        // Agregar evento al botón de cerrar después de que el InfoWindow se abra
         google.maps.event.addListenerOnce(infoWindow, 'domready', () => {
           const closeBtn = document.getElementById('close-tooltip-btn');
-          if (closeBtn) {
-            // Agregar efecto hover
-            closeBtn.addEventListener('mouseenter', () => {
-              closeBtn.style.backgroundColor = '#ff4757';
-              closeBtn.style.color = 'white';
-            });
-            closeBtn.addEventListener('mouseleave', () => {
-              closeBtn.style.backgroundColor = 'transparent';
-              closeBtn.style.color = '#666';
-            });
-
-            // Agregar evento de clic para cerrar
-            closeBtn.addEventListener('click', () => {
-              infoWindow.close();
-            });
-          }
+          if (!closeBtn) return;
+          closeBtn.addEventListener('mouseenter', () => {
+            closeBtn.style.backgroundColor = '#ff4757';
+            closeBtn.style.color = 'white';
+          });
+          closeBtn.addEventListener('mouseleave', () => {
+            closeBtn.style.backgroundColor = 'transparent';
+            closeBtn.style.color = '#666';
+          });
+          closeBtn.addEventListener('click', () => infoWindow.close());
         });
       });
 
-      // Guardar referencia para poder limpiarlo después
       circlesRef.current.push(circle);
     });
   };
 
-  // Limpiar círculos cuando el componente se desmonte o la visibilidad cambie
   useEffect(() => {
-    if (!visible) {
-      limpiarCirculos();
-      return;
-    }
+    if (!visible) limpiarCirculos();
   }, [visible]);
 
-  // Limpiar círculos al desmontar el componente
-  useEffect(() => {
-    return () => {
-      limpiarCirculos();
-    };
-  }, []);
+  useEffect(() => () => limpiarCirculos(), []);
 
-  // Usar los hooks para obtener datos de todas las tipologías
-  const robosQuery = useRobosQuery(filtrosConFechas, visible);
-  const extorsionesQuery = useExtorsionesQuery(filtrosConFechas, visible);
-  const homicidiosQuery = useHomicidiosQuery(filtrosConFechas, visible);
+  // Hooks de datos
+  const robosQuery        = useRobosQuery(filtrosConFechas, visible);
+  const extorsionesQuery  = useExtorsionesQuery(filtrosConFechas, visible);
+  const homicidiosQuery   = useHomicidiosQuery(filtrosConFechas, visible);
   const feminicidiosQuery = useFeminicidiosQuery(filtrosConFechas, visible);
-  const sicariatosQuery = useSicariatosQuery(filtrosConFechas, visible);
-  const secuestrosQuery = useSecuestrosQuery(filtrosConFechas, visible);
-  const drogasQuery = useDrogasQuery(filtrosConFechas, visible);
-  const barrasQuery = useBarrasQuery(filtrosConFechas, visible);
+  const sicariatosQuery   = useSicariatosQuery(filtrosConFechas, visible);
+  const secuestrosQuery   = useSecuestrosQuery(filtrosConFechas, visible);
+  const drogasQuery       = useDrogasQuery(filtrosConFechas, visible);
+  const barrasQuery       = useBarrasQuery(filtrosConFechas, visible);
 
-  // Efecto para procesar los datos cuando cambien
+  // Agrupar estado de todas las queries en un solo objeto para reducir deps del useEffect
+  const queriesState = useMemo(() => ({
+    isLoading:
+      robosQuery.isLoading || extorsionesQuery.isLoading || homicidiosQuery.isLoading ||
+      feminicidiosQuery.isLoading || sicariatosQuery.isLoading || secuestrosQuery.isLoading ||
+      drogasQuery.isLoading || barrasQuery.isLoading,
+    isError:
+      robosQuery.isError || extorsionesQuery.isError || homicidiosQuery.isError ||
+      feminicidiosQuery.isError || sicariatosQuery.isError || secuestrosQuery.isError ||
+      drogasQuery.isError || barrasQuery.isError,
+    data: {
+      robos:        robosQuery.data        || [],
+      extorsiones:  extorsionesQuery.data  || [],
+      homicidios:   homicidiosQuery.data   || [],
+      feminicidios: feminicidiosQuery.data || [],
+      sicariatos:   sicariatosQuery.data   || [],
+      secuestros:   secuestrosQuery.data   || [],
+      drogas:       drogasQuery.data       || [],
+      barras:       barrasQuery.data       || [],
+    },
+  }), [
+    robosQuery.isLoading,        robosQuery.isError,        robosQuery.data,
+    extorsionesQuery.isLoading,  extorsionesQuery.isError,  extorsionesQuery.data,
+    homicidiosQuery.isLoading,   homicidiosQuery.isError,   homicidiosQuery.data,
+    feminicidiosQuery.isLoading, feminicidiosQuery.isError, feminicidiosQuery.data,
+    sicariatosQuery.isLoading,   sicariatosQuery.isError,   sicariatosQuery.data,
+    secuestrosQuery.isLoading,   secuestrosQuery.isError,   secuestrosQuery.data,
+    drogasQuery.isLoading,       drogasQuery.isError,       drogasQuery.data,
+    barrasQuery.isLoading,       barrasQuery.isError,       barrasQuery.data,
+  ]);
+
   useEffect(() => {
     if (!visible || !map || !google || !infoWindow) return;
 
-    // Verificar si alguna consulta está cargando
-    const isLoading = robosQuery.isLoading || extorsionesQuery.isLoading ||
-      homicidiosQuery.isLoading || feminicidiosQuery.isLoading ||
-      sicariatosQuery.isLoading || secuestrosQuery.isLoading ||
-      drogasQuery.isLoading || barrasQuery.isLoading;
+    setLoading(queriesState.isLoading);
 
-    const hasErrors = robosQuery.isError || extorsionesQuery.isError ||
-      homicidiosQuery.isError || feminicidiosQuery.isError ||
-      sicariatosQuery.isError || secuestrosQuery.isError ||
-      drogasQuery.isError || barrasQuery.isError;
-
-    setLoading(isLoading);
-
-    // Si hay errores, limpiar y salir
-    if (hasErrors) {
+    if (queriesState.isError) {
       logger.error('❌ Error cargando datos de incidencias');
       limpiarCirculos();
-      window.dispatchEvent(
-        new CustomEvent('clustersGenerados', {
-          detail: {
-            totalClusters: 0,
-            totalPuntos: 0,
-            puntosClusteados: 0,
-          },
-        })
-      );
+      window.dispatchEvent(new CustomEvent('clustersGenerados', {
+        detail: { totalClusters: 0, totalPuntos: 0, puntosClusteados: 0 },
+      }));
       return;
     }
 
-    // Si aún está cargando, no procesar
-    if (isLoading) return;
+    if (queriesState.isLoading) return;
 
-    // Obtener los datos de todas las consultas
-    const datosRobos = robosQuery.data || [];
-    const datosExtorsiones = extorsionesQuery.data || [];
-    const datosHomicidios = homicidiosQuery.data || [];
-    const datosFeminicidios = feminicidiosQuery.data || [];
-    const datosSicariatos = sicariatosQuery.data || [];
-    const datosSecuestros = secuestrosQuery.data || [];
-    const datosDrogas = drogasQuery.data || [];
-    const datosBarras = barrasQuery.data || [];
-
-    logger.log('🎯 Datos obtenidos de la API:', {
-      robos: datosRobos.length,
-      extorsiones: datosExtorsiones.length,
-      homicidios: datosHomicidios.length,
-      feminicidios: datosFeminicidios.length,
-      sicariatos: datosSicariatos.length,
-      secuestros: datosSecuestros.length,
-      drogas: datosDrogas.length,
-      barras: datosBarras.length,
-    });
-
-    // Combinar todos los tipos de datos, filtrando según los tipos activos
+    const { data } = queriesState;
     const todosLosDatos = [
-      ...(tiposIncidenciasCluster.robos ? datosRobos.map(item => ({ ...item, Tipo: 'Robo' })) : []),
-      ...(tiposIncidenciasCluster.extorsiones ? datosExtorsiones.map(item => ({ ...item, Tipo: 'Extorsión' })) : []),
-      ...(tiposIncidenciasCluster.homicidios ? datosHomicidios.map(item => ({ ...item, Tipo: 'Homicidio' })) : []),
-      ...(tiposIncidenciasCluster.feminicidios ? datosFeminicidios.map(item => ({ ...item, Tipo: 'Feminicidio' })) : []),
-      ...(tiposIncidenciasCluster.sicariatos ? datosSicariatos.map(item => ({ ...item, Tipo: 'Sicariato' })) : []),
-      ...(tiposIncidenciasCluster.secuestros ? datosSecuestros.map(item => ({ ...item, Tipo: 'Secuestro' })) : []),
-      ...(tiposIncidenciasCluster.drogas ? datosDrogas.map(item => ({ ...item, Tipo: 'Drogas' })) : []),
-      ...(tiposIncidenciasCluster.barras ? datosBarras.map(item => ({ ...item, Tipo: 'Barras' })) : []),
+      ...(tiposIncidenciasCluster.robos        ? data.robos.map(i        => ({ ...i, Tipo: 'Robo' }))        : []),
+      ...(tiposIncidenciasCluster.extorsiones  ? data.extorsiones.map(i  => ({ ...i, Tipo: 'Extorsión' }))   : []),
+      ...(tiposIncidenciasCluster.homicidios   ? data.homicidios.map(i   => ({ ...i, Tipo: 'Homicidio' }))   : []),
+      ...(tiposIncidenciasCluster.feminicidios ? data.feminicidios.map(i => ({ ...i, Tipo: 'Feminicidio' })) : []),
+      ...(tiposIncidenciasCluster.sicariatos   ? data.sicariatos.map(i   => ({ ...i, Tipo: 'Sicariato' }))   : []),
+      ...(tiposIncidenciasCluster.secuestros   ? data.secuestros.map(i   => ({ ...i, Tipo: 'Secuestro' }))   : []),
+      ...(tiposIncidenciasCluster.drogas       ? data.drogas.map(i       => ({ ...i, Tipo: 'Drogas' }))      : []),
+      ...(tiposIncidenciasCluster.barras       ? data.barras.map(i       => ({ ...i, Tipo: 'Barras' }))      : []),
     ];
 
-    logger.log('📊 Total de datos combinados:', todosLosDatos.length, 'registros');
-
-    // Convertir datos al formato esperado por el algoritmo de clustering
-    // Solo incluir registros con coordenadas válidas
-    const data = todosLosDatos
+    const puntosValidos = todosLosDatos
       .filter(item => {
         const lat = parseFloat(item.Latitud);
         const lng = parseFloat(item.Longitud);
-        return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+        return !isNaN(lat) && !isNaN(lng);
       })
       .map((item, index) => ({
         Id: item.Id || index + 1,
@@ -421,80 +205,28 @@ const GoogleClusterIncidencias = ({ visible, map, google, filtros = null }) => {
         Tipo: item.Tipo,
       }));
 
-    logger.log('📊 Datos procesados para clustering:', data.length, 'puntos válidos');
+    logger.log('📊 Datos para clustering:', puntosValidos.length, 'puntos');
 
-    if (data.length === 0) {
-      logger.log('⚠️ No hay datos válidos para clustering');
+    if (puntosValidos.length === 0) {
       limpiarCirculos();
-      window.dispatchEvent(
-        new CustomEvent('clustersGenerados', {
-          detail: {
-            totalClusters: 0,
-            totalPuntos: 0,
-            puntosClusteados: 0,
-          },
-        })
-      );
+      window.dispatchEvent(new CustomEvent('clustersGenerados', {
+        detail: { totalClusters: 0, totalPuntos: 0, puntosClusteados: 0 },
+      }));
       return;
     }
 
-    // Realizar clustering
-    logger.log('🔄 Iniciando proceso de clustering con radio:', radioCluster, 'm');
-    const clustersGenerados = realizarClustering(data, radioCluster);
-    logger.log('✅ Clustering completado:', clustersGenerados.length, 'clusters generados');
-
-    // Crear círculos usando Google Maps Circle
+    const clustersGenerados = realizarClustering(puntosValidos, radioCluster);
     crearCirculosCluster(clustersGenerados);
 
-    // Dispatch evento con estadísticas
-    const puntosClusteados = clustersGenerados.reduce((sum, cluster) => sum + cluster.cantidad, 0);
-    const estadisticas = {
-      totalClusters: clustersGenerados.length,
-      totalPuntos: data.length,
-      puntosClusteados: puntosClusteados,
-    };
-
-    logger.log('📈 Estadísticas Google Maps:', estadisticas);
-
-    window.dispatchEvent(
-      new CustomEvent('clustersGenerados', {
-        detail: estadisticas,
-      })
-    );
-  }, [
-    visible,
-    radioCluster,
-    map,
-    google,
-    filtrosConFechas,
-    infoWindow,
-    tiposIncidenciasCluster,
-    fechasClusters,
-    robosQuery.data,
-    extorsionesQuery.data,
-    homicidiosQuery.data,
-    feminicidiosQuery.data,
-    sicariatosQuery.data,
-    secuestrosQuery.data,
-    drogasQuery.data,
-    barrasQuery.data,
-    robosQuery.isLoading,
-    extorsionesQuery.isLoading,
-    homicidiosQuery.isLoading,
-    feminicidiosQuery.isLoading,
-    sicariatosQuery.isLoading,
-    secuestrosQuery.isLoading,
-    drogasQuery.isLoading,
-    barrasQuery.isLoading,
-    robosQuery.isError,
-    extorsionesQuery.isError,
-    homicidiosQuery.isError,
-    feminicidiosQuery.isError,
-    sicariatosQuery.isError,
-    secuestrosQuery.isError,
-    drogasQuery.isError,
-    barrasQuery.isError,
-  ]);
+    const puntosClusteados = clustersGenerados.reduce((s, c) => s + c.cantidad, 0);
+    window.dispatchEvent(new CustomEvent('clustersGenerados', {
+      detail: {
+        totalClusters: clustersGenerados.length,
+        totalPuntos: puntosValidos.length,
+        puntosClusteados,
+      },
+    }));
+  }, [visible, radioCluster, map, google, infoWindow, tiposIncidenciasCluster, queriesState]);
 
   if (!visible) return null;
 
@@ -528,15 +260,8 @@ const GoogleClusterIncidencias = ({ visible, map, google, filtros = null }) => {
               borderRadius: '50%',
               animation: 'spin 1s linear infinite',
             }}
-          ></div>
-          <span
-            style={{
-              marginLeft: 12,
-              fontSize: '15px',
-              fontWeight: '500',
-              color: '#2c3e50',
-            }}
-          >
+          />
+          <span style={{ marginLeft: 12, fontSize: '15px', fontWeight: '500', color: '#2c3e50' }}>
             Generando clusters...
           </span>
         </div>

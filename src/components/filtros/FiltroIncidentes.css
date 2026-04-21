@@ -1,7 +1,7 @@
 .filtro-panel {
   position: fixed;
   bottom: 10px;
-  left: calc(70px + 15px);
+  left: calc(var(--sidebar-width, 70px) + 15px);
   width: 33%;
   max-width: 420px;
   z-index: 100;

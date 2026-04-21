@@ -1,189 +1,131 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, MapPin, ChevronDown, Camera, Map, Video, Users, Calendar } from 'lucide-react';
+import {
+  LogOut, MapPin, Camera, Map, Video, Users,
+  Calendar, ChevronRight, ChevronLeft,
+} from 'lucide-react';
 import ConfirmModal from '../Modal/ConfirmModal';
 import './Sidebar.css';
 
-const Sidebar = () => {
+const Sidebar = ({ isExpanded, onToggle }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const dropdownRef = useRef(null);
 
-  const isAdmin = user?.role?.toLowerCase() === 'administrator' || user?.role?.toLowerCase() === 'admin';
+  const isAdmin =
+    user?.role?.toLowerCase() === 'administrator' ||
+    user?.role?.toLowerCase() === 'admin';
   const isCodisec = user?.role?.toUpperCase() === 'CODISEC';
 
-  const handleLogoutClick = () => {
-    setShowLogoutModal(true);
-    setDropdownOpen(false);
-  };
-
-  const handleLogoutConfirm = async () => {
-    setShowLogoutModal(false);
-    await logout();
-  };
-
-  const handleLogoutCancel = () => {
-    setShowLogoutModal(false);
-  };
-
   const getRoleLabel = role => {
-    const roles = {
+    const map = {
       administrator: 'Administrador',
       admin: 'Administrador',
       supervisor: 'Supervisor',
       codisec: 'CODISEC',
       ceplan: 'CEPLAN',
     };
-    return roles[role?.toLowerCase()] || role;
+    return map[role?.toLowerCase()] || role;
   };
 
-  const getInitials = username => {
-    if (!username) return 'U';
-    return username.substring(0, 2).toUpperCase();
-  };
+  const getInitials = username =>
+    username ? username.substring(0, 2).toUpperCase() : 'U';
 
   const getRoleColor = role => {
-    const colors = {
+    const map = {
       administrator: '#ef4444',
       admin: '#ef4444',
       supervisor: '#f59e0b',
       codisec: '#8b5cf6',
       ceplan: '#10b981',
     };
-    return colors[role?.toLowerCase()] || '#6b7280';
+    return map[role?.toLowerCase()] || '#6b7280';
   };
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = event => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  const navItems = [
+    { path: '/', icon: Map, label: 'Mapa', show: true },
+    { path: '/admin/actividades', icon: Calendar, label: 'Actividades', show: isAdmin || isCodisec },
+    { path: '/admin/camaras-vecinales', icon: Camera, label: 'Cám. Vecinales', show: isAdmin },
+    { path: '/admin/camaras-municipales', icon: Video, label: 'Cám. Municipales', show: isAdmin },
+    { path: '/admin/usuarios', icon: Users, label: 'Usuarios', show: isAdmin },
+  ].filter(item => item.show);
 
   return (
-    <aside className="app-sidebar">
-      {/* Logo and Title */}
+    <aside className={`app-sidebar${isExpanded ? ' expanded' : ''}`}>
+      {/* Logo */}
       <div className="sidebar-header">
         <div className="sidebar-logo">
-          <MapPin size={24} strokeWidth={2.5} />
+          <MapPin size={20} strokeWidth={2.5} />
         </div>
-        <h1 className="sidebar-title">Mapa de Incidencias</h1>
+        <span className="sidebar-title">MAPA CECOM</span>
       </div>
 
-      {/* User Section */}
-      <div className="sidebar-user" ref={dropdownRef}>
-        <button
-          className="user-trigger"
-          onClick={() => setDropdownOpen(!dropdownOpen)}
-          aria-expanded={dropdownOpen}
-        >
-          <div className="user-avatar" style={{ background: getRoleColor(user?.role) }}>
+      {/* Navigation */}
+      <nav className="sidebar-nav">
+        {navItems.map(({ path, icon: Icon, label }) => (
+          <button
+            key={path}
+            onClick={() => navigate(path)}
+            className={`nav-item${location.pathname === path ? ' active' : ''}`}
+            title={!isExpanded ? label : undefined}
+          >
+            <Icon size={20} strokeWidth={2} />
+            <span className="nav-label">{label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* Footer: user info + toggle */}
+      <div className="sidebar-footer">
+        <div className="sidebar-user">
+          <div
+            className="user-avatar"
+            style={{ background: getRoleColor(user?.role) }}
+          >
             {getInitials(user?.username)}
           </div>
-          <ChevronDown
-            size={16}
-            className={`dropdown-icon ${dropdownOpen ? 'open' : ''}`}
-          />
-        </button>
-
-        {/* Dropdown Menu */}
-        {dropdownOpen && (
-          <div className="user-dropdown">
-            <div className="dropdown-header">
-              <div className="dropdown-avatar" style={{ background: getRoleColor(user?.role) }}>
-                {getInitials(user?.username)}
-              </div>
-              <div className="dropdown-info">
-                <span className="dropdown-name">{user?.username}</span>
-                <span className="dropdown-role" style={{ color: getRoleColor(user?.role) }}>
-                  {getRoleLabel(user?.role)}
-                </span>
-              </div>
-            </div>
-
-            <div className="dropdown-divider" />
-
-            <button onClick={handleLogoutClick} className="dropdown-item logout-item">
-              <LogOut size={16} />
-              <span>Cerrar sesión</span>
-            </button>
+          <div className="user-info">
+            <span className="user-name">{user?.username}</span>
+            <span
+              className="user-role"
+              style={{ color: getRoleColor(user?.role) }}
+            >
+              {getRoleLabel(user?.role)}
+            </span>
           </div>
-        )}
+          <button
+            className="logout-btn"
+            onClick={() => setShowLogoutModal(true)}
+            title="Cerrar sesión"
+          >
+            <LogOut size={15} strokeWidth={2} />
+          </button>
+        </div>
+
+        <div className="sidebar-bottom">
+          <span className="app-version">v2.0.0</span>
+          <button
+            className="toggle-btn"
+            onClick={onToggle}
+            title={isExpanded ? 'Colapsar menú' : 'Expandir menú'}
+          >
+            {isExpanded ? <ChevronLeft size={15} /> : <ChevronRight size={15} />}
+          </button>
+        </div>
       </div>
 
       <ConfirmModal
         isOpen={showLogoutModal}
-        onConfirm={handleLogoutConfirm}
-        onCancel={handleLogoutCancel}
+        onConfirm={async () => { setShowLogoutModal(false); await logout(); }}
+        onCancel={() => setShowLogoutModal(false)}
         title="Cerrar Sesión"
         message="¿Estás seguro que deseas cerrar sesión? Tendrás que volver a iniciar sesión para acceder al sistema."
         confirmText="Sí, cerrar sesión"
         cancelText="Cancelar"
         type="logout"
       />
-
-      {/* Navigation */}
-      <nav className="sidebar-nav">
-        <button
-          onClick={() => navigate('/')}
-          className={`nav-item ${location.pathname === '/' ? 'active' : ''}`}
-        >
-          <Map size={20} />
-          <span>Mapa</span>
-        </button>
-
-        {(isAdmin || isCodisec) && (
-          <button
-            onClick={() => navigate('/admin/actividades')}
-            className={`nav-item ${location.pathname === '/admin/actividades' ? 'active' : ''}`}
-          >
-            <Calendar size={20} />
-            <span>Actividades</span>
-          </button>
-        )}
-
-        {isAdmin && (
-          <>
-            <button
-              onClick={() => navigate('/admin/camaras-vecinales')}
-              className={`nav-item ${location.pathname === '/admin/camaras-vecinales' ? 'active' : ''}`}
-            >
-              <Camera size={20} />
-              <span>Cám. Vecinales</span>
-            </button>
-
-            <button
-              onClick={() => navigate('/admin/camaras-municipales')}
-              className={`nav-item ${location.pathname === '/admin/camaras-municipales' ? 'active' : ''}`}
-            >
-              <Video size={20} />
-              <span>Cám. Municipales</span>
-            </button>
-
-            <button
-              onClick={() => navigate('/admin/usuarios')}
-              className={`nav-item ${location.pathname === '/admin/usuarios' ? 'active' : ''}`}
-            >
-              <Users size={20} />
-              <span>Usuarios</span>
-            </button>
-          </>
-        )}
-      </nav>
-
-      {/* Bottom Section */}
-      <div className="sidebar-footer">
-        <div className="app-version">v1.0.0</div>
-      </div>
     </aside>
   );
 };

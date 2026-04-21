@@ -456,6 +456,7 @@
   padding: 24px;
   overflow-y: auto;
   flex: 1;
+  background: white;
 }
 
 .camaras-modal-footer {
@@ -493,6 +494,7 @@
   font-family: inherit;
   transition: all 0.3s ease;
   color: #001D39;
+  background: white;
 }
 
 .camaras-form-group input:focus,
@@ -503,7 +505,9 @@
   box-shadow: 0 0 0 3px rgba(110, 162, 179, 0.15);
 }
 
-.camaras-form-group input.disabled {
+.camaras-form-group input:disabled,
+.camaras-form-group select:disabled,
+.camaras-form-group textarea:disabled {
   background: #f3f4f6;
   color: #6b7280;
   cursor: not-allowed;

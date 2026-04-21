@@ -1,6 +1,6 @@
 .control-busqueda {
   position: fixed;
-  left: 85px;
+  left: calc(var(--sidebar-width, 70px) + 15px);
   z-index: 2000;
   width: 350px;
   max-height: calc(100vh - 100px);
@@ -18,7 +18,7 @@
 
 /* Posición para modo Leaflet (comportamiento por defecto) */
 .control-busqueda.leaflet-mode {
-  left: 85px;
+  left: calc(var(--sidebar-width, 70px) + 15px);
 }
 
 /* Posición para modo Google Maps - evitar controles de Google */

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Edit2, Trash2, X, Save, RefreshCw, User, Mail, Shield, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, RefreshCw, User, Mail, Phone, Shield, Eye, EyeOff } from 'lucide-react';
 import authService from '../../services/authService';
 import usuariosService from '../../services/usuariosService';
 import UseUrlParamsManager from '../../hooks/UseUrlParamsManager';
@@ -165,8 +165,28 @@ const GestionUsuarios = () => {
     }));
   };
 
+  const validateForm = () => {
+    if (!formData.name.trim()) return 'El nombre es obligatorio';
+    if (!formData.lastname.trim()) return 'El apellido es obligatorio';
+    if (!formData.username.trim()) return 'El usuario es obligatorio';
+    if (!formData.email.trim()) return 'El email es obligatorio';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return 'El email no tiene un formato válido';
+    if (!formData.dni.trim()) return 'El DNI es obligatorio';
+    if (!/^\d{8}$/.test(formData.dni)) return 'El DNI debe tener exactamente 8 dígitos numéricos';
+    if (!formData.phone.trim()) return 'El teléfono es obligatorio';
+    if (!/^\d{9}$/.test(formData.phone)) return 'El teléfono debe tener exactamente 9 dígitos numéricos';
+    if (modalMode === 'create' && !formData.password.trim()) return 'La contraseña es obligatoria';
+    return null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -208,7 +228,6 @@ const GestionUsuarios = () => {
           return;
         }
 
-        console.log('Datos enviados al PATCH:', JSON.stringify(changedFields, null, 2));
         await usuariosService.update(selectedUser.id, changedFields);
         setSuccess('Usuario actualizado exitosamente');
       }
@@ -560,7 +579,7 @@ const GestionUsuarios = () => {
 
               <div className="form-group">
                 <label htmlFor="phone">
-                  <Mail size={16} />
+                  <Phone size={16} />
                   <span>Teléfono *</span>
                 </label>
                 <input
