@@ -1,62 +1,58 @@
-/* LeyendaCamaras.css */
+/* LeyendaCamaras.css — Diseño blanco/verde para TV */
 .leyenda-camaras {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: linear-gradient(135deg, rgba(0, 29, 57, 0.92) 0%, rgba(10, 65, 116, 0.85) 100%);
-  border: 1px solid rgba(189, 216, 233, 0.25);
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-top: 4px solid #16a34a;
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 0 60px rgba(123, 189, 232, 0.15);
-  padding: 12px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  padding: 14px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
   z-index: 1999;
-  min-width: 200px;
-  max-width: 280px;
-  backdrop-filter: blur(30px) saturate(150%);
-  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  min-width: 210px;
+  max-width: 290px;
   max-height: calc(100vh - 40px);
   overflow-y: auto;
   transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Cuando el panel de capas está expandido, mover la leyenda a la izquierda */
-.leyenda-camaras.panel-expanded {
-  right: 310px;
-}
-
 .leyenda-header {
-  margin-bottom: 8px;
-  border-bottom: 1px solid rgba(123, 189, 232, 0.3);
-  padding-bottom: 6px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 8px;
 }
 
 .leyenda-header h4 {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #BDD8E9;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
+}
+
+.leyenda-header h4 svg {
+  color: #16a34a;
 }
 
 .leyenda-content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .leyenda-section h5 {
-  margin: 0 0 10px 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #7BBDE8;
+  margin: 0 0 8px 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #16a34a;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
 }
 
 .leyenda-subsection {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .leyenda-subsection:last-child {
@@ -65,9 +61,9 @@
 
 .leyenda-subsection h6 {
   margin: 0 0 6px 0;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
-  color: #6EA2B3;
+  color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -75,14 +71,20 @@
 .leyenda-items {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .leyenda-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 0;
+  padding: 5px 7px;
+  border-radius: 7px;
+  transition: background 0.12s ease;
+}
+
+.leyenda-item:hover {
+  background: #f0fdf4;
 }
 
 .leyenda-item-label {
@@ -94,10 +96,10 @@
 }
 
 .leyenda-checkbox {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   cursor: pointer;
-  accent-color: #7BBDE8;
+  accent-color: #16a34a;
   flex-shrink: 0;
 }
 
@@ -109,16 +111,12 @@
 }
 
 .leyenda-icon-svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-}
-
-.leyenda-icon-svg svg {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 .leyenda-color-badge {
@@ -126,49 +124,35 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 40px;
+  min-width: 38px;
+}
+
+.leyenda-pin-vecinal {
+  flex-shrink: 0;
+  display: block;
 }
 
 .leyenda-item span {
-  font-size: 12px;
-  color: #BDD8E9;
+  font-size: 12.5px;
+  color: #374151;
   font-weight: 500;
 }
 
 /* Animación de entrada */
-.leyenda-camaras {
-  animation: slideInFromRight 0.3s ease-out;
-}
-
 @keyframes slideInFromRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);   opacity: 1; }
 }
 
-/* Scrollbar personalizada para la leyenda */
-.leyenda-camaras::-webkit-scrollbar {
-  width: 6px;
+.leyenda-camaras {
+  animation: slideInFromRight 0.28s ease-out;
 }
 
-.leyenda-camaras::-webkit-scrollbar-track {
-  background: rgba(0, 29, 57, 0.3);
-  border-radius: 3px;
-}
-
-.leyenda-camaras::-webkit-scrollbar-thumb {
-  background: rgba(110, 162, 179, 0.4);
-  border-radius: 3px;
-}
-
-.leyenda-camaras::-webkit-scrollbar-thumb:hover {
-  background: rgba(123, 189, 232, 0.6);
-}
+/* Scrollbar */
+.leyenda-camaras::-webkit-scrollbar { width: 5px; }
+.leyenda-camaras::-webkit-scrollbar-track { background: #f8fafc; border-radius: 3px; }
+.leyenda-camaras::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+.leyenda-camaras::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -180,17 +164,7 @@
     max-width: none;
     padding: 10px;
   }
-
-  .leyenda-header h4 {
-    font-size: 13px;
-  }
-
-  .leyenda-item span {
-    font-size: 11px;
-  }
-
-  .leyenda-icon {
-    width: 18px;
-    height: 18px;
-  }
+  .leyenda-header h4 { font-size: 12.5px; }
+  .leyenda-item span { font-size: 11.5px; }
+  .leyenda-icon      { width: 18px; height: 18px; }
 }
