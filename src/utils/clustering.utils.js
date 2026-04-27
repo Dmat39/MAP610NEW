@@ -52,7 +52,10 @@ export const calcularRadioCluster = (puntos, centroide) => {
   return Math.max(maxDistancia + 10, 30);
 };
 
-// DBSCAN corregido: busca vecinos en todos los índices, no solo j > i
+// Clustering por radio fijo desde semilla: cada semilla absorbe solo los puntos
+// dentro de radioMaximo de ella misma (sin expansión en cadena).
+// Garantía: todos los miembros están dentro de radioMaximo del centroide,
+// por lo que el círculo dibujado siempre contiene exactamente su conteo.
 export const realizarClustering = (puntos, radioMaximo = 50) => {
   if (!Array.isArray(puntos) || puntos.length === 0) return [];
   if (radioMaximo <= 0) {
@@ -74,47 +77,36 @@ export const realizarClustering = (puntos, radioMaximo = 50) => {
     radio: radioMaximo,
   });
 
+  const asignados = new Set();
   const clusters = [];
-  const visitados = new Set();
 
   for (let i = 0; i < puntosLimitados.length; i++) {
-    if (visitados.has(i)) continue;
+    if (asignados.has(i)) continue;
 
-    const cluster = [puntosLimitados[i]];
-    visitados.add(i);
-    const cola = [i];
+    const semilla = puntosLimitados[i];
+    const miembros = [semilla];
+    asignados.add(i);
 
-    while (cola.length > 0) {
-      const indiceActual = cola.shift();
-      const puntoBase = puntosLimitados[indiceActual];
-
-      for (let j = 0; j < puntosLimitados.length; j++) {
-        if (visitados.has(j)) continue;
-
-        const distancia = calcularDistancia(
-          puntoBase.Latitud,
-          puntoBase.Longitud,
-          puntosLimitados[j].Latitud,
-          puntosLimitados[j].Longitud
-        );
-
-        if (distancia <= radioMaximo) {
-          cluster.push(puntosLimitados[j]);
-          visitados.add(j);
-          cola.push(j);
-        }
+    for (let j = 0; j < puntosLimitados.length; j++) {
+      if (asignados.has(j)) continue;
+      const d = calcularDistancia(
+        semilla.Latitud, semilla.Longitud,
+        puntosLimitados[j].Latitud, puntosLimitados[j].Longitud
+      );
+      if (d <= radioMaximo) {
+        miembros.push(puntosLimitados[j]);
+        asignados.add(j);
       }
     }
 
-    if (cluster.length >= 2) {
-      const centroide = calcularCentroide(cluster);
-      const radio = calcularRadioCluster(cluster, centroide);
+    if (miembros.length >= 2) {
+      const centroide = calcularCentroide(miembros);
       clusters.push({
-        id: `cluster_${Date.now()}_${clusters.length}`,
-        puntos: cluster,
+        id: `cluster_${i}`,
+        puntos: miembros,
         centroide,
-        radio,
-        cantidad: cluster.length,
+        radio: calcularRadioCluster(miembros, centroide),
+        cantidad: miembros.length,
       });
     }
   }

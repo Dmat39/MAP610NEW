@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { useMapContext } from '../../../context/MapContext';
+import { useMapLayout } from '../../../context/MapLayoutContext';
 import './ControlClusters.css';
 
+const PANEL_ID = 'clusters';
+const PANEL_HEIGHT = 50;
+const PANEL_ORDER = 2;
+const BASE_RIGHT = 10;
+
 const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
+  const { registerPanel, unregisterPanel, getBottomOffset, rightOffset } = useMapLayout();
   const {
     radioCluster,
     setRadioCluster,
@@ -12,6 +19,13 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
     fechasClusters,
     handleFechasClustersChange
   } = useMapContext();
+  useEffect(() => {
+    if (visible) {
+      registerPanel(PANEL_ID, { order: PANEL_ORDER, height: PANEL_HEIGHT });
+      return () => unregisterPanel(PANEL_ID);
+    }
+  }, [visible, registerPanel, unregisterPanel]);
+
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [estadisticas, setEstadisticas] = useState({
     totalClusters: 0,
@@ -67,7 +81,14 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
   };
 
   return (
-    <div className={`control-clusters ${mapType}-mode ${isCollapsed ? 'collapsed' : ''}`}>
+    <div
+      className={`control-clusters ${isCollapsed ? 'collapsed' : ''}`}
+      style={{
+        bottom: getBottomOffset(PANEL_ID),
+        right: BASE_RIGHT + rightOffset,
+        transition: 'bottom 0.3s ease, right 0.3s ease',
+      }}
+    >
       <div className="control-clusters-header" onClick={toggleCollapse}>
         <div className="header-content">
           <h3>🎯 Control de Clusters</h3>

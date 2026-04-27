@@ -1,7 +1,5 @@
 .control-clusters {
   position: fixed;
-  bottom: 20px;
-  right: 10px;
   width: 300px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -15,17 +13,6 @@
   transform-origin: bottom;
 }
 
-/* Posición para modo Leaflet (comportamiento por defecto) */
-.control-clusters.leaflet-mode {
-  bottom: 20px;
-  right: 10px;
-}
-
-/* Posición para modo Google Maps - evitar controles de Google */
-.control-clusters.google-mode {
-  bottom: 10px; /* Alejado de los controles de Street View y otros de Google Maps */
-  right: 60px;
-}
 
 .control-clusters.collapsed {
   height: auto;
