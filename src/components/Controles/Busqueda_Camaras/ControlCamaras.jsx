@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Search, Filter, MapPin, Zap, AlertTriangle, Camera } from 'lucide-react';
+import { ChevronUp, ChevronDown, Search, Filter, MapPin, Zap, AlertTriangle, Camera, X, Target } from 'lucide-react';
 import './ControlCamaras.css';
 import { logger } from '../../../utils/logger.js';
 import camarasService from '../../../services/camarasService';
@@ -339,9 +339,10 @@ const ControlCamaras = ({
     >
       <div className="control-camaras-header" onClick={toggleCollapse}>
         <div className="header-content">
-          <h3>📷 Búsqueda de Cámaras</h3>
+          <Camera size={20} style={{ color: '#16a34a', flexShrink: 0 }} />
+          <h3>Búsqueda de Cámaras</h3>
           <button className="collapse-btn">
-            {isCollapsed ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            {isCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
           </button>
         </div>
       </div>
@@ -351,15 +352,21 @@ const ControlCamaras = ({
         <div className="busqueda-principal">
           <div className="input-group">
             <div className="input-container">
-              <Search size={18} className="search-icon" />
+              <Search size={20} className="search-icon" />
               <input
                 type="text"
                 value={busqueda}
                 onChange={e => setBusqueda(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ingresa el nombre o número de cámara..."
+                placeholder="Ingresa nombre o número de cámara..."
                 className="busqueda-input"
                 disabled={cargando}
+                style={{
+                  color: '#1f2937',
+                  WebkitTextFillColor: '#1f2937',
+                  background: '#ffffff',
+                  caretColor: '#16a34a',
+                }}
               />
             </div>
             <button
@@ -492,19 +499,19 @@ const ControlCamaras = ({
             {filtros.megafono && (
               <div className="stat-item activo">
                 <span className="stat-numero">{camaras.filter(c => c.megafono).length}</span>
-                <span className="stat-label">📢 Megáfono</span>
+                <span className="stat-label">Megáfono</span>
               </div>
             )}
             {filtros.boton && (
               <div className="stat-item activo">
                 <span className="stat-numero">{camaras.filter(c => c.boton).length}</span>
-                <span className="stat-label">🚨 Botón</span>
+                <span className="stat-label">Botón</span>
               </div>
             )}
             {filtros.lpr && (
               <div className="stat-item activo">
                 <span className="stat-numero">{camaras.filter(c => c.tipo === 'TIPO III').length}</span>
-                <span className="stat-label">📹 LPR</span>
+                <span className="stat-label">LPR</span>
               </div>
             )}
           </div>
@@ -519,11 +526,11 @@ const ControlCamaras = ({
           filtros.jurisdicciones.length > 0) && (
           <div className="acciones-container">
             <button onClick={limpiarBusqueda} className="btn-limpiar-todo">
-              🧹 Limpiar Todo
+              <X size={14} /> Limpiar
             </button>
             {ultimaBusqueda && (
               <button onClick={iniciarSeguimiento} className="btn-seguimiento">
-                🎯 Seguimiento
+                <Target size={14} /> Seguimiento
               </button>
             )}
           </div>
