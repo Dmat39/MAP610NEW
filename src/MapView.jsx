@@ -22,6 +22,7 @@ import CapaResiduos from './components/capas/Residuos/CapaResiduos';
 import CapaSostenimiento from './components/capas/Sostenimiento/CapaSostenimiento';
 import CapaActividades from './components/capas/Actividades/CapaActividades';
 import FiltroGiro from './components/filtros/FiltroGiro';
+import FiltroIncidenciasPNP from './components/filtros/FiltroIncidenciasPNP';
 import CapaBusquedaDirecciones from './components/capas/BusquedaDirecciones/CapaBusquedaDirecciones';
 import CapaUbicadorPunto from './components/capas/UbicadorPuntos/CapaUbicadorPunto';
 import ControlBusqueda from './components/Controles/Busqueda_Direcciones/ControlBusqueda';
@@ -53,14 +54,33 @@ import GoogleCapaActividades from './components/googlemaps/GoogleCapaActividades
 import CapaJurisdiccionCodisec from './components/capas/Jurisdiccion/CapaJurisdiccionCodisec';
 import GoogleCapaJurisdiccionCodisec from './components/googlemaps/GoogleCapaJurisdiccionCodisec';
 import ControlClusters from './components/Controles/Mapa_Clusters/ControlClusters';
+import CapaIncidenciasPNP from './components/capas/IncidenciasPNP/CapaIncidenciasPNP';
+import ClusterCombinado from './components/capas/ClusterCombinado/ClusterCombinado';
+import GoogleClusterCombinado from './components/googlemaps/GoogleClusterCombinado';
+import ControlClusterCombinado from './components/Controles/Cluster_Combinado/ControlClusterCombinado';
+
+const PNP_TIPOS = [
+  { key: 'pnpRoboAlPaso',        tipo: 'Robo al paso',                    label: 'Robo al paso' },
+  { key: 'pnpRoboAgravado',      tipo: 'Robo agravado',                   label: 'Robo agravado' },
+  { key: 'pnpDrogas',            tipo: 'Microcomercialización de drogas', label: 'Drogas PNP' },
+  { key: 'pnpViolenciaFamiliar', tipo: 'Violencia familiar',              label: 'Violencia Familiar' },
+  { key: 'pnpAccidente',         tipo: 'Accidente de tránsito',           label: 'Accidente de Tránsito' },
+  { key: 'pnpViolenciaSexual',   tipo: 'Violencia sexual',                label: 'Violencia Sexual' },
+  { key: 'pnpHomicidio',         tipo: 'Homicidio',                       label: 'Homicidio PNP' },
+  { key: 'pnpLesiones',          tipo: 'Lesiones',                        label: 'Lesiones PNP' },
+  { key: 'pnpHurto',             tipo: 'Hurto',                           label: 'Hurto PNP' },
+  { key: 'pnpOtros',             tipo: 'Otros',                           label: 'Otros PNP' },
+];
 
 const MapView = () => {
   const { user } = useAuth();
   const userRole = user?.role;
+  const isSuperAdmin = userRole === 'SUPERADMIN';
   const isOperator = userRole === 'OPERATOR';
   const isSupervisor = userRole === 'SUPERVISOR';
   const isCodisec = userRole === 'CODISEC';
   const isViewer = userRole === 'VIEWER';
+  const isPnp = userRole === 'PNP';
 
   const [mapType, setMapType] = useState('leaflet'); // 'leaflet' o 'google'
   const [capasVisibles, setCapasVisibles] = useState({
@@ -84,10 +104,22 @@ const MapView = () => {
     ubicadorPunto: false,
     rutas: false,
     clusters: false,
+    clusterCombinado: false,
     zonasCodisec: false,
+    pnpRoboAlPaso: false,
+    pnpRoboAgravado: false,
+    pnpDrogas: false,
+    pnpViolenciaFamiliar: false,
+    pnpAccidente: false,
+    pnpViolenciaSexual: false,
+    pnpHomicidio: false,
+    pnpLesiones: false,
+    pnpHurto: false,
+    pnpOtros: false,
   });
 
   const [payloadFiltros, setPayloadFiltros] = useState(null);
+  const [filtrosPnp, setFiltrosPnp] = useState(null);
   const [filtrosRobos, setFiltrosRobos] = useState(null);
   const [filtrosExtorsion, setFiltrosExtorsion] = useState(null);
   const [filtrosHomicidios, setFiltrosHomicidios] = useState(null);
@@ -107,6 +139,16 @@ const MapView = () => {
   const [seguimientoCamara, setSeguimientoCamara] = useState(null);
   const [limpiarSeguimiento, setLimpiarSeguimiento] = useState(null);
   const [camaraConVision, setCamaraConVision] = useState(null); // Track camera with vision field active
+
+  const getDefaultFechasCombinado = () => {
+    const today = new Date();
+    const hace30 = new Date();
+    hace30.setDate(today.getDate() - 30);
+    const fmt = d => d.toISOString().split('T')[0];
+    return { fechaInicio: fmt(hace30), fechaFin: fmt(today) };
+  };
+  const [radioClusterCombinado, setRadioClusterCombinado] = useState(50);
+  const [fechasClusterCombinado, setFechasClusterCombinado] = useState(getDefaultFechasCombinado);
   const payloadVacio = {
     Año: '',
     Mes: '',
@@ -144,6 +186,7 @@ const MapView = () => {
   }, [capasVisibles]);
 
   const handleLimpiar = useCallback(() => {
+    setPayloadFiltros(null);
     setFiltrosRobos(payloadVacio);
     setFiltrosExtorsion(payloadVacio);
     setFiltrosHomicidios(payloadVacio);
@@ -232,6 +275,7 @@ const MapView = () => {
     { name: 'drogas', label: 'Drogas', visible: capasVisibles.drogas, restrictedForOperator: true },
     { name: 'barras', label: 'Barras', visible: capasVisibles.barras, restrictedForOperator: true },
     { name: 'clusters', label: 'Clusters de Incidencias', visible: capasVisibles.clusters, restrictedForOperator: true },
+    { name: 'clusterCombinado', label: 'Cluster Combinado (Serenos + PNP)', visible: capasVisibles.clusterCombinado, restrictedForOperator: true },
     {
       name: 'busquedaDirecciones',
       label: 'Búsqueda de Direcciones',
@@ -254,6 +298,7 @@ const MapView = () => {
     { name: 'sostenimiento', label: 'Sostenimiento', visible: capasVisibles.sostenimiento },
     { name: 'actividades', label: 'Actividades', visible: capasVisibles.actividades },
     { name: 'zonasCodisec', label: 'Comunas', visible: capasVisibles.zonasCodisec, codisecOnly: true },
+    ...PNP_TIPOS.map(t => ({ name: t.key, label: t.label, visible: capasVisibles[t.key] })),
   ];
 
   // Capas permitidas para CODISEC
@@ -262,14 +307,27 @@ const MapView = () => {
   // Capas permitidas para VIEWER
   const capasViewer = ['camaras', 'camarasVecinales'];
 
+  // Capas permitidas para PNP
+  const capasPnp = [
+    'camaras', 'camarasVecinales', 'paraderosAutorizados', 'paraderosNoAutorizados',
+    'robos', 'extorsiones', 'homicidios', 'feminicidios', 'sicariatos', 'secuestros',
+    'drogas', 'barras', 'clusters', 'clusterCombinado', 'residuos', 'defensaCivil', 'sostenimiento',
+    'busquedaDirecciones', 'ubicadorPunto', 'rutas',
+    ...PNP_TIPOS.map(t => t.key),
+  ];
+
   // Filtrar capas según el rol del usuario
-  const capas = isCodisec
-    ? todasLasCapas.filter(capa => capasCodisec.includes(capa.name))
-    : isViewer
-      ? todasLasCapas.filter(capa => capasViewer.includes(capa.name))
-      : (isOperator || isSupervisor)
-        ? todasLasCapas.filter(capa => !capa.restrictedForOperator && !capa.codisecOnly)
-        : todasLasCapas;
+  const capas = (isSuperAdmin)
+    ? todasLasCapas
+    : isCodisec
+      ? todasLasCapas.filter(capa => capasCodisec.includes(capa.name))
+      : isViewer
+        ? todasLasCapas.filter(capa => capasViewer.includes(capa.name))
+        : isPnp
+          ? todasLasCapas.filter(capa => capasPnp.includes(capa.name))
+          : (isOperator || isSupervisor)
+            ? todasLasCapas.filter(capa => !capa.restrictedForOperator && !capa.codisecOnly)
+            : todasLasCapas;
 
   const handleToggle = useCallback(nombre => {
     setCapasVisibles(prev => {
@@ -303,17 +361,51 @@ const MapView = () => {
     });
   }, [payloadFiltros]);
 
+  const handleFiltrarPnp = useCallback(payload => {
+    setFiltrosPnp(payload);
+  }, []);
+
+  const handleLimpiarPnp = useCallback(() => {
+    setFiltrosPnp(null);
+  }, []);
+
+  const anyPnpVisible = PNP_TIPOS.some(t => capasVisibles[t.key]);
+
   const mapCenter = [-11.9699, -76.998];
   const mapZoom = 13.1;
   const mapStyle = { height: '100vh', width: '100%', position: 'relative', zIndex: 1 };
 
   return (
       <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-        {!isOperator && (capasVisibles.robos || capasVisibles.extorsiones || capasVisibles.homicidios ||
+        {/* Filtros bottom-left: apilan verticalmente cuando ambos están activos */}
+        {((!isOperator) && (capasVisibles.robos || capasVisibles.extorsiones || capasVisibles.homicidios ||
           capasVisibles.feminicidios || capasVisibles.sicariatos || capasVisibles.secuestros ||
-          capasVisibles.drogas || capasVisibles.barras) && (
-          <FiltroIncidentes onFiltrar={handleFiltrar} onLimpiar={handleLimpiar} />
-        )}
+          capasVisibles.drogas || capasVisibles.barras)) || anyPnpVisible ? (
+          <div style={{
+            position: 'fixed',
+            bottom: 10,
+            left: 'calc(var(--sidebar-width, 70px) + 15px)',
+            display: 'flex',
+            flexDirection: 'column-reverse',
+            gap: 10,
+            alignItems: 'flex-start',
+            zIndex: 100,
+            pointerEvents: 'none',
+          }}>
+            {(!isOperator) && (capasVisibles.robos || capasVisibles.extorsiones || capasVisibles.homicidios ||
+              capasVisibles.feminicidios || capasVisibles.sicariatos || capasVisibles.secuestros ||
+              capasVisibles.drogas || capasVisibles.barras) && (
+              <div style={{ pointerEvents: 'auto' }}>
+                <FiltroIncidentes onFiltrar={handleFiltrar} onLimpiar={handleLimpiar} />
+              </div>
+            )}
+            {anyPnpVisible && (
+              <div style={{ pointerEvents: 'auto' }}>
+                <FiltroIncidenciasPNP onFiltrar={handleFiltrarPnp} onLimpiar={handleLimpiarPnp} />
+              </div>
+            )}
+          </div>
+        ) : null}
         <div className="map-view-inner">
           <LayerTogglePanel
             capas={capas}
@@ -357,6 +449,15 @@ const MapView = () => {
           10
         }
       />
+      <ControlClusterCombinado
+        visible={capasVisibles.clusterCombinado}
+        clusterNormalVisible={capasVisibles.clusters}
+        radio={radioClusterCombinado}
+        setRadio={setRadioClusterCombinado}
+        fechas={fechasClusterCombinado}
+        setFechas={setFechasClusterCombinado}
+        mapType={mapType}
+      />
 
       {mapType === 'leaflet' ? (
         <MapContainer
@@ -394,7 +495,7 @@ const MapView = () => {
           <CapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
           <CapaParaderosAutorizados visible={capasVisibles.paraderosAutorizados} />
           <CapaParaderosNoAutorizados visible={capasVisibles.paraderosNoAutorizados} />
-          {!isOperator && (
+          {(!isOperator) && (
             <>
               <CapaRobos visible={capasVisibles.robos} filtros={filtrosRobos} />
               <CapaExtorsion visible={capasVisibles.extorsiones} filtros={filtrosExtorsion} />
@@ -406,7 +507,16 @@ const MapView = () => {
               <CapaBarras visible={capasVisibles.barras} filtros={filtrosBarras} />
             </>
           )}
-          <ClusterIncidencias visible={capasVisibles.clusters} />
+          <ClusterIncidencias visible={capasVisibles.clusters} filtros={payloadFiltros} />
+          <ClusterCombinado visible={capasVisibles.clusterCombinado} radio={radioClusterCombinado} fechas={fechasClusterCombinado} />
+          {PNP_TIPOS.map(t => (
+            <CapaIncidenciasPNP
+              key={t.key}
+              visible={capasVisibles[t.key]}
+              filtros={filtrosPnp}
+              tipo={t.tipo}
+            />
+          ))}
           <CapaResiduos visible={capasVisibles.residuos} />
           <CapaDefensaCivil visible={capasVisibles.defensaCivil} />
           <CapaSostenimiento visible={capasVisibles.sostenimiento} />
@@ -466,6 +576,15 @@ const MapView = () => {
             </>
           )}
           <GoogleClusterIncidencias visible={capasVisibles.clusters} />
+          <GoogleClusterCombinado visible={capasVisibles.clusterCombinado} radio={radioClusterCombinado} fechas={fechasClusterCombinado} />
+          {PNP_TIPOS.map(t => (
+            <CapaIncidenciasPNP
+              key={t.key}
+              visible={capasVisibles[t.key]}
+              filtros={filtrosPnp}
+              tipo={t.tipo}
+            />
+          ))}
           <GoogleCapaResiduos visible={capasVisibles.residuos} />
           <GoogleCapaActividades visible={capasVisibles.actividades} />
           <GoogleCapaJurisdiccionCodisec

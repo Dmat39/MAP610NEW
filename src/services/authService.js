@@ -101,8 +101,12 @@ const authService = {
     return user?.role || null;
   },
 
+  isSuperAdmin() {
+    return this.getUserRole() === 'SUPERADMIN';
+  },
+
   isAdmin() {
-    return this.getUserRole() === 'ADMINISTRATOR';
+    return this.getUserRole() === 'ADMINISTRATOR' || this.isSuperAdmin();
   },
 
   isSupervisor() {
@@ -111,6 +115,10 @@ const authService = {
 
   isOperator() {
     return this.getUserRole() === 'OPERATOR';
+  },
+
+  isPnp() {
+    return this.getUserRole() === 'PNP';
   },
 
   // Verificar si el usuario tiene al menos un rol específico

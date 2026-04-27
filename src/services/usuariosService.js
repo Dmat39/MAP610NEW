@@ -1,5 +1,13 @@
 const API_URL = import.meta.env.VITE_API_URL;
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const validateId = (id) => {
+  if (!id || !UUID_REGEX.test(String(id))) {
+    throw new Error('ID de usuario inválido');
+  }
+};
+
 const usuariosService = {
   /**
    * Obtener todos los usuarios con filtros
@@ -59,6 +67,7 @@ const usuariosService = {
    */
   async getById(id) {
     try {
+      validateId(id);
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('No hay token de autenticación');
@@ -129,6 +138,7 @@ const usuariosService = {
    */
   async update(id, userData) {
     try {
+      validateId(id);
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('No hay token de autenticación');
@@ -168,6 +178,7 @@ const usuariosService = {
    */
   async delete(id) {
     try {
+      validateId(id);
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('No hay token de autenticación');
