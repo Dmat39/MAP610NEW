@@ -44,24 +44,23 @@ const ClusterIncidencias = ({ visible, filtros = null }) => {
         .join(' | ');
 
       circle.bindPopup(`
-        <div style="font-size: 13px; max-width: 260px;">
-          <strong>🎯 Cluster de Incidencias</strong><br/>
-          <strong>Cantidad:</strong> ${cluster.cantidad} incidencias<br/>
-          <strong>Radio:</strong> ${Math.round(cluster.radio)} metros<br/>
-          <strong>Centroide:</strong><br/>
-          Lat: ${cluster.centroide.lat.toFixed(6)}<br/>
-          Lng: ${cluster.centroide.lng.toFixed(6)}<br/>
-          <strong>Tipos:</strong><br/>
-          ${tiposStr}
+        <div style="font-family:'Segoe UI',system-ui,sans-serif; font-size:13px; max-width:260px; line-height:1.5;">
+          <div style="font-weight:700; font-size:14px; color:#1f2937; padding-bottom:6px; margin-bottom:8px; border-bottom:2px solid #16a34a;">
+            Cluster de Incidencias
+          </div>
+          <div style="margin-bottom:4px; color:#374151;"><span style="font-weight:600;">Cantidad:</span> ${cluster.cantidad} incidencias</div>
+          <div style="margin-bottom:8px; color:#374151;"><span style="font-weight:600;">Radio:</span> ${Math.round(cluster.radio)} m</div>
+          <div style="font-weight:600; font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px;">Tipos</div>
+          <div style="font-size:12px; color:#374151; line-height:1.6;">${tiposStr}</div>
         </div>
       `);
 
       circle.bindTooltip(
-        `<div style="font-size: 12px; font-weight: bold; text-align: center;">
-          🎯 ${cluster.cantidad} incidencias<br/>
-          ${Math.round(cluster.radio)}m radio
+        `<div style="font-family:'Segoe UI',system-ui,sans-serif; font-size:12px; font-weight:600; text-align:center; color:#1f2937;">
+          ${cluster.cantidad} incidencias<br/>
+          <span style="color:#16a34a; font-size:11px;">${Math.round(cluster.radio)} m radio</span>
         </div>`,
-        { direction: 'top', offset: [0, -10], opacity: 0.9 }
+        { direction: 'top', offset: [0, -10], opacity: 0.95 }
       );
 
       circle.addTo(map);
@@ -91,16 +90,45 @@ const ClusterIncidencias = ({ visible, filtros = null }) => {
 
       setLoading(true);
 
-      const buildURL = tipo => {
+      const normalizarTexto = t =>
+        (t || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+      const mapTurno = { 'turno manana': 1, 'turno tarde': 2, 'turno noche': 3 };
+      const mapHorario = {
+        '00:00 - 01:59': 1, '02:00 - 03:59': 2, '04:00 - 05:59': 3,
+        '06:00 - 07:59': 4, '08:00 - 09:59': 5, '10:00 - 11:59': 6,
+        '12:00 - 13:59': 7, '14:00 - 15:59': 8, '16:00 - 17:59': 9,
+        '18:00 - 19:59': 10, '20:00 - 21:59': 11, '22:00 - 23:59': 12,
+        
+      };
+      const mapJurisdiccion = {
+        'caja de agua': 1, zarate: 2, huayrona: 3, 'canto rey': 4,
+        'santa elizabeth': 5, bayovar: 6, 'mariscal caceres': 7, '10 de octubre': 8,
+      };
+
+      const buildURL = (tipo, subtype) => {
         const API_URL = import.meta.env.VITE_API_URL;
         if (!API_URL) throw new Error('VITE_API_URL no está configurada.');
+        const defaultStart = (() => {
+          const d = new Date(); d.setDate(d.getDate() - 30);
+          return d.toISOString().split('T')[0];
+        })();
+        const defaultEnd = new Date().toISOString().split('T')[0];
+        const startDate = filtros?.fechaInicio || fechasClusters.fechaInicio || defaultStart;
+        const endDate   = filtros?.fechaFin    || fechasClusters.fechaFin    || defaultEnd;
         const params = new URLSearchParams();
         params.append('type', tipo);
-        params.append('start', filtros?.fechaInicio || fechasClusters.fechaInicio);
-        params.append('end', filtros?.fechaFin || fechasClusters.fechaFin);
-        if (filtros?.Turno) params.append('shift', filtros.Turno);
-        if (filtros?.Horario) params.append('schedule', filtros.Horario);
-        if (filtros?.Jurisdiccion) params.append('jurisdiction', filtros.Jurisdiccion);
+        if (subtype) params.append('subtype', subtype);
+        params.append('start', startDate);
+        params.append('end', endDate);
+        params.append('page', '0');
+        params.append('limit', '5000');
+        const turnoId = mapTurno[normalizarTexto(filtros?.Turno)];
+        if (turnoId) params.append('shift', turnoId);
+        const horarioId = mapHorario[normalizarTexto(filtros?.Horario)];
+        if (horarioId) params.append('schedule', horarioId);
+        const jurisdiccionId = mapJurisdiccion[normalizarTexto(filtros?.Jurisdiccion)];
+        if (jurisdiccionId) params.append('jurisdiction', jurisdiccionId);
         return `${API_URL}incidence?${params.toString()}`;
       };
 
@@ -108,22 +136,24 @@ const ClusterIncidencias = ({ visible, filtros = null }) => {
       const headers = { 'Content-Type': 'application/json' };
       if (TOKEN) headers['Authorization'] = `Bearer ${TOKEN}`;
 
+      // Tipos y subtypes exactos que usa useIncidenciasQuery.js
+      // IMPORTANTE: Extorsión va ANTES que Robo para que el dedup priorice la etiqueta correcta
       const todasTipologias = [
-        { tipo: 1, nombre: 'Robo',        key: 'robos' },
-        { tipo: 2, nombre: 'Extorsión',   key: 'extorsiones' },
-        { tipo: 3, nombre: 'Homicidio',   key: 'homicidios' },
-        { tipo: 4, nombre: 'Feminicidio', key: 'feminicidios' },
-        { tipo: 5, nombre: 'Sicariato',   key: 'sicariatos' },
-        { tipo: 6, nombre: 'Secuestro',   key: 'secuestros' },
-        { tipo: 7, nombre: 'Drogas',      key: 'drogas' },
-        { tipo: 8, nombre: 'Barras',      key: 'barras' },
+        { tipo: 3, subtype: 24,   nombre: 'Extorsión',   key: 'extorsiones' },
+        { tipo: 3, subtype: null, nombre: 'Robo',        key: 'robos' },
+        { tipo: 1, subtype: 1,    nombre: 'Homicidio',   key: 'homicidios' },
+        { tipo: 1, subtype: 2,    nombre: 'Feminicidio', key: 'feminicidios' },
+        { tipo: 1, subtype: 3,    nombre: 'Sicariato',   key: 'sicariatos' },
+        { tipo: 2, subtype: 6,    nombre: 'Secuestro',   key: 'secuestros' },
+        { tipo: 5, subtype: 28,   nombre: 'Drogas',      key: 'drogas' },
+        { tipo: 7, subtype: 31,   nombre: 'Barras',      key: 'barras' },
       ];
 
       const tipologias = todasTipologias.filter(t => tiposIncidenciasCluster[t.key]);
 
       Promise.all(
-        tipologias.map(({ tipo, nombre }) =>
-          fetch(buildURL(tipo), { headers, signal })
+        tipologias.map(({ tipo, subtype, nombre }) =>
+          fetch(buildURL(tipo, subtype), { headers, signal })
             .then(res => {
               if (!res.ok) throw new Error(`Error ${res.status} al obtener ${nombre}`);
               return res.json();
@@ -152,8 +182,21 @@ const ClusterIncidencias = ({ visible, filtros = null }) => {
         .then(resultados => {
           if (signal.aborted) return;
 
-          const data = resultados.flat();
-          logger.log('📊 Datos para clustering:', data.length, 'incidencias');
+          const raw = resultados.flat();
+          // Diagnóstico: ver solapamiento entre Robo y Extorsión
+          const robosIds = new Set(raw.filter(i => i.Tipo === 'Robo').map(i => i.Id));
+          const extorsionDupes = raw.filter(i => i.Tipo === 'Extorsión' && robosIds.has(i.Id));
+          logger.log('🔍 RAW total:', raw.length, '| Extorsiones solapadas con Robos:', extorsionDupes.length, '| IDs solapados:', extorsionDupes.map(i => i.Id));
+
+          const seen = new Set();
+          const data = raw.filter(item => {
+            // Clave de dedup: Id si existe, sino lat+lng exactos (mismo punto = misma incidencia)
+            const key = item.Id != null ? String(item.Id) : `${item.Latitud},${item.Longitud}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          logger.log('📊 Datos para clustering:', data.length, 'incidencias (', raw.length - data.length, 'duplicados eliminados)');
 
           const clustersGenerados = realizarClustering(data, radioCluster);
           crearCirculosCluster(clustersGenerados);
@@ -217,13 +260,13 @@ const ClusterIncidencias = ({ visible, filtros = null }) => {
             style={{
               width: '20px',
               height: '20px',
-              border: '2px solid #3498db',
-              borderTop: '2px solid transparent',
+              border: '2px solid #e2e8f0',
+              borderTop: '2px solid #16a34a',
               borderRadius: '50%',
               animation: 'spin 1s linear infinite',
             }}
           />
-          <span style={{ marginLeft: 12, fontSize: '15px', fontWeight: '500', color: '#2c3e50' }}>
+          <span style={{ marginLeft: 12, fontSize: '14px', fontWeight: '500', color: '#374151' }}>
             Generando clusters...
           </span>
         </div>
