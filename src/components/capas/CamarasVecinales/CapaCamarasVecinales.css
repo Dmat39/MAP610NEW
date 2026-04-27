@@ -28,20 +28,22 @@
 /* Tooltip personalizado - Limpio y legible */
 .custom-tooltip-vecinal {
   background: white !important;
-  border: 2px solid #3b82f6 !important;
+  border: 2px solid #16a34a !important;
   border-radius: 8px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.13) !important;
   padding: 6px 12px !important;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  font-family: 'Segoe UI', system-ui, sans-serif !important;
   color: #1f2937 !important;
+  font-weight: 500 !important;
+  font-size: 12.5px !important;
 }
 
 .custom-tooltip-vecinal::before {
   border-top-color: white !important;
-  filter: drop-shadow(0 -1px 0 #3b82f6);
+  filter: drop-shadow(0 -1px 0 #16a34a);
 }
 
-/* Estilos para el icono personalizado de cámara vecinal */
+/* Estilos para el icono personalizado de cámara vecinal (legado) */
 .custom-camara-vecinal-icon {
   background: transparent !important;
   border: none !important;
@@ -51,31 +53,51 @@
   cursor: pointer;
 }
 
-/* Animación de pulso para los marcadores */
-@keyframes pulse-camara-vecinal {
-  0% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.3);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
+/* =====================================================
+   PINS DINÁMICOS VECINALES - Círculo outline por zoom
+   ===================================================== */
+
+/* Nivel 1: Punto pequeño (zoom ≤ 12) */
+.vec-pin-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease;
+  cursor: pointer;
 }
 
-/* Hover effect para el marcador */
-.custom-camara-vecinal-icon:hover .camara-vecinal-marker > div:first-child {
-  transform: scale(1.15) translateY(-4px) !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+.vec-pin-dot:hover {
+  transform: scale(1.6);
 }
 
-/* Efecto de resplandor en hover */
-.custom-camara-vecinal-icon:hover .pulse-ring {
-  animation: none !important;
-  opacity: 0.4 !important;
-  transform: scale(1.2) !important;
+/* Nivel 2: Teardrop outline sin ícono (zoom 13–15) */
+.vec-pin-mid {
+  width: 10px;
+  height: 10px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: white;
+  border: 2px solid var(--vec-color, #3b82f6);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+}
+
+.vec-pin-mid:hover {
+  transform: rotate(-45deg) scale(1.35);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Nivel 3: Círculo con ícono SVG (zoom ≥ 16) */
+.vec-pin-wrap {
+  display: block;
+  transition: transform 0.15s ease, filter 0.2s ease;
+  cursor: pointer;
+}
+
+.vec-pin-wrap:hover {
+  transform: scale(1.2);
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.25));
 }

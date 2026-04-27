@@ -11,28 +11,85 @@ import { cargarJurisdicciones, obtenerJurisdiccion } from '../../../utils/jurisd
 
 import L from 'leaflet';
 
-// Función para crear iconos según el tipo de cámara
-const crearIconoCamara = tipo => {
-  let iconUrl;
-  switch (tipo) {
-    case 'TIPO I':
-      iconUrl = '/icon/camera.png';
-      break;
-    case 'TIPO II':
-      iconUrl = '/icon/camera2.png';
-      break;
-    case 'TIPO III':
-      iconUrl = '/icon/camera3.png';
-      break;
-    default:
-      iconUrl = '/icon/camera.png'; // Fallback por defecto
+// Colores por tipo de cámara
+const COLORES_TIPO = {
+  'TIPO I': '#3B82F6',
+  'TIPO II': '#22C55E',
+  'TIPO III': '#8B5CF6',
+};
+const COLOR_DEFAULT = '#3B82F6';
+
+// Nivel de zoom: 1=lejano, 2=medio, 3=cercano
+const getZoomNivel = zoom => {
+  if (zoom <= 12) return 1;
+  if (zoom <= 15) return 2;
+  return 3;
+};
+
+// Crea el pin SVG completo (nivel 3) o con indicador de seguimiento
+const _svgPin = (color, esSeleccionada, enSeguimiento) => {
+  const w = esSeleccionada ? 34 : 28;
+  const h = esSeleccionada ? 44 : 36;
+  const indicador = esSeleccionada
+    ? `<circle cx="22" cy="5" r="4.5" fill="${color}" stroke="white" stroke-width="1.5"/>`
+    : enSeguimiento
+      ? `<circle cx="22" cy="5" r="4.5" fill="#10b981" stroke="white" stroke-width="1.5"/>`
+      : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 28 36" style="display:block">
+    <path d="M14 0C6.27 0 0 6.27 0 14c0 9.75 14 22 14 22S28 23.75 28 14C28 6.27 21.73 0 14 0z" fill="${color}"/>
+    <circle cx="14" cy="13" r="9" fill="white" opacity="0.93"/>
+    <rect x="7" y="10" width="14" height="9" rx="1.5" fill="${color}"/>
+    <circle cx="14" cy="14.5" r="3.5" fill="white"/>
+    <circle cx="14" cy="14.5" r="1.8" fill="${color}"/>
+    <path d="M11.5 10 L12.5 8.2 L15.5 8.2 L16.5 10 Z" fill="${color}"/>
+    ${indicador}
+  </svg>`;
+};
+
+// Función principal: crea el DivIcon según tipo, nivel de zoom y estado
+const crearIconoCamaraModerno = (tipo, nivelZoom, esSeleccionada = false, enSeguimiento = false) => {
+  const color = COLORES_TIPO[tipo] || COLOR_DEFAULT;
+
+  // Siempre pin completo si está seleccionada
+  if (esSeleccionada) {
+    return new L.DivIcon({
+      html: `<div class="cam-pin-wrap cam-pin-selected">${_svgPin(color, true, false)}</div>`,
+      iconSize: [34, 44],
+      iconAnchor: [17, 44],
+      popupAnchor: [0, -44],
+      className: '',
+    });
   }
 
-  return new L.Icon({
-    iconUrl: iconUrl,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14], // Centrado: la mitad del ancho y alto
-    popupAnchor: [0, -14], // Popup aparece arriba del centro del icono
+  if (nivelZoom >= 3) {
+    const glowStyle = enSeguimiento ? 'filter:drop-shadow(0 0 5px #10b98170);' : '';
+    return new L.DivIcon({
+      html: `<div class="cam-pin-wrap" style="${glowStyle}">${_svgPin(color, false, enSeguimiento)}</div>`,
+      iconSize: [28, 36],
+      iconAnchor: [14, 36],
+      popupAnchor: [0, -36],
+      className: '',
+    });
+  }
+
+  if (nivelZoom === 2) {
+    const seguimientoStyle = enSeguimiento ? 'box-shadow:0 0 0 3px #10b98150;' : '';
+    return new L.DivIcon({
+      html: `<div class="cam-pin-mid" style="--pin-color:${color};${seguimientoStyle}"></div>`,
+      iconSize: [18, 22],
+      iconAnchor: [9, 22],
+      popupAnchor: [0, -22],
+      className: '',
+    });
+  }
+
+  // Nivel 1: punto simple
+  return new L.DivIcon({
+    html: `<div class="cam-pin-dot" style="background:${color};"></div>`,
+    iconSize: [10, 10],
+    iconAnchor: [5, 5],
+    popupAnchor: [0, -10],
+    className: '',
   });
 };
 
@@ -111,11 +168,26 @@ const CapaCamarasMunicipales = ({
   const [circulosAnteriores, setCirculosAnteriores] = useState([]);
   const [camarasCercanas, setCamarasCercanas] = useState([]);
   const [, setHistorialSeguimiento] = useState([]);
+  const [zoomNivel, setZoomNivel] = useState(1);
   const map = useMap();
   const markersRef = useRef({});
 
   // Usar el hook para habilitar la copia de ubicaciones
   useMapLocationCopy();
+
+  // Sincronizar nivel de zoom (1=lejano, 2=medio, 3=cercano)
+  useEffect(() => {
+    if (!map) return;
+    const actualizar = () => {
+      setZoomNivel(prev => {
+        const nuevo = getZoomNivel(map.getZoom());
+        return prev !== nuevo ? nuevo : prev;
+      });
+    };
+    actualizar();
+    map.on('zoomend', actualizar);
+    return () => map.off('zoomend', actualizar);
+  }, [map]);
 
   // Agregar listener para obtener coordenadas con Ctrl+Click (herramienta de ayuda)
   useEffect(() => {
@@ -481,45 +553,7 @@ const CapaCamarasMunicipales = ({
           infoDistancia = ` (${distanciaKm}km)`;
         }
 
-        // Crear el icono según si está seleccionada o no
-        let iconUrl;
-        switch (props.tipo) {
-          case 'TIPO I':
-            iconUrl = '/icon/camera.png';
-            break;
-          case 'TIPO II':
-            iconUrl = '/icon/camera2.png';
-            break;
-          case 'TIPO III':
-            iconUrl = '/icon/camera3.png';
-            break;
-          default:
-            iconUrl = '/icon/camera.png';
-        }
-
-        let iconoMarcador;
-        if (esSeleccionada) {
-          // Icono con efecto de selección
-          iconoMarcador = new L.DivIcon({
-            html: `<div style="
-            width: 40px;
-            height: 40px;
-            background-image: url('${iconUrl}');
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.8));
-            animation: pulse-camara 2s infinite;
-          "></div>`,
-            iconSize: [40, 40],
-            iconAnchor: [20, 20],
-            popupAnchor: [0, -20],
-            className: 'camara-seleccionada-custom',
-          });
-        } else {
-          // Icono normal
-          iconoMarcador = crearIconoCamara(props.tipo);
-        }
+        const iconoMarcador = crearIconoCamaraModerno(props.tipo, zoomNivel, esSeleccionada, enSeguimiento);
 
         // Generar campo de visión si corresponde
         let visionPolygonElement = null;
