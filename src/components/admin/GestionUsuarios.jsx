@@ -41,17 +41,19 @@ const GestionUsuarios = () => {
     rol: 'OPERATOR',
   });
 
-  // Roles disponibles
+  const isSuperAdmin = authService.isSuperAdmin();
+  const isAdmin = isSuperAdmin; // solo SUPERADMIN gestiona usuarios
+
+  // Roles disponibles según quien está logueado
   const roles = [
+    ...(isSuperAdmin ? [{ value: 'SUPERADMIN', label: 'Superadmin', color: '#dc2626' }] : []),
     { value: 'ADMINISTRATOR', label: 'Administrador', color: '#ef4444' },
     { value: 'SUPERVISOR', label: 'Supervisor', color: '#f59e0b' },
     { value: 'CODISEC', label: 'CODISEC', color: '#8b5cf6' },
     { value: 'OPERATOR', label: 'Operador', color: '#3b82f6' },
     { value: 'VIEWER', label: 'Visualizador', color: '#10b981' },
+    { value: 'PNP', label: 'PNP', color: '#0ea5e9' },
   ];
-
-  // Verificar si es administrador
-  const isAdmin = authService.isAdmin();
 
   // Cargar usuarios cuando cambian los parámetros de URL
   useEffect(() => {
@@ -308,16 +310,16 @@ const GestionUsuarios = () => {
   return (
     <div className="gestion-container">
       <div className="gestion-header">
-        <div className="header-content">
-          <User size={28} />
-          <div className="header-text">
+        <div className="gestion-header-content">
+          <div className="gestion-header-icon"><User size={24} /></div>
+          <div className="gestion-header-text">
             <h1>Gestión de Usuarios</h1>
             <p>Administra los usuarios del sistema</p>
           </div>
         </div>
-        <div className="header-actions">
-          <button onClick={refreshData} className="btn-refresh" title="Actualizar">
-            <RefreshCw size={18} className={loading ? 'spinning' : ''} />
+        <div className="gestion-header-actions">
+          <button onClick={refreshData} className="btn-secondary">
+            <RefreshCw size={15} className={loading ? 'spinning' : ''} /> Actualizar
           </button>
           <button onClick={openCreateModal} className="btn-primary">
             <Plus size={18} />
@@ -326,7 +328,7 @@ const GestionUsuarios = () => {
         </div>
       </div>
 
-      {error && (
+      {error && !showModal && (
         <div className="alert alert-error">
           <X size={18} />
           <span>{error}</span>
@@ -491,6 +493,15 @@ const GestionUsuarios = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="modal-body">
+              {error && (
+                <div className="alert alert-error" style={{ marginBottom: '16px' }}>
+                  <X size={18} />
+                  <span>{error}</span>
+                  <button onClick={() => setError(null)} className="alert-close">
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
               <div className="form-group">
                 <label htmlFor="name">
                   <User size={16} />
