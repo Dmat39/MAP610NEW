@@ -1,20 +1,28 @@
 import './LayerTogglePanel.css';
 import { Layers, X, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import authService from '../../services/authService';
+import { useMapLayout } from '../../context/MapLayoutContext';
 
 const LayerTogglePanel = ({ capas, onToggle }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [categoriesExpanded, setCategoriesExpanded] = useState({
     cameras: true,
     incidents: false,
+    incidentsPnp: false,
     infrastructure: false,
     tools: false,
     zonas: false,
   });
 
+  const { setDrawerOpen } = useMapLayout();
   const userRole = authService.getUserRole();
   const isOperator = userRole === 'OPERATOR';
+  const isPnp = userRole === 'PNP';
+
+  useEffect(() => {
+    setDrawerOpen(isOpen);
+  }, [isOpen, setDrawerOpen]);
 
   const categories = {
     cameras: {
@@ -25,13 +33,21 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
       title: 'Incidencias Delictivas',
       layers: ['robos', 'extorsiones', 'homicidios', 'feminicidios', 'sicariatos', 'secuestros', 'drogas', 'barras'],
     },
+    incidentsPnp: {
+      title: 'Incidencias PNP',
+      layers: [
+        'pnpRoboAlPaso', 'pnpRoboAgravado', 'pnpDrogas', 'pnpViolenciaFamiliar',
+        'pnpAccidente', 'pnpViolenciaSexual', 'pnpHomicidio', 'pnpLesiones',
+        'pnpHurto', 'pnpOtros',
+      ],
+    },
     infrastructure: {
       title: 'Puntos Estratégicos',
       layers: ['paraderosAutorizados', 'defensaCivil', 'paraderosNoAutorizados', 'residuos', 'sostenimiento', 'actividades'],
     },
     tools: {
       title: 'Herramientas',
-      layers: ['clusters', 'busquedaDirecciones', 'ubicadorPunto', 'rutas'],
+      layers: ['clusters', 'clusterCombinado', 'busquedaDirecciones', 'ubicadorPunto', 'rutas'],
     },
     zonas: {
       title: 'Zonas Geográficas',
@@ -55,7 +71,7 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
   const totalActive = capas.filter(c => c.visible).length;
 
   const visibleCategories = Object.entries(categories).filter(([key, cat]) => {
-    if (key === 'incidents' && isOperator) return false;
+    if (key === 'incidents' && (isOperator || isPnp)) return false;
     return cat.layers.map(getCapaByName).filter(Boolean).length > 0;
   });
 
