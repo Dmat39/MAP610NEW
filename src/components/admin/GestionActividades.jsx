@@ -48,6 +48,7 @@ const GestionActividades = () => {
   // Verificar si es administrador o codisec
   const userRole = authService.getUserRole();
   const hasAccess = authService.isAdmin() || userRole === 'CODISEC';
+  const canWrite = authService.isSuperAdmin();
 
   // Cargar actividades cuando cambian los parámetros de URL
   useEffect(() => {
@@ -403,24 +404,26 @@ const GestionActividades = () => {
     <div className="gestion-actividades-container">
       <div className="actividades-header">
         <div className="actividades-header-content">
-          <Calendar size={28} />
+          <div className="actividades-header-icon"><Calendar size={24} /></div>
           <div className="actividades-header-text">
             <h1>Gestión de Actividades</h1>
             <p>Administra las actividades en puntos estratégicos</p>
           </div>
         </div>
         <div className="actividades-header-actions">
-          <button onClick={refreshData} className="btn-actividades-refresh" title="Actualizar">
-            <RefreshCw size={18} className={loading ? 'spinning' : ''} />
+          <button onClick={refreshData} className="btn-actividades-refresh">
+            <RefreshCw size={15} className={loading ? 'spinning' : ''} /> Actualizar
           </button>
           <button onClick={exportarExcel} className="btn-actividades-excel" disabled={loading} title="Descargar Excel">
             <Download size={18} />
             <span>Descargar Excel</span>
           </button>
-          <button onClick={openCreateModal} className="btn-actividades-primary">
-            <Plus size={18} />
-            <span>Nueva Actividad</span>
-          </button>
+          {canWrite && (
+            <button onClick={openCreateModal} className="btn-actividades-primary">
+              <Plus size={18} />
+              <span>Nueva Actividad</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -481,10 +484,12 @@ const GestionActividades = () => {
             <Calendar size={48} />
             <h3>No hay actividades registradas</h3>
             <p>Comienza creando una nueva actividad</p>
-            <button onClick={openCreateModal} className="btn-actividades-primary">
-              <Plus size={18} />
-              <span>Crear Actividad</span>
-            </button>
+            {canWrite && (
+              <button onClick={openCreateModal} className="btn-actividades-primary">
+                <Plus size={18} />
+                <span>Crear Actividad</span>
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -536,20 +541,24 @@ const GestionActividades = () => {
                         </td>
                         <td>
                           <div className="actividades-action-buttons">
-                            <button
-                              className="btn-icon-actividades btn-edit"
-                              onClick={() => openEditModal(actividad)}
-                              title="Editar"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button
-                              className="btn-icon-actividades btn-delete"
-                              onClick={() => handleDelete(actividad.id)}
-                              title="Eliminar"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            {canWrite && (
+                              <>
+                                <button
+                                  className="btn-icon-actividades btn-edit"
+                                  onClick={() => openEditModal(actividad)}
+                                  title="Editar"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                                <button
+                                  className="btn-icon-actividades btn-delete"
+                                  onClick={() => handleDelete(actividad.id)}
+                                  title="Eliminar"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>

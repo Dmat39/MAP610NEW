@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  background-color: #f5f5f5;
+  background-color: #f1f5f9;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   position: relative;
   z-index: 1;
@@ -17,14 +17,19 @@
 
 /* Header */
 .actividades-header {
-  background: linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%);
-  border-radius: 16px;
+  background: white;
+  border-radius: 12px;
   padding: 18px 24px;
-  margin-bottom: 20px;
-  color: white;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(189, 216, 233, 0.2);
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1px solid #e2e8f0;
+  border-top: 4px solid #16a34a;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .actividades-header-content {
@@ -33,92 +38,80 @@
   gap: 14px;
 }
 
+.actividades-header-icon {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  background: #dcfce7;
+  border-radius: 10px;
+  border: 1.5px solid #86efac;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
 .actividades-header-text h1 {
   font-size: 22px;
   font-weight: bold;
   margin: 0 0 4px 0;
-  color: white;
+  color: #0f172a;
 }
 
 .actividades-header-text p {
   font-size: 13px;
   margin: 0;
   opacity: 0.95;
-  color: rgba(255, 255, 255, 0.9);
+  color: #64748b;
 }
 
 .actividades-header-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 14px;
+  gap: 10px;
   align-items: center;
 }
 
 /* Botones */
 .btn-actividades-primary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 18px;
-  background: rgba(255, 255, 255, 0.95);
-  color: #0A4174;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex; align-items: center; gap: 6px;
+  background: #16a34a; color: white;
+  border: none; border-radius: 8px;
+  padding: 9px 16px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background 0.15s;
+  box-shadow: 0 1px 4px rgba(22,163,74,0.25);
 }
-
-.btn-actividades-primary:hover {
-  background: white;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-}
+.btn-actividades-primary:hover { background: #15803d; }
+.btn-actividades-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-actividades-refresh {
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 10px;
-  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  width: 42px;
-  height: 42px;
+  gap: 6px;
+  background: white;
+  color: #374151;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
 .btn-actividades-refresh:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: scale(1.05);
+  background: #f9fafb;
 }
 
 .btn-actividades-excel {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 18px;
-  background: rgba(16, 185, 129, 0.9);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  display: flex; align-items: center; gap: 6px;
+  background: white; color: #374151;
+  border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: 9px 16px; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: background 0.15s;
 }
-
-.btn-actividades-excel:hover {
-  background: rgba(16, 185, 129, 1);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-}
+.btn-actividades-excel:hover { background: #f9fafb; }
+.btn-actividades-excel:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .btn-actividades-excel:disabled {
   opacity: 0.6;
@@ -233,7 +226,7 @@
 
 .actividades-count-number {
   font-weight: 700;
-  color: #0A4174;
+  color: #374151;
   font-size: 16px;
 }
 
@@ -287,7 +280,7 @@
 }
 
 .actividades-table thead {
-  background: linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%);
+  background: #16a34a;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -310,7 +303,7 @@
 }
 
 .actividades-table tbody tr:hover {
-  background-color: rgba(78, 142, 162, 0.05);
+  background-color: rgba(22, 163, 74, 0.06);
 }
 
 .actividades-table td {
@@ -341,7 +334,7 @@
 
 .actividades-badge-type {
   background: rgba(59, 130, 246, 0.15);
-  color: #0A4174;
+  color: #374151;
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
@@ -426,7 +419,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  background: linear-gradient(135deg, rgba(78, 142, 162, 0.15) 0%, rgba(10, 65, 116, 0.12) 100%);
+  background: white;
   border-bottom: 1px solid #e5e7eb;
   border-radius: 16px 16px 0 0;
   position: sticky;
@@ -437,7 +430,7 @@
 .actividades-modal-header h2 {
   font-size: 19px;
   font-weight: 600;
-  color: #0A4174;
+  color: #374151;
   margin: 0;
   display: flex;
   align-items: center;
@@ -482,8 +475,8 @@
 .actividades-form-group select:focus,
 .actividades-form-group textarea:focus {
   outline: none;
-  border-color: #6EA2B3;
-  box-shadow: 0 0 0 3px rgba(110, 162, 179, 0.15);
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
 }
 
 .actividades-coordinates-group {
@@ -503,7 +496,7 @@
   justify-content: center;
   gap: 8px;
   padding: 12px 20px;
-  background: linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%);
+  background: #16a34a;
   color: white;
   border: none;
   border-radius: 10px;
@@ -516,22 +509,22 @@
 
 .actividades-map-toggle-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(78, 142, 162, 0.3);
+  box-shadow: 0 6px 20px rgba(22,163,74,0.3);
 }
 
 .actividades-map-preview {
   margin-top: 16px;
-  border: 2px solid #4E8EA2;
+  border: 1px solid #bbf7d0;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(78, 142, 162, 0.15);
+  box-shadow: 0 4px 12px rgba(22,163,74,0.15);
   height: 350px;
 }
 
 .actividades-map-hint {
   padding: 12px 16px;
-  background: rgba(78, 142, 162, 0.08);
-  border-top: 1px solid #4E8EA2;
+  background: #f0fdf4;
+  border-top: 1px solid #bbf7d0;
   font-size: 12px;
   color: #065f46;
   text-align: center;
@@ -574,14 +567,14 @@
 }
 
 .actividades-modal-footer .btn-save {
-  background: linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%);
+  background: #16a34a;
   color: white;
   border: none;
 }
 
 .actividades-modal-footer .btn-save:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(78, 142, 162, 0.3);
+  box-shadow: 0 6px 20px rgba(22,163,74,0.3);
 }
 
 .actividades-modal-footer .btn-save:disabled {
@@ -684,6 +677,20 @@
     align-items: flex-start;
     gap: 12px;
   }
+
+.actividades-header-icon {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  background: #dcfce7;
+  border-radius: 10px;
+  border: 1.5px solid #86efac;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #16a34a;
+  flex-shrink: 0;
+}
 
   .actividades-header-text h1 {
     font-size: 18px;

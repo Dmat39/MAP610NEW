@@ -58,8 +58,8 @@ const GestionCamarasMunicipales = () => {
   const visionPolygonRef = useRef(null);
   const visionMarkerRef = useRef(null);
 
-  // Verificar si es administrador
   const isAdmin = authService.isAdmin();
+  const canWrite = authService.isSuperAdmin();
 
   // Cargar cámaras cuando cambian los parámetros de URL
   useEffect(() => {
@@ -671,24 +671,26 @@ const GestionCamarasMunicipales = () => {
     <div className="gestion-municipales-container">
       <div className="municipales-header">
         <div className="municipales-header-content">
-          <Video size={28} />
+          <div className="municipales-header-icon"><Video size={24} /></div>
           <div className="municipales-header-text">
             <h1>Gestión de Cámaras Municipales</h1>
             <p>Administra las cámaras municipales del sistema</p>
           </div>
         </div>
         <div className="municipales-header-actions">
-          <button onClick={refreshData} className="btn-municipales-refresh" title="Actualizar">
-            <RefreshCw size={18} className={loading ? 'spinning' : ''} />
+          <button onClick={refreshData} className="btn-municipales-refresh">
+            <RefreshCw size={15} className={loading ? 'spinning' : ''} /> Actualizar
           </button>
           <button onClick={exportarExcel} className="btn-municipales-excel" disabled={loading} title="Descargar Excel">
             <Download size={18} />
             <span>Descargar Excel</span>
           </button>
-          <button onClick={openCreateModal} className="btn-municipales-primary">
-            <Plus size={18} />
-            <span>Nueva Cámara</span>
-          </button>
+          {canWrite && (
+            <button onClick={openCreateModal} className="btn-municipales-primary">
+              <Plus size={18} />
+              <span>Nueva Cámara</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -760,10 +762,12 @@ const GestionCamarasMunicipales = () => {
             <Video size={48} />
             <h3>No hay cámaras municipales registradas</h3>
             <p>Comienza creando una nueva cámara municipal</p>
-            <button onClick={openCreateModal} className="btn-municipales-primary">
-              <Plus size={18} />
-              <span>Crear Cámara Municipal</span>
-            </button>
+            {canWrite && (
+              <button onClick={openCreateModal} className="btn-municipales-primary">
+                <Plus size={18} />
+                <span>Crear Cámara Municipal</span>
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -817,22 +821,24 @@ const GestionCamarasMunicipales = () => {
                           </span>
                         </td>
                         <td>
-                          <div className="municipales-action-buttons">
-                            <button
-                              className="btn-icon-municipales btn-edit"
-                              onClick={() => openEditModal(camera)}
-                              title="Editar"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button
-                              className="btn-icon-municipales btn-delete"
-                              onClick={() => handleDelete(camera.id)}
-                              title="Eliminar"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
+                          {canWrite && (
+                            <div className="municipales-action-buttons">
+                              <button
+                                className="btn-icon-municipales btn-edit"
+                                onClick={() => openEditModal(camera)}
+                                title="Editar"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                className="btn-icon-municipales btn-delete"
+                                onClick={() => handleDelete(camera.id)}
+                                title="Eliminar"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     );
