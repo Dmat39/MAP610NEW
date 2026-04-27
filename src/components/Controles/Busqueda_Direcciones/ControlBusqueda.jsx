@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronUp, ChevronDown, Search, Trash2 } from 'lucide-react';
+import { ChevronUp, ChevronDown, Search, Trash2, MapPin, AlertCircle, CheckCircle, Eye } from 'lucide-react';
 import './ControlBusqueda.css';
 import { logger } from '../../../utils/logger.js';
 
@@ -146,9 +146,10 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
     >
       <div className="control-busqueda-header" onClick={toggleCollapse}>
         <div className="header-content">
+          <Search size={16} color="#16a34a" style={{ flexShrink: 0 }} />
           <h3>Búsqueda en SJL</h3>
           <button className="collapse-btn">
-            {isCollapsed ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
           </button>
         </div>
       </div>
@@ -160,9 +161,10 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
               type="text"
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
-              placeholder="Ej: Av. Universitaria 1801, San Martin de Porres"
+              placeholder="Ej: Av. Gran Chimú, SJL"
               className="busqueda-input"
               disabled={cargando}
+              style={{ color: '#1f2937', WebkitTextFillColor: '#1f2937', background: '#ffffff', caretColor: '#16a34a' }}
             />
           </div>
 
@@ -185,13 +187,17 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
         </form>
 
         {/* Mostrar error */}
-        {error && <div className="error-message">⚠️ {error}</div>}
+        {error && (
+          <div className="error-message">
+            <AlertCircle size={14} style={{ flexShrink: 0 }} /> {error}
+          </div>
+        )}
 
         {/* Mostrar estadísticas de resultados */}
         {resultados.length > 0 && (
           <div className="resultados-stats">
-            ✅ {resultados.length} resultado{resultados.length !== 1 ? 's' : ''} encontrado
-            {resultados.length !== 1 ? 's' : ''}
+            <CheckCircle size={14} style={{ flexShrink: 0 }} />
+            {resultados.length} resultado{resultados.length !== 1 ? 's' : ''} encontrado{resultados.length !== 1 ? 's' : ''}
           </div>
         )}
 
@@ -199,14 +205,14 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
         {resultados.length > 0 && (
           <div className="resultados-lista">
             <div className="resultados-header">
-              <h4>📍 Resultados:</h4>
+              <h4><MapPin size={12} color="#16a34a" /> Resultados</h4>
               {resultadoSeleccionado && (
                 <button
                   onClick={mostrarTodos}
                   className="btn-mostrar-todos"
                   title="Mostrar todos los resultados"
                 >
-                  👁️ Mostrar todos
+                  <Eye size={12} /> Mostrar todos
                 </button>
               )}
             </div>
@@ -232,7 +238,9 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
                   </div>
                 </div>
                 {resultadoSeleccionado === resultado.id && (
-                  <div className="resultado-seleccionado-icono">✅</div>
+                  <div className="resultado-seleccionado-icono">
+                    <CheckCircle size={14} color="#16a34a" />
+                  </div>
                 )}
               </div>
             ))}

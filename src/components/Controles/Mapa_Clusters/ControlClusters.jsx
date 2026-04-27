@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, ScatterChart, CalendarDays, RotateCcw, SlidersHorizontal, ListFilter, BarChart3 } from 'lucide-react';
 import { useMapContext } from '../../../context/MapContext';
 import { useMapLayout } from '../../../context/MapLayoutContext';
 import './ControlClusters.css';
@@ -91,9 +91,10 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
     >
       <div className="control-clusters-header" onClick={toggleCollapse}>
         <div className="header-content">
-          <h3>🎯 Control de Clusters</h3>
+          <ScatterChart size={17} color="#16a34a" style={{ flexShrink: 0 }} />
+          <h3>Control de Clusters</h3>
           <button className="collapse-btn">
-            {isCollapsed ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
           </button>
         </div>
       </div>
@@ -101,7 +102,7 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
       <div className={`control-clusters-content ${isCollapsed ? 'hidden' : ''}`}>
         <div className="periodo-info">
           <div className="periodo-header">
-            <span className="periodo-icon">📅</span>
+            <CalendarDays size={14} color="#16a34a" />
             <span className="periodo-label">Período de datos</span>
           </div>
 
@@ -139,13 +140,13 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
           </div>
 
           <button className="btn-resetear-fechas" onClick={resetearFechas}>
-            🔄 Últimos 30 días
+            <RotateCcw size={13} /> Últimos 30 días
           </button>
         </div>
 
         <div className="radio-control">
-          <label htmlFor="radio-slider">
-            <strong>Radio de Clustering:</strong>
+          <label htmlFor="radio-slider" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <SlidersHorizontal size={13} color="#16a34a" /> Radio de Clustering
           </label>
           <div className="slider-container">
             <input
@@ -162,7 +163,7 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
         </div>
 
         <div className="filtros-incidencias">
-          <h4>🔍 Tipos de Incidencias</h4>
+          <h4 style={{ display: 'flex', alignItems: 'center', gap: 6 }}><ListFilter size={13} color="#16a34a" /> Tipos de Incidencias</h4>
           <div className="filtros-grid">
             <label className="filtro-checkbox">
               <input
@@ -232,7 +233,7 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
         </div>
 
         <div className="estadisticas">
-          <h4>📊 Estadísticas</h4>
+          <h4 style={{ display: 'flex', alignItems: 'center', gap: 6 }}><BarChart3 size={13} color="#16a34a" /> Estadísticas</h4>
           <div className="stat-item">
             <span className="stat-label">Total de puntos:</span>
             <span className="stat-value">{estadisticas.totalPuntos.toLocaleString()}</span>
@@ -252,7 +253,7 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
         </div>
 
         <div className="leyenda">
-          <h4>🎨 Leyenda</h4>
+          <h4 style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '0 0 8px 0', fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Leyenda de colores</h4>
           <div className="leyenda-item">
             <div className="color-box amarillo"></div>
             <span>2-3 incidencias</span>

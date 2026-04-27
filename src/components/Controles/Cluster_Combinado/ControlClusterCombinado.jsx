@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, Link2, CalendarDays, RotateCcw, SlidersHorizontal, BarChart3, Palette } from 'lucide-react';
 import { useMapLayout } from '../../../context/MapLayoutContext';
 import './ControlClusterCombinado.css';
 
@@ -59,8 +59,13 @@ const ControlClusterCombinado = ({
       }}
     >
       <div className="ctrl-combinado-header" onClick={() => setIsCollapsed(p => !p)}>
-        <h3>🔗 Cluster Combinado</h3>
-        <button>{isCollapsed ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>
+        <div className="ctrl-combinado-header-content">
+          <Link2 size={17} color="#16a34a" style={{ flexShrink: 0 }} />
+          <h3>Cluster Combinado</h3>
+        </div>
+        <button>
+          {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+        </button>
       </div>
 
       <div className={`ctrl-combinado-body${isCollapsed ? ' hidden' : ''}`}>
@@ -68,7 +73,7 @@ const ControlClusterCombinado = ({
         {/* Período de datos */}
         <div className="ctrl-combinado-periodo">
           <div className="ctrl-combinado-periodo-header">
-            <span className="ctrl-combinado-periodo-icon">📅</span>
+            <CalendarDays size={14} color="#16a34a" />
             <span className="ctrl-combinado-periodo-label">Período de datos</span>
           </div>
           <div className="ctrl-combinado-fechas">
@@ -95,14 +100,14 @@ const ControlClusterCombinado = ({
             </div>
           </div>
           <button className="ctrl-combinado-btn-reset-fecha" onClick={resetearFechas}>
-            🔄 Últimos 30 días
+            <RotateCcw size={13} /> Últimos 30 días
           </button>
         </div>
 
         {/* Radio de clustering */}
         <div className="ctrl-combinado-radio">
           <label>
-            <strong>Radio de Clustering:</strong>
+            <SlidersHorizontal size={13} color="#16a34a" /> Radio de Clustering
           </label>
           <div className="ctrl-combinado-slider-row">
             <input
@@ -120,18 +125,18 @@ const ControlClusterCombinado = ({
         {/* Fuentes */}
         <div className="ctrl-combinado-fuentes">
           <div className="fuente-badge serenos">
-            <span className="fuente-num">🔵 {stats.totalSerenos.toLocaleString()}</span>
+            <span className="fuente-num">{stats.totalSerenos.toLocaleString()}</span>
             <span className="fuente-label">Serenos</span>
           </div>
           <div className="fuente-badge pnp">
-            <span className="fuente-num">🔴 {stats.totalPnp.toLocaleString()}</span>
+            <span className="fuente-num">{stats.totalPnp.toLocaleString()}</span>
             <span className="fuente-label">PNP</span>
           </div>
         </div>
 
         {/* Estadísticas */}
         <div className="ctrl-combinado-stats">
-          <h4>📊 Estadísticas</h4>
+          <h4><BarChart3 size={13} color="#16a34a" /> Estadísticas</h4>
           <div className="ctrl-combinado-stat">
             <span>Total de puntos:</span>
             <span>{stats.totalPuntos.toLocaleString()}</span>
@@ -152,7 +157,7 @@ const ControlClusterCombinado = ({
 
         {/* Leyenda */}
         <div className="ctrl-combinado-leyenda">
-          <h4>🎨 Leyenda</h4>
+          <h4><Palette size={13} color="#16a34a" /> Leyenda</h4>
           <div className="ctrl-combinado-leyenda-item">
             <div className="ctrl-combinado-color" style={{ background: '#FFD700' }} />
             <span>2–3 incidencias</span>

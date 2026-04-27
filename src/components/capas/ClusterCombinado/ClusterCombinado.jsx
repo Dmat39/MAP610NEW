@@ -6,6 +6,55 @@ import { realizarClustering, obtenerColorCluster } from '../../../utils/clusteri
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+const TIPO_COLORS = {
+  'Robo':        { bg: '#fee2e2', color: '#dc2626', border: '#fecaca' },
+  'Extorsión':   { bg: '#fff7ed', color: '#ea580c', border: '#fed7aa' },
+  'Homicidio':   { bg: '#f1f5f9', color: '#1e293b', border: '#cbd5e1' },
+  'Feminicidio': { bg: '#fdf2f8', color: '#a21caf', border: '#f5d0fe' },
+  'Sicariato':   { bg: '#faf5ff', color: '#7c3aed', border: '#e9d5ff' },
+  'Secuestro':   { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
+  'Drogas':      { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
+  'Barras':      { bg: '#fefce8', color: '#a16207', border: '#fef08a' },
+};
+const COLOR_DEF = { bg: '#f8fafc', color: '#374151', border: '#e2e8f0' };
+
+const fmtFecha = d => {
+  if (!d) return '';
+  try {
+    const dt = new Date(d);
+    return isNaN(dt) ? String(d) : dt.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  } catch { return String(d); }
+};
+
+const buildDetalleRowsCombinado = puntos => {
+  const sorted = [...puntos].sort((a, b) => {
+    if (!a.Fecha && !b.Fecha) return 0;
+    if (!a.Fecha) return 1;
+    if (!b.Fecha) return -1;
+    return new Date(b.Fecha) - new Date(a.Fecha);
+  });
+  const shown = sorted.slice(0, 10);
+  const remaining = sorted.length - shown.length;
+
+  const rows = shown.map(p => {
+    const c = TIPO_COLORS[p.Tipo] || COLOR_DEF;
+    const origenStyle = p.Origen === 'Sereno'
+      ? 'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;'
+      : 'background:#fff1f2;color:#be123c;border:1px solid #fecdd3;';
+    const origenBadge = `<span style="${origenStyle}border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;flex-shrink:0;white-space:nowrap;">${p.Origen}</span>`;
+    const tipoBadge = `<span style="background:${c.bg};color:${c.color};border:1px solid ${c.border};border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;flex-shrink:0;white-space:nowrap;">${p.Tipo}</span>`;
+    const idLine = p.Id ? `<div style="font-size:12px;font-weight:600;color:#1f2937;">${p.Id}</div>` : '';
+    const fechaLine = p.Fecha ? `<div style="font-size:11px;color:#6b7280;">${fmtFecha(p.Fecha)}</div>` : '';
+    return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:5px;padding:5px 0;border-bottom:1px solid #f1f5f9;">${origenBadge}${tipoBadge}<div style="flex:1;min-width:0;">${idLine}${fechaLine}</div></div>`;
+  }).join('');
+
+  const masRow = remaining > 0
+    ? `<div style="text-align:center;font-size:11px;color:#94a3b8;padding-top:6px;font-style:italic;">+${remaining} incidencia${remaining !== 1 ? 's' : ''} más</div>`
+    : '';
+
+  return rows + masRow;
+};
+
 // Tipos/subtypes correctos según useIncidenciasQuery.js
 // Extorsión va ANTES que Robo para que el dedup priorice su etiqueta
 const SERENOS_TIPOS = [
@@ -48,14 +97,13 @@ const ClusterCombinado = ({ visible, radio = 50, fechas }) => {
       const totalSerenos = cluster.puntos.filter(p => p.Origen === 'Sereno').length;
       const totalPnp = cluster.puntos.filter(p => p.Origen === 'PNP').length;
 
-      const tiposStr = Object.entries(
-        cluster.puntos.reduce((acc, p) => {
-          acc[p.Tipo] = (acc[p.Tipo] || 0) + 1;
-          return acc;
-        }, {})
-      )
-        .map(([tipo, cant]) => `${tipo}: ${cant}`)
-        .join('<br/>');
+      const tipoCounts = {};
+      cluster.puntos.forEach(p => { tipoCounts[p.Tipo] = (tipoCounts[p.Tipo] || 0) + 1; });
+      const tiposBadges = Object.entries(tipoCounts)
+        .map(([tipo, cnt]) => {
+          const c = TIPO_COLORS[tipo] || COLOR_DEF;
+          return `<span style="background:${c.bg};color:${c.color};border:1px solid ${c.border};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;white-space:nowrap;">${tipo} ×${cnt}</span>`;
+        }).join('');
 
       const circle = L.circle([cluster.centroide.lat, cluster.centroide.lng], {
         radius: cluster.radio,
@@ -68,26 +116,31 @@ const ClusterCombinado = ({ visible, radio = 50, fechas }) => {
       });
 
       circle.bindPopup(`
-        <div style="font-family:'Segoe UI',system-ui,sans-serif; font-size:13px; max-width:280px; line-height:1.5;">
-          <div style="font-weight:700; font-size:14px; color:#1f2937; padding-bottom:6px; margin-bottom:8px; border-bottom:2px solid #16a34a;">
+        <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;max-width:320px;line-height:1.5;">
+          <div style="font-weight:700;font-size:14px;color:#1f2937;padding-bottom:6px;margin-bottom:8px;border-bottom:2px solid #16a34a;">
             Cluster Combinado
           </div>
-          <div style="margin-bottom:4px; color:#374151;"><span style="font-weight:600;">Total:</span> ${cluster.cantidad} incidencias</div>
-          <div style="margin-bottom:8px; color:#374151;"><span style="font-weight:600;">Radio:</span> ${Math.round(cluster.radio)} m</div>
-          <div style="display:flex; gap:8px; margin-bottom:8px;">
-            <div style="flex:1; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:6px 8px; text-align:center;">
-              <div style="font-size:16px; font-weight:700; color:#1d4ed8;">${totalSerenos}</div>
-              <div style="font-size:10px; color:#3b82f6; font-weight:500;">Serenos</div>
+          <div style="display:flex;gap:16px;margin-bottom:10px;">
+            <span style="color:#374151;"><b>Total:</b> ${cluster.cantidad}</span>
+            <span style="color:#6b7280;font-size:12px;">Radio: ${Math.round(cluster.radio)} m</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <div style="flex:1;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:6px 8px;text-align:center;">
+              <div style="font-size:16px;font-weight:700;color:#1d4ed8;">${totalSerenos}</div>
+              <div style="font-size:10px;color:#3b82f6;font-weight:600;text-transform:uppercase;">Serenos</div>
             </div>
-            <div style="flex:1; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:6px 8px; text-align:center;">
-              <div style="font-size:16px; font-weight:700; color:#dc2626;">${totalPnp}</div>
-              <div style="font-size:10px; color:#ef4444; font-weight:500;">PNP</div>
+            <div style="flex:1;background:#fff1f2;border:1px solid #fecdd3;border-radius:6px;padding:6px 8px;text-align:center;">
+              <div style="font-size:16px;font-weight:700;color:#be123c;">${totalPnp}</div>
+              <div style="font-size:10px;color:#e11d48;font-weight:600;text-transform:uppercase;">PNP</div>
             </div>
           </div>
-          <div style="font-weight:600; font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px;">Por tipo</div>
-          <div style="font-size:12px; color:#374151; line-height:1.6;">${tiposStr}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">${tiposBadges}</div>
+          <div style="font-weight:600;font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;padding-top:6px;border-top:1px solid #e2e8f0;">
+            Detalle de incidencias
+          </div>
+          ${buildDetalleRowsCombinado(cluster.puntos)}
         </div>
-      `);
+      `, { maxWidth: 340 });
 
       circle.bindTooltip(
         `<div style="font-family:'Segoe UI',system-ui,sans-serif; font-size:12px; font-weight:600; text-align:center; color:#1f2937;">
@@ -153,6 +206,7 @@ const ClusterCombinado = ({ visible, radio = 50, fechas }) => {
                 Latitud: parseFloat(item.latitude ?? item.Latitud),
                 Longitud: parseFloat(item.longitude ?? item.Longitud),
                 Tipo: nombre,
+                Fecha: item.date || item.Fecha || '',
                 Origen: 'Sereno',
               }))
               .filter(p => !isNaN(p.Latitud) && !isNaN(p.Longitud));
@@ -175,6 +229,7 @@ const ClusterCombinado = ({ visible, radio = 50, fechas }) => {
               Latitud: parseFloat(item.latitude),
               Longitud: parseFloat(item.longitude),
               Tipo: item.incidence_type || 'PNP',
+              Fecha: item.date || item.fecha || '',
               Origen: 'PNP',
             }))
             .filter(p => !isNaN(p.Latitud) && !isNaN(p.Longitud));
