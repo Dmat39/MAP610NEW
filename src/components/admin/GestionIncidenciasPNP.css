@@ -191,6 +191,61 @@
   overflow: hidden;
 }
 
+.pnp-map-hint {
+  font-size: 11.5px;
+  color: #6b7280;
+  margin-top: 6px;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Badge "Auto" que aparece junto al label cuando el campo es auto-rellenado */
+.pnp-auto-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: middle;
+  letter-spacing: 0.2px;
+}
+
+.pnp-detecting-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: #fefce8;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: middle;
+  animation: pulse-badge 1s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+/* Borde verde en inputs/selects auto-rellenados */
+.pnp-form-group select.pnp-auto-input,
+.pnp-form-group input.pnp-auto-input {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
 /* Modal footer buttons override (dark bg context) */
 .pnp-modal-footer .btn-pnp-secondary {
   background: #f3f4f6; color: #374151;

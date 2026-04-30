@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
-  Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Shield,
+  Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Shield, Zap,
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -13,27 +13,27 @@ import TablePagination from '../Table/TablePagination';
 import './GestionIncidenciasPNP.css';
 
 const SHIFT_OPTIONS = [
-  { value: 'MORNING', label: 'Mañana' },
+  { value: 'MORNING',   label: 'Mañana' },
   { value: 'AFTERNOON', label: 'Tarde' },
-  { value: 'NIGHT', label: 'Noche' },
+  { value: 'NIGHT',     label: 'Noche' },
 ];
 
 const CASE_STATUS_OPTIONS = [
   { value: 'INVESTIGATING', label: 'En investigación' },
-  { value: 'REFERRED', label: 'Derivado' },
-  { value: 'CLOSED', label: 'Cerrado' },
+  { value: 'REFERRED',      label: 'Derivado' },
+  { value: 'CLOSED',        label: 'Cerrado' },
 ];
 
 const SHIFT_COLORS = {
-  MORNING: '#ffd93d',
+  MORNING:   '#ffd93d',
   AFTERNOON: '#ff8c42',
-  NIGHT: '#6c5ce7',
+  NIGHT:     '#6c5ce7',
 };
 
 const STATUS_COLORS = {
   INVESTIGATING: '#3b82f6',
-  REFERRED: '#f59e0b',
-  CLOSED: '#10b981',
+  REFERRED:      '#f59e0b',
+  CLOSED:        '#10b981',
 };
 
 const INCIDENCE_TYPES = [
@@ -60,33 +60,68 @@ const EMPTY_FORM = {
   occurred_at: '',
 };
 
+// ─── Utilidades ────────────────────────────────────────────────────────────────
+
+/** Normaliza texto: minúsculas, sin acentos, sin espacios extremos */
+const normalize = s =>
+  (s || '').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .trim();
+
+/**
+ * Calcula el turno a partir de una cadena "YYYY-MM-DDTHH:mm" (hora local = Lima).
+ * Mañana 06-13h | Tarde 14-21h | Noche 22-05h
+ */
+function calcularTurno(dateTimeStr) {
+  if (!dateTimeStr) return '';
+  const hora = parseInt(dateTimeStr.slice(11, 13), 10);
+  if (hora >= 6 && hora < 14)  return 'MORNING';
+  if (hora >= 14 && hora < 22) return 'AFTERNOON';
+  return 'NIGHT';
+}
+
+/** Devuelve "YYYY-MM-DDTHH:mm" en hora local para datetime-local inputs */
+function getNowLocal() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
+// ─── Componente ────────────────────────────────────────────────────────────────
+
 const GestionIncidenciasPNP = () => {
-  const location = useLocation();
+  const location  = useLocation();
   const { addParams, getParams } = UseUrlParamsManager();
-  const params = getParams();
+  const params    = getParams();
 
-  const [incidencias, setIncidencias] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  const [count, setCount] = useState(0);
-  const [update, setUpdate] = useState(false);
+  const [incidencias, setIncidencias]       = useState([]);
+  const [loading, setLoading]               = useState(false);
+  const [error, setError]                   = useState(null);
+  const [success, setSuccess]               = useState(null);
+  const [count, setCount]                   = useState(0);
+  const [update, setUpdate]                 = useState(false);
 
-  const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState('create');
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [showModal, setShowModal]           = useState(false);
+  const [modalMode, setModalMode]           = useState('create');
+  const [selectedItem, setSelectedItem]     = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget]     = useState(null);
 
-  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [formData, setFormData]             = useState(EMPTY_FORM);
   const [showMapPreview, setShowMapPreview] = useState(false);
 
-  const mapRef = useRef(null);
-  const leafletMapRef = useRef(null);
-  const markerRef = useRef(null);
+  // Indicadores de auto-relleno
+  const [shiftAutoFilled, setShiftAutoFilled]             = useState(false);
+  const [jurisdictionAutoFilled, setJurisdictionAutoFilled] = useState(false);
+  const [detectingJuris, setDetectingJuris]               = useState(false);
 
-  const userRole = authService.getUserRole();
-  const canWrite = ['SUPERADMIN', 'PNP'].includes(userRole);
+  const mapRef        = useRef(null);
+  const leafletMapRef = useRef(null);
+  const markerRef     = useRef(null);
+  const geojsonCache  = useRef(null);
+
+  const userRole  = authService.getUserRole();
+  const canWrite  = ['SUPERADMIN', 'PNP'].includes(userRole);
   const hasAccess = ['SUPERADMIN', 'ADMINISTRATOR', 'SUPERVISOR', 'PNP'].includes(userRole);
 
   useEffect(() => {
@@ -97,13 +132,12 @@ const GestionIncidenciasPNP = () => {
     try {
       setLoading(true);
       setError(null);
-
       const filters = {
-        search: params.search || '',
-        shift: params.shift || '',
+        search:       params.search       || '',
+        shift:        params.shift        || '',
         jurisdiction: params.jurisdiction || '',
-        page: parseInt(params.page) || 1,
-        limit: parseInt(params.limit) || 20,
+        page:         parseInt(params.page)  || 1,
+        limit:        parseInt(params.limit) || 20,
       };
       const response = await pnpIncidenceService.getAll(filters);
       setIncidencias(Array.isArray(response.data) ? response.data : []);
@@ -122,9 +156,46 @@ const GestionIncidenciasPNP = () => {
     setTimeout(() => { setError(null); setSuccess(null); }, 4000);
   };
 
+  // ─── Auto-detección de jurisdicción via GeoJSON + Turf ─────────────────────
+
+  const autoDetectarJurisdiccion = async (lat, lng) => {
+    try {
+      setDetectingJuris(true);
+      if (!geojsonCache.current) {
+        const res = await fetch('/data/juridiccion.geojson');
+        geojsonCache.current = await res.json();
+      }
+      const { point, booleanPointInPolygon, polygon } = await import('@turf/turf');
+      const punto    = point([lng, lat]);
+      const features = geojsonCache.current?.features ?? [];
+
+      for (const feat of features) {
+        if (!feat.geometry?.coordinates) continue;
+        const poly = polygon(feat.geometry.coordinates);
+        if (booleanPointInPolygon(punto, poly)) {
+          const geoName = normalize(feat.properties?.name || feat.properties?.nombre || '');
+          const match   = JURISDICTIONS.find(j => normalize(j) === geoName);
+          if (match) return match;
+        }
+      }
+    } catch (e) {
+      console.error('Error detectando jurisdicción:', e);
+    } finally {
+      setDetectingJuris(false);
+    }
+    return null;
+  };
+
+  // ─── Modal create ───────────────────────────────────────────────────────────
+
   const openCreateModal = () => {
+    const now   = getNowLocal();
+    const turno = calcularTurno(now);
     setModalMode('create');
-    setFormData(EMPTY_FORM);
+    setFormData({ ...EMPTY_FORM, occurred_at: now, shift: turno });
+    setShiftAutoFilled(true);
+    setJurisdictionAutoFilled(false);
+    setShowMapPreview(true);
     setShowModal(true);
   };
 
@@ -132,17 +203,20 @@ const GestionIncidenciasPNP = () => {
     setModalMode('edit');
     setSelectedItem(item);
     setFormData({
-      description: item.description || '',
-      incidence_type: item.incidence_type || '',
-      latitude: item.latitude ?? '',
-      longitude: item.longitude ?? '',
-      jurisdiction: item.jurisdiction || '',
-      shift: item.shift || '',
+      description:      item.description      || '',
+      incidence_type:   item.incidence_type   || '',
+      latitude:         item.latitude         ?? '',
+      longitude:        item.longitude        ?? '',
+      jurisdiction:     item.jurisdiction     || '',
+      shift:            item.shift            || '',
       complaint_number: item.complaint_number || '',
-      police_station: item.police_station || '',
-      case_status: item.case_status || 'INVESTIGATING',
-      occurred_at: item.occurred_at ? item.occurred_at.substring(0, 16) : '',
+      police_station:   item.police_station   || '',
+      case_status:      item.case_status      || 'INVESTIGATING',
+      occurred_at:      item.occurred_at ? item.occurred_at.substring(0, 16) : '',
     });
+    setShiftAutoFilled(false);
+    setJurisdictionAutoFilled(false);
+    setShowMapPreview(true);
     setShowModal(true);
   };
 
@@ -151,6 +225,8 @@ const GestionIncidenciasPNP = () => {
     setSelectedItem(null);
     setFormData(EMPTY_FORM);
     setShowMapPreview(false);
+    setShiftAutoFilled(false);
+    setJurisdictionAutoFilled(false);
     if (leafletMapRef.current) {
       leafletMapRef.current.remove();
       leafletMapRef.current = null;
@@ -158,9 +234,21 @@ const GestionIncidenciasPNP = () => {
     markerRef.current = null;
   };
 
+  // ─── Handlers de formulario ─────────────────────────────────────────────────
+
   const handleFormChange = e => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'shift')        setShiftAutoFilled(false);
+    if (name === 'jurisdiction') setJurisdictionAutoFilled(false);
+  };
+
+  /** Cuando cambia la fecha/hora del hecho → recalcula turno automáticamente */
+  const handleOccurredAtChange = e => {
+    const val   = e.target.value;
+    const turno = calcularTurno(val);
+    setFormData(prev => ({ ...prev, occurred_at: val, shift: turno }));
+    setShiftAutoFilled(!!turno);
   };
 
   const handleSubmit = async e => {
@@ -179,12 +267,11 @@ const GestionIncidenciasPNP = () => {
       setLoading(true);
       const payload = {
         ...formData,
-        latitude: parseFloat(formData.latitude),
-        longitude: parseFloat(formData.longitude),
-        occurred_at: new Date(formData.occurred_at).toISOString(),
+        latitude:         parseFloat(formData.latitude),
+        longitude:        parseFloat(formData.longitude),
+        occurred_at:      new Date(formData.occurred_at).toISOString(),
         complaint_number: formData.complaint_number || undefined,
       };
-
       if (modalMode === 'create') {
         await pnpIncidenceService.create(payload);
         showMessage('Incidencia registrada correctamente');
@@ -201,10 +288,7 @@ const GestionIncidenciasPNP = () => {
     }
   };
 
-  const confirmDelete = item => {
-    setDeleteTarget(item);
-    setShowDeleteConfirm(true);
-  };
+  const confirmDelete = item => { setDeleteTarget(item); setShowDeleteConfirm(true); };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -222,7 +306,8 @@ const GestionIncidenciasPNP = () => {
     }
   };
 
-  // Map preview
+  // ─── Mapa Leaflet ───────────────────────────────────────────────────────────
+
   useEffect(() => {
     if (showMapPreview && mapRef.current && !leafletMapRef.current) {
       const lat = parseFloat(formData.latitude) || -11.9699;
@@ -243,9 +328,18 @@ const GestionIncidenciasPNP = () => {
 
       markerRef.current = L.marker([lat, lng], { icon }).addTo(leafletMapRef.current);
 
-      leafletMapRef.current.on('dblclick', e => {
-        const { lat, lng } = e.latlng;
-        setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
+      leafletMapRef.current.on('dblclick', async e => {
+        const { lat: clickLat, lng: clickLng } = e.latlng;
+        setFormData(prev => ({ ...prev, latitude: clickLat, longitude: clickLng }));
+
+        // Auto-detectar jurisdicción
+        const jurisdiccion = await autoDetectarJurisdiccion(clickLat, clickLng);
+        if (jurisdiccion) {
+          setFormData(prev => ({ ...prev, jurisdiction: jurisdiccion }));
+          setJurisdictionAutoFilled(true);
+        } else {
+          setJurisdictionAutoFilled(false);
+        }
       });
     }
     return () => {
@@ -268,6 +362,8 @@ const GestionIncidenciasPNP = () => {
     }
   }, [formData.latitude, formData.longitude]);
 
+  // ─── Render ─────────────────────────────────────────────────────────────────
+
   if (!hasAccess) {
     return (
       <div className="pnp-container">
@@ -283,9 +379,7 @@ const GestionIncidenciasPNP = () => {
       {/* Header */}
       <div className="pnp-header">
         <div className="pnp-header-content">
-          <div className="pnp-header-icon">
-            <Shield size={28} />
-          </div>
+          <div className="pnp-header-icon"><Shield size={28} /></div>
           <div className="pnp-header-text">
             <h1>Incidencias PNP</h1>
             <p>Registro de incidencias policiales — {count} registros</p>
@@ -310,9 +404,7 @@ const GestionIncidenciasPNP = () => {
           {error}
         </div>
       )}
-      {success && (
-        <div className="pnp-alert pnp-alert-success">{success}</div>
-      )}
+      {success && <div className="pnp-alert pnp-alert-success">{success}</div>}
 
       {/* Filters */}
       <div className="pnp-filters">
@@ -327,9 +419,7 @@ const GestionIncidenciasPNP = () => {
           onChange={e => addParams({ shift: e.target.value, page: 1 })}
         >
           <option value="">Todos los turnos</option>
-          {SHIFT_OPTIONS.map(o => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
+          {SHIFT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         <select
           className="pnp-select-filter"
@@ -337,9 +427,7 @@ const GestionIncidenciasPNP = () => {
           onChange={e => addParams({ jurisdiction: e.target.value, page: 1 })}
         >
           <option value="">Todas las jurisdicciones</option>
-          {JURISDICTIONS.map(j => (
-            <option key={j} value={j}>{j}</option>
-          ))}
+          {JURISDICTIONS.map(j => <option key={j} value={j}>{j}</option>)}
         </select>
       </div>
 
@@ -371,7 +459,11 @@ const GestionIncidenciasPNP = () => {
                   <td>
                     <span
                       className="pnp-badge"
-                      style={{ background: SHIFT_COLORS[item.shift] + '33', color: SHIFT_COLORS[item.shift], border: `1px solid ${SHIFT_COLORS[item.shift]}` }}
+                      style={{
+                        background: SHIFT_COLORS[item.shift] + '33',
+                        color: SHIFT_COLORS[item.shift],
+                        border: `1px solid ${SHIFT_COLORS[item.shift]}`,
+                      }}
                     >
                       {SHIFT_OPTIONS.find(s => s.value === item.shift)?.label || item.shift}
                     </span>
@@ -381,7 +473,11 @@ const GestionIncidenciasPNP = () => {
                   <td>
                     <span
                       className="pnp-badge"
-                      style={{ background: STATUS_COLORS[item.case_status] + '22', color: STATUS_COLORS[item.case_status], border: `1px solid ${STATUS_COLORS[item.case_status]}` }}
+                      style={{
+                        background: STATUS_COLORS[item.case_status] + '22',
+                        color: STATUS_COLORS[item.case_status],
+                        border: `1px solid ${STATUS_COLORS[item.case_status]}`,
+                      }}
                     >
                       {CASE_STATUS_OPTIONS.find(s => s.value === item.case_status)?.label || item.case_status}
                     </span>
@@ -413,10 +509,10 @@ const GestionIncidenciasPNP = () => {
         onPageChange={page => addParams({ page })}
       />
 
-      {/* Create/Edit Modal */}
+      {/* Create / Edit Modal */}
       {showModal && (
-        <div className="pnp-modal-overlay" onClick={closeModal}>
-          <div className="pnp-modal" onClick={e => e.stopPropagation()}>
+        <div className="pnp-modal-overlay" onClick={e => { if (e.target === e.currentTarget) closeModal(); }}>
+          <div className="pnp-modal">
             <div className="pnp-modal-header">
               <h2>{modalMode === 'create' ? 'Nueva Incidencia PNP' : 'Editar Incidencia'}</h2>
               <button className="pnp-modal-close" onClick={closeModal}><X size={18} /></button>
@@ -424,18 +520,41 @@ const GestionIncidenciasPNP = () => {
 
             <form onSubmit={handleSubmit} className="pnp-modal-body">
               <div className="pnp-form-grid">
+
+                
+                {/* Mapa */}
                 <div className="pnp-form-group full">
-                  <label>Descripción *</label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
+                  <button
+                    type="button"
+                    className="btn-pnp-secondary btn-map-toggle"
+                    onClick={() => setShowMapPreview(p => !p)}
+                  >
+                    <MapPin size={14} />
+                    {showMapPreview ? 'Ocultar mapa' : 'Seleccionar en mapa (doble clic)'}
+                  </button>
+                  {showMapPreview && (
+                    <>
+                      <p className="pnp-map-hint">
+                        Doble clic en el mapa para fijar la ubicación y detectar la jurisdicción automáticamente.
+                      </p>
+                      <div ref={mapRef} className="pnp-map-preview" />
+                    </>
+                  )}
+                </div>
+
+                {/* N° Denuncia */}
+                <div className="pnp-form-group">
+                  <label>N° Denuncia</label>
+                  <input
+                    type="text"
+                    name="complaint_number"
+                    value={formData.complaint_number}
                     onChange={handleFormChange}
-                    rows={3}
-                    required
-                    placeholder="Describe la incidencia..."
+                    placeholder="Opcional"
                   />
                 </div>
 
+                {/* Tipo */}
                 <div className="pnp-form-group">
                   <label>Tipo de Incidencia *</label>
                   <select name="incidence_type" value={formData.incidence_type} onChange={handleFormChange} required>
@@ -444,22 +563,66 @@ const GestionIncidenciasPNP = () => {
                   </select>
                 </div>
 
+                {/* Fecha/hora → auto-calcula turno */}
                 <div className="pnp-form-group">
-                  <label>Turno *</label>
-                  <select name="shift" value={formData.shift} onChange={handleFormChange} required>
+                  <label>Fecha y Hora del Hecho *</label>
+                  <input
+                    type="datetime-local"
+                    name="occurred_at"
+                    value={formData.occurred_at}
+                    onChange={handleOccurredAtChange}
+                    required
+                  />
+                </div>
+
+                {/* Turno — auto-calculado */}
+                <div className="pnp-form-group">
+                  <label>
+                    Turno *
+                    {shiftAutoFilled && (
+                      <span className="pnp-auto-badge">
+                        <Zap size={10} /> Auto
+                      </span>
+                    )}
+                  </label>
+                  <select
+                    name="shift"
+                    value={formData.shift}
+                    onChange={handleFormChange}
+                    required
+                    className={shiftAutoFilled ? 'pnp-auto-input' : ''}
+                  >
                     <option value="">Seleccionar...</option>
                     {SHIFT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </div>
 
+                {/* Jurisdicción — auto-detectada por mapa */}
                 <div className="pnp-form-group">
-                  <label>Jurisdicción *</label>
-                  <select name="jurisdiction" value={formData.jurisdiction} onChange={handleFormChange} required>
+                  <label>
+                    Jurisdicción *
+                    {jurisdictionAutoFilled && (
+                      <span className="pnp-auto-badge">
+                        <MapPin size={10} /> Auto
+                      </span>
+                    )}
+                    {detectingJuris && (
+                      <span className="pnp-detecting-badge">Detectando...</span>
+                    )}
+                  </label>
+                  <select
+                    name="jurisdiction"
+                    value={formData.jurisdiction}
+                    onChange={handleFormChange}
+                    required
+                    className={jurisdictionAutoFilled ? 'pnp-auto-input' : ''}
+                  >
                     <option value="">Seleccionar...</option>
                     {JURISDICTIONS.map(j => <option key={j} value={j}>{j}</option>)}
                   </select>
                 </div>
 
+                {/* Comisaría */}
                 <div className="pnp-form-group">
                   <label>Comisaría *</label>
                   <input
@@ -472,17 +635,9 @@ const GestionIncidenciasPNP = () => {
                   />
                 </div>
 
-                <div className="pnp-form-group">
-                  <label>N° Denuncia</label>
-                  <input
-                    type="text"
-                    name="complaint_number"
-                    value={formData.complaint_number}
-                    onChange={handleFormChange}
-                    placeholder="Opcional"
-                  />
-                </div>
+                
 
+                {/* Estado */}
                 <div className="pnp-form-group">
                   <label>Estado del Caso *</label>
                   <select name="case_status" value={formData.case_status} onChange={handleFormChange} required>
@@ -490,17 +645,7 @@ const GestionIncidenciasPNP = () => {
                   </select>
                 </div>
 
-                <div className="pnp-form-group">
-                  <label>Fecha y Hora del Hecho *</label>
-                  <input
-                    type="datetime-local"
-                    name="occurred_at"
-                    value={formData.occurred_at}
-                    onChange={handleFormChange}
-                    required
-                  />
-                </div>
-
+                {/* Coordenadas */}
                 <div className="pnp-form-group">
                   <label>Latitud *</label>
                   <input
@@ -527,18 +672,17 @@ const GestionIncidenciasPNP = () => {
                   />
                 </div>
 
+                {/* Descripción */}
                 <div className="pnp-form-group full">
-                  <button
-                    type="button"
-                    className="btn-pnp-secondary btn-map-toggle"
-                    onClick={() => setShowMapPreview(p => !p)}
-                  >
-                    <MapPin size={14} />
-                    {showMapPreview ? 'Ocultar mapa' : 'Seleccionar en mapa (doble clic)'}
-                  </button>
-                  {showMapPreview && (
-                    <div ref={mapRef} className="pnp-map-preview" />
-                  )}
+                  <label>Descripción *</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleFormChange}
+                    rows={3}
+                    required
+                    placeholder="Describe la incidencia..."
+                  />
                 </div>
               </div>
 
@@ -557,8 +701,8 @@ const GestionIncidenciasPNP = () => {
 
       {/* Delete Confirm */}
       {showDeleteConfirm && (
-        <div className="pnp-modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
-          <div className="pnp-modal pnp-modal-sm" onClick={e => e.stopPropagation()}>
+        <div className="pnp-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}>
+          <div className="pnp-modal pnp-modal-sm">
             <div className="pnp-modal-header">
               <h2>Confirmar eliminación</h2>
               <button className="pnp-modal-close" onClick={() => setShowDeleteConfirm(false)}><X size={18} /></button>
@@ -568,9 +712,7 @@ const GestionIncidenciasPNP = () => {
               <p style={{ color: '#6b7280', fontSize: '13px' }}>{deleteTarget?.description}</p>
             </div>
             <div className="pnp-modal-footer">
-              <button className="btn-pnp-secondary" onClick={() => setShowDeleteConfirm(false)}>
-                Cancelar
-              </button>
+              <button className="btn-pnp-secondary" onClick={() => setShowDeleteConfirm(false)}>Cancelar</button>
               <button className="btn-pnp-danger" onClick={handleDelete} disabled={loading}>
                 <Trash2 size={14} /> Eliminar
               </button>
