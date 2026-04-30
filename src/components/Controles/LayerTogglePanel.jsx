@@ -25,9 +25,14 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
   }, [isOpen, setDrawerOpen]);
 
   const categories = {
+    
     cameras: {
       title: 'Cámaras de Seguridad',
       layers: ['camaras', 'camarasVecinales'],
+    },
+    zonas: {
+      title: 'Zonas Geográficas',
+      layers: ['zonasCodisec', 'jurisdicciones'],
     },
     incidents: {
       title: 'Incidencias Delictivas',
@@ -47,12 +52,9 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
     },
     tools: {
       title: 'Herramientas',
-      layers: ['clusters', 'clusterCombinado', 'busquedaDirecciones', 'ubicadorPunto', 'rutas'],
+      layers: ['clusters', 'clusterCombinado', 'clusterPNP', 'busquedaDirecciones', 'ubicadorPunto', 'rutas'],
     },
-    zonas: {
-      title: 'Zonas Geográficas',
-      layers: ['zonasCodisec'],
-    },
+    
   };
 
   const toggleCategory = key =>

@@ -8,6 +8,7 @@ import UseUrlParamsManager from '../../hooks/UseUrlParamsManager';
 import SearchInput from '../Table/SearchInput';
 import TablePagination from '../Table/TablePagination';
 import { generateVisionField, createSectorPolygon } from '../../utils/cameraUtils';
+import { asignarJurisdiccionACamaras } from '../../utils/jurisdiccionUtils';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './GestionCamarasMunicipales.css';
@@ -592,6 +593,8 @@ const GestionCamarasMunicipales = () => {
         return;
       }
 
+      const camarasConJurisdiccion = await asignarJurisdiccionACamaras(todasLasCamaras);
+
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Cámaras Municipales');
 
@@ -599,6 +602,7 @@ const GestionCamarasMunicipales = () => {
         { header: '#', key: 'index', width: 6 },
         { header: 'Nombre', key: 'name', width: 15 },
         { header: 'Dirección', key: 'address', width: 40 },
+        { header: 'Jurisdicción', key: 'jurisdiccion', width: 20 },
         { header: 'Tipo', key: 'camera', width: 12 },
         { header: 'Latitud', key: 'latitude', width: 15 },
         { header: 'Longitud', key: 'longitude', width: 15 },
@@ -619,11 +623,12 @@ const GestionCamarasMunicipales = () => {
       worksheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
 
       // Agregar datos
-      todasLasCamaras.forEach((camara, idx) => {
+      camarasConJurisdiccion.forEach((camara, idx) => {
         worksheet.addRow({
           index: idx + 1,
           name: camara.name || '',
           address: camara.address || '',
+          jurisdiccion: camara.jurisdiccion || 'Sin jurisdicción',
           camera: camara.camera || '',
           latitude: camara.latitude || '',
           longitude: camara.longitude || '',

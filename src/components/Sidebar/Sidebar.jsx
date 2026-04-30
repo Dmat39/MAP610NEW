@@ -17,10 +17,14 @@ const Sidebar = ({ isExpanded, onToggle }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ bottom: 0, left: 0 });
   const userBtnRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = e => {
-      if (userBtnRef.current && !userBtnRef.current.contains(e.target)) {
+      if (
+        userBtnRef.current && !userBtnRef.current.contains(e.target) &&
+        dropdownRef.current && !dropdownRef.current.contains(e.target)
+      ) {
         setShowUserMenu(false);
       }
     };
@@ -92,7 +96,7 @@ const Sidebar = ({ isExpanded, onToggle }) => {
         <div className="sidebar-logo">
           <MapPin size={20} strokeWidth={2.5} />
         </div>
-        <span className="sidebar-title">MAPA CECOM</span>
+        <span className="sidebar-title">MIT SJL</span>
       </div>
 
       {/* Navigation */}
@@ -149,21 +153,32 @@ const Sidebar = ({ isExpanded, onToggle }) => {
 
       {showUserMenu && (
         <div
+          ref={dropdownRef}
           className="user-dropdown"
           style={{ bottom: menuPos.bottom, left: menuPos.left }}
         >
-          <div className="user-dropdown-header">
-            <span className="user-dropdown-name">{user?.username}</span>
-            <span className="user-dropdown-role" style={{ color: getRoleColor(user?.role) }}>
-              {getRoleLabel(user?.role)}
-            </span>
+          <div className="user-dropdown-profile">
+            <div
+              className="user-dropdown-avatar"
+              style={{ background: getRoleColor(user?.role) }}
+            >
+              {getInitials(user?.username)}
+            </div>
+            <div className="user-dropdown-info">
+              <span className="user-dropdown-name">{user?.username}</span>
+              <span className="user-dropdown-role" style={{ color: getRoleColor(user?.role) }}>
+                {getRoleLabel(user?.role)}
+              </span>
+            </div>
           </div>
           <div className="user-dropdown-divider" />
           <button
-            className="user-dropdown-item"
+            className="user-dropdown-item logout"
             onClick={() => { setShowUserMenu(false); setShowLogoutModal(true); }}
           >
-            <LogOut size={14} strokeWidth={2} />
+            <div className="user-dropdown-item-icon">
+              <LogOut size={14} strokeWidth={2.5} />
+            </div>
             <span>Cerrar sesión</span>
           </button>
         </div>

@@ -1,124 +1,110 @@
-import React, { useState, useEffect } from "react";
-import { FaIdCard, FaLock, FaShieldAlt, FaEye, FaEyeSlash } from "react-icons/fa";
-import { useAuth } from "../context/AuthContext";
-import "./Login.css";
+import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import './Login.css';
 
 export default function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const { login } = useAuth();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setError('');
     setLoading(true);
-
     try {
       const result = await login(username, password);
-
       if (!result.success) {
-        setError(result.error || "Error al iniciar sesión");
+        setError(result.error || 'Credenciales incorrectas. Intente nuevamente.');
       }
-    } catch (err) {
-      setError("Error de conexión. Intente nuevamente.");
+    } catch {
+      setError('Error de conexión. Intente nuevamente.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      {/* Grid pattern de fondo */}
-      <div className="particles"></div>
+    <div className="login-page">
+      {/* Esquina superior izquierda */}
+      <div className="login-corner login-corner--top" />
+      {/* Esquina inferior derecha */}
+      <div className="login-corner login-corner--bottom" />
 
-      {/* Acentos sutiles de fondo */}
-      <div className="waves">
-        <div className="wave wave-1"></div>
-        <div className="wave wave-2"></div>
-        <div className="wave wave-3"></div>
-      </div>
+      <div className="login-center">
+        {/* Logo */}
+        <img
+          src="/logo_isa.webp"
+          alt="Logo ISA"
+          className="login-logo"
+          draggable={false}
+        />
 
-      {/* TÍTULO INSTITUCIONAL ARRIBA */}
-      <div className={`top-title ${mounted ? 'visible' : ''}`}>
-        <div className="shield-icon">
-          <FaShieldAlt />
-        </div> 
-        <h2 className="sjl">SAN JUAN DE LURIGANCHO</h2>
-        <div className="title-underline"></div>
-      </div>
+        {/* Título */}
+        <h1 className="login-title">Mesa de Inteligencia Territorial SJL</h1>
+        <p className="login-subtitle">Acceso para personal autorizado</p>
 
-      <div className={`login-card ${mounted ? 'visible' : ''}`}>
-        <div className="login-header">
-          <div className="header-glow"></div>
-          <h1>Iniciar Sesión</h1>
-          <p>Acceso para personal autorizado</p>
-        </div>
-
-        <form className="login-form" onSubmit={handleSubmit}>
+        {/* Formulario */}
+        <form className="login-form" onSubmit={handleSubmit} noValidate>
           {error && (
-            <div className="error-message">
+            <div className="login-error" role="alert">
               {error}
             </div>
           )}
 
-          <div className="input-group">
-            <div className="input-icon-wrapper">
-              <FaIdCard className="input-icon" />
-            </div>
+          <div className="login-field">
+            <label htmlFor="username" className="login-label">Usuario</label>
             <input
+              id="username"
               type="text"
+              className="login-input"
               placeholder="Ingrese su usuario"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={loading}
+              autoComplete="username"
               required
             />
-            <div className="input-border"></div>
           </div>
 
-          <div className="input-group">
-            <div className="input-icon-wrapper">
-              <FaLock className="input-icon" />
+          <div className="login-field">
+            <label htmlFor="password" className="login-label">Contraseña</label>
+            <div className="login-input-wrap">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                className="login-input"
+                placeholder="Ingrese su contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                autoComplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                className="login-eye"
+                onClick={() => setShowPassword((v) => !v)}
+                tabIndex={-1}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                {showPassword ? <EyeOff size={20} strokeWidth={2} /> : <Eye size={20} strokeWidth={2} />}
+              </button>
             </div>
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Ingrese su contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              required
-            />
-            <button
-              type="button"
-              className="toggle-password-btn"
-              onClick={() => setShowPassword(!showPassword)}
-              tabIndex={-1}
-            >
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
-            </button>
-            <div className="input-border"></div>
           </div>
 
           <button type="submit" className="login-btn" disabled={loading}>
-            <span className="btn-content">
-              {loading ? (
-                <>
-                  <div className="spinner"></div>
-                  Ingresando...
-                </>
-              ) : (
-                "Acceder"
-              )}
-            </span>
-            <div className="btn-glow"></div>
+            {loading ? (
+              <span className="login-btn-inner">
+                <span className="login-spinner" />
+                Ingresando...
+              </span>
+            ) : (
+              'Iniciar Sesión'
+            )}
           </button>
         </form>
       </div>

@@ -152,8 +152,8 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
             <input
               id="radio-slider"
               type="range"
-              min="10"
-              max="100"
+              min="0"
+              max="300"
               value={radioCluster}
               onChange={(e) => setRadioCluster(Number(e.target.value))}
               className="radio-slider"

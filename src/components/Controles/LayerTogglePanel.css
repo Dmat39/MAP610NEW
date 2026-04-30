@@ -335,6 +335,33 @@
   transform: translateX(17px);
 }
 
+/* ── Radio Option (categorías exclusivas) ────────────────── */
+.radio-opt {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  background: #f8fafc;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, background 0.2s;
+}
+.radio-opt:hover { border-color: #16a34a; background: #f0fdf4; }
+.radio-opt.on    { border-color: #16a34a; background: #16a34a; }
+
+.radio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  transition: background 0.2s;
+}
+.radio-opt.on .radio-dot { background: #ffffff; }
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 640px) {
   .layers-drawer {

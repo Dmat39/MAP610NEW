@@ -58,6 +58,8 @@ import CapaIncidenciasPNP from './components/capas/IncidenciasPNP/CapaIncidencia
 import ClusterCombinado from './components/capas/ClusterCombinado/ClusterCombinado';
 import GoogleClusterCombinado from './components/googlemaps/GoogleClusterCombinado';
 import ControlClusterCombinado from './components/Controles/Cluster_Combinado/ControlClusterCombinado';
+import ClusterIncidenciasPNP from './components/capas/ClusterIncidenciasPNP/ClusterIncidenciasPNP';
+import ControlClusterPNP from './components/Controles/Cluster_PNP/ControlClusterPNP';
 
 const PNP_TIPOS = [
   { key: 'pnpRoboAlPaso',        tipo: 'Robo al paso',                    label: 'Robo al paso' },
@@ -105,7 +107,9 @@ const MapView = () => {
     rutas: false,
     clusters: false,
     clusterCombinado: false,
+    clusterPNP: false,
     zonasCodisec: false,
+    jurisdicciones: true,
     pnpRoboAlPaso: false,
     pnpRoboAgravado: false,
     pnpDrogas: false,
@@ -149,6 +153,8 @@ const MapView = () => {
   };
   const [radioClusterCombinado, setRadioClusterCombinado] = useState(50);
   const [fechasClusterCombinado, setFechasClusterCombinado] = useState(getDefaultFechasCombinado);
+  const [radioClusterPNP, setRadioClusterPNP]     = useState(50);
+  const [fechasClusterPNP, setFechasClusterPNP]   = useState(getDefaultFechasCombinado);
   const payloadVacio = {
     Año: '',
     Mes: '',
@@ -276,6 +282,7 @@ const MapView = () => {
     { name: 'barras', label: 'Barras', visible: capasVisibles.barras, restrictedForOperator: true },
     { name: 'clusters', label: 'Clusters de Incidencias', visible: capasVisibles.clusters, restrictedForOperator: true },
     { name: 'clusterCombinado', label: 'Cluster Combinado (Serenos + PNP)', visible: capasVisibles.clusterCombinado, restrictedForOperator: true },
+    { name: 'clusterPNP',      label: 'Cluster Incidencias PNP',           visible: capasVisibles.clusterPNP,      restrictedForOperator: true },
     {
       name: 'busquedaDirecciones',
       label: 'Búsqueda de Direcciones',
@@ -297,12 +304,13 @@ const MapView = () => {
     { name: 'residuos', label: 'Puntos Residuos Sólidos', visible: capasVisibles.residuos },
     { name: 'sostenimiento', label: 'Sostenimiento', visible: capasVisibles.sostenimiento },
     { name: 'actividades', label: 'Actividades', visible: capasVisibles.actividades },
-    { name: 'zonasCodisec', label: 'Comunas', visible: capasVisibles.zonasCodisec, codisecOnly: true },
+    { name: 'zonasCodisec',   label: 'Comunas',         visible: capasVisibles.zonasCodisec,   codisecOnly: true },
+    { name: 'jurisdicciones', label: 'Jurisdicciones',  visible: capasVisibles.jurisdicciones },
     ...PNP_TIPOS.map(t => ({ name: t.key, label: t.label, visible: capasVisibles[t.key] })),
   ];
 
   // Capas permitidas para CODISEC
-  const capasCodisec = ['camaras', 'camarasVecinales', 'actividades', 'zonasCodisec'];
+  const capasCodisec = ['camaras', 'camarasVecinales', 'actividades', 'zonasCodisec', 'jurisdicciones'];
 
   // Capas permitidas para VIEWER
   const capasViewer = ['camaras', 'camarasVecinales'];
@@ -311,8 +319,8 @@ const MapView = () => {
   const capasPnp = [
     'camaras', 'camarasVecinales', 'paraderosAutorizados', 'paraderosNoAutorizados',
     'robos', 'extorsiones', 'homicidios', 'feminicidios', 'sicariatos', 'secuestros',
-    'drogas', 'barras', 'clusters', 'clusterCombinado', 'residuos', 'defensaCivil', 'sostenimiento',
-    'busquedaDirecciones', 'ubicadorPunto', 'rutas',
+    'drogas', 'barras', 'clusters', 'clusterCombinado', 'clusterPNP', 'residuos', 'defensaCivil', 'sostenimiento',
+    'busquedaDirecciones', 'ubicadorPunto', 'rutas', 'jurisdicciones',
     ...PNP_TIPOS.map(t => t.key),
   ];
 
@@ -331,7 +339,15 @@ const MapView = () => {
 
   const handleToggle = useCallback(nombre => {
     setCapasVisibles(prev => {
-      const updated = { ...prev, [nombre]: !prev[nombre] };
+      let updated = { ...prev, [nombre]: !prev[nombre] };
+
+      // Zonas geográficas: exclusividad mutua
+      if (nombre === 'jurisdicciones' && updated.jurisdicciones) {
+        updated.zonasCodisec = false;
+      }
+      if (nombre === 'zonasCodisec' && updated.zonasCodisec) {
+        updated.jurisdicciones = false;
+      }
 
       // Si se activa
       if (!prev[nombre]) {
@@ -458,6 +474,15 @@ const MapView = () => {
         setFechas={setFechasClusterCombinado}
         mapType={mapType}
       />
+      <ControlClusterPNP
+        visible={capasVisibles.clusterPNP}
+        radio={radioClusterPNP}
+        setRadio={setRadioClusterPNP}
+        fechas={fechasClusterPNP}
+        setFechas={setFechasClusterPNP}
+        clusterNormalVisible={capasVisibles.clusters}
+        clusterCombinadoVisible={capasVisibles.clusterCombinado}
+      />
 
       {mapType === 'leaflet' ? (
         <MapContainer
@@ -471,7 +496,7 @@ const MapView = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             maxZoom={20}
           />
-          {!capasVisibles.zonasCodisec && (
+          {capasVisibles.jurisdicciones && (
             <CapaJurisdiccion
               ubicadorActivo={
                 capasVisibles.ubicadorPunto ||
@@ -509,6 +534,7 @@ const MapView = () => {
           )}
           <ClusterIncidencias visible={capasVisibles.clusters} filtros={payloadFiltros} />
           <ClusterCombinado visible={capasVisibles.clusterCombinado} radio={radioClusterCombinado} fechas={fechasClusterCombinado} />
+          <ClusterIncidenciasPNP visible={capasVisibles.clusterPNP} radio={radioClusterPNP} fechas={fechasClusterPNP} />
           {PNP_TIPOS.map(t => (
             <CapaIncidenciasPNP
               key={t.key}
@@ -541,7 +567,7 @@ const MapView = () => {
         </MapContainer>
       ) : (
         <GoogleMapWrapper center={mapCenter} zoom={mapZoom} style={mapStyle}>
-          {!capasVisibles.zonasCodisec && (
+          {capasVisibles.jurisdicciones && (
             <GoogleCapaJurisdiccion
               ubicadorActivo={
                 capasVisibles.ubicadorPunto ||
@@ -577,6 +603,7 @@ const MapView = () => {
           )}
           <GoogleClusterIncidencias visible={capasVisibles.clusters} />
           <GoogleClusterCombinado visible={capasVisibles.clusterCombinado} radio={radioClusterCombinado} fechas={fechasClusterCombinado} />
+          <ClusterIncidenciasPNP visible={capasVisibles.clusterPNP} radio={radioClusterPNP} fechas={fechasClusterPNP} />
           {PNP_TIPOS.map(t => (
             <CapaIncidenciasPNP
               key={t.key}
