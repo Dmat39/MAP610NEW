@@ -112,8 +112,8 @@ const ControlClusterCombinado = ({
           <div className="ctrl-combinado-slider-row">
             <input
               type="range"
-              min="10"
-              max="100"
+              min="0"
+              max="300"
               value={radio}
               onChange={e => setRadio(Number(e.target.value))}
               className="ctrl-combinado-slider"
