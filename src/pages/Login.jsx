@@ -44,7 +44,7 @@ export default function Login() {
         />
 
         {/* Título */}
-        <h1 className="login-title">Mesa de Inteligencia Territorial SJL</h1>
+        <h1 className="login-title">Mapa de Inteligencia Territorial SJL</h1>
         <p className="login-subtitle">Acceso para personal autorizado</p>
 
         {/* Formulario */}
