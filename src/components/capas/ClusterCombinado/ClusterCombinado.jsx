@@ -41,15 +41,21 @@ const buildDetalleRowsCombinado = puntos => {
     const origenStyle = p.Origen === 'Sereno'
       ? 'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;'
       : 'background:#fff1f2;color:#be123c;border:1px solid #fecdd3;';
-    const origenBadge = `<span style="${origenStyle}border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;flex-shrink:0;white-space:nowrap;">${p.Origen}</span>`;
-    const tipoBadge = `<span style="background:${c.bg};color:${c.color};border:1px solid ${c.border};border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;flex-shrink:0;white-space:nowrap;">${p.Tipo}</span>`;
-    const idLine = p.Id ? `<div style="font-size:12px;font-weight:600;color:#1f2937;">${p.Id}</div>` : '';
-    const fechaLine = p.Fecha ? `<div style="font-size:11px;color:#6b7280;">${fmtFecha(p.Fecha)}</div>` : '';
-    return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:5px;padding:5px 0;border-bottom:1px solid #f1f5f9;">${origenBadge}${tipoBadge}<div style="flex:1;min-width:0;">${idLine}${fechaLine}</div></div>`;
+    const origenBadge = `<span style="${origenStyle}border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;flex-shrink:0;white-space:nowrap;">${p.Origen}</span>`;
+    const tipoBadge = p.Origen === 'Sereno'
+      ? `<span style="background:${c.bg};color:${c.color};border:1px solid ${c.border};border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;flex-shrink:0;white-space:nowrap;">${p.Tipo}</span>`
+      : '';
+    const denunciaLine = p.Origen === 'PNP'
+      ? (p.Denuncia
+          ? `<div style="font-size:12px;font-weight:700;color:#111827;">N° ${p.Denuncia}</div>`
+          : `<div style="font-size:11px;color:#6b7280;font-style:italic;">Sin N° denuncia</div>`)
+      : (p.Id ? `<div style="font-size:12px;font-weight:600;color:#111827;">${p.Id}</div>` : '');
+    const fechaLine = p.Fecha ? `<div style="font-size:11px;color:#4b5563;">${fmtFecha(p.Fecha)}</div>` : '';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid #e5e7eb;"><div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">${origenBadge}${tipoBadge}</div><div style="text-align:right;">${denunciaLine}${fechaLine}</div></div>`;
   }).join('');
 
   const masRow = remaining > 0
-    ? `<div style="text-align:center;font-size:11px;color:#94a3b8;padding-top:6px;font-style:italic;">+${remaining} incidencia${remaining !== 1 ? 's' : ''} más</div>`
+    ? `<div style="text-align:center;font-size:11px;color:#6b7280;padding-top:6px;font-style:italic;">+${remaining} incidencia${remaining !== 1 ? 's' : ''} más</div>`
     : '';
 
   return rows + masRow;
@@ -110,37 +116,37 @@ const ClusterCombinado = ({ visible, radio = 50, fechas }) => {
         color: colores.color,
         fillColor: colores.fillColor,
         fillOpacity: colores.fillOpacity,
-        weight: 3,
+        weight: 4,
         opacity: 1,
-        dashArray: '8,4',
+        dashArray: null,
       });
 
       circle.bindPopup(`
-        <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;max-width:320px;line-height:1.5;">
-          <div style="font-weight:700;font-size:14px;color:#1f2937;padding-bottom:6px;margin-bottom:8px;border-bottom:2px solid #16a34a;">
+         <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;min-width:320px;max-width:340px;line-height:1.5;">  
+          <div style="font-weight:700;font-size:14px;color:#111827;padding-bottom:7px;margin-bottom:10px;border-bottom:2px solid #16a34a;">
             Cluster Combinado
           </div>
           <div style="display:flex;gap:16px;margin-bottom:10px;">
-            <span style="color:#374151;"><b>Total:</b> ${cluster.cantidad}</span>
-            <span style="color:#6b7280;font-size:12px;">Radio: ${Math.round(cluster.radio)} m</span>
+            <span style="color:#111827;font-size:13px;"><b>Total:</b> ${cluster.cantidad}</span>
+            <span style="color:#374151;font-size:12px;">Radio: ${Math.round(cluster.radio)} m</span>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:10px;">
-            <div style="flex:1;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:6px 8px;text-align:center;">
-              <div style="font-size:16px;font-weight:700;color:#1d4ed8;">${totalSerenos}</div>
-              <div style="font-size:10px;color:#3b82f6;font-weight:600;text-transform:uppercase;">Serenos</div>
+            <div style="flex:1;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:7px 8px;text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:#1d4ed8;">${totalSerenos}</div>
+              <div style="font-size:11px;color:#1d4ed8;font-weight:600;text-transform:uppercase;">Serenos</div>
             </div>
-            <div style="flex:1;background:#fff1f2;border:1px solid #fecdd3;border-radius:6px;padding:6px 8px;text-align:center;">
-              <div style="font-size:16px;font-weight:700;color:#be123c;">${totalPnp}</div>
-              <div style="font-size:10px;color:#e11d48;font-weight:600;text-transform:uppercase;">PNP</div>
+            <div style="flex:1;background:#fff1f2;border:1px solid #fecdd3;border-radius:6px;padding:7px 8px;text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:#be123c;">${totalPnp}</div>
+              <div style="font-size:11px;color:#be123c;font-weight:600;text-transform:uppercase;">PNP</div>
             </div>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">${tiposBadges}</div>
-          <div style="font-weight:600;font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;padding-top:6px;border-top:1px solid #e2e8f0;">
+          <div style="font-weight:700;font-size:11px;color:#374151;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;padding-top:7px;border-top:1px solid #e2e8f0;">
             Detalle de incidencias
           </div>
           ${buildDetalleRowsCombinado(cluster.puntos)}
         </div>
-      `, { maxWidth: 340 });
+      `, { maxWidth: 360 });
 
       circle.bindTooltip(
         `<div style="font-family:'Segoe UI',system-ui,sans-serif; font-size:12px; font-weight:600; text-align:center; color:#1f2937;">
@@ -225,12 +231,13 @@ const ClusterCombinado = ({ visible, radio = 50, fechas }) => {
           const raw = result.data?.data || result.data || [];
           return raw
             .map(item => ({
-              Id: item.id,
-              Latitud: parseFloat(item.latitude),
+              Id:       item.id,
+              Denuncia: item.complaint_number || '',
+              Latitud:  parseFloat(item.latitude),
               Longitud: parseFloat(item.longitude),
-              Tipo: item.incidence_type || 'PNP',
-              Fecha: item.date || item.fecha || '',
-              Origen: 'PNP',
+              Tipo:     item.incidence_type || 'PNP',
+              Fecha:    item.occurred_at || item.date || item.fecha || '',
+              Origen:   'PNP',
             }))
             .filter(p => !isNaN(p.Latitud) && !isNaN(p.Longitud));
         })

@@ -52,10 +52,48 @@ export const calcularRadioCluster = (puntos, centroide) => {
   return Math.max(maxDistancia + 10, 30);
 };
 
+// Fusiona clusters cuyo centroide cae dentro del círculo de otro cluster.
+const fusionarClustersContenidos = clusters => {
+  let result = clusters.map(c => ({ ...c, puntos: [...c.puntos] }));
+  let changed = true;
+
+  while (changed) {
+    changed = false;
+
+    outer: for (let i = 0; i < result.length; i++) {
+      for (let j = 0; j < result.length; j++) {
+        if (i === j) continue;
+
+        const dist = calcularDistancia(
+          result[i].centroide.lat, result[i].centroide.lng,
+          result[j].centroide.lat, result[j].centroide.lng
+        );
+
+        if (dist <= result[i].radio) {
+          const puntosMerged = [...result[i].puntos, ...result[j].puntos];
+          const centroideMerged = calcularCentroide(puntosMerged);
+          result[i] = {
+            ...result[i],
+            puntos: puntosMerged,
+            centroide: centroideMerged,
+            radio: calcularRadioCluster(puntosMerged, centroideMerged),
+            cantidad: puntosMerged.length,
+          };
+          result.splice(j, 1);
+          changed = true;
+          break outer;
+        }
+      }
+    }
+  }
+
+  logger.log(`🔀 Fusión completada: ${clusters.length} → ${result.length} clusters`);
+  return result;
+};
+
 // Clustering por radio fijo desde semilla: cada semilla absorbe solo los puntos
 // dentro de radioMaximo de ella misma (sin expansión en cadena).
-// Garantía: todos los miembros están dentro de radioMaximo del centroide,
-// por lo que el círculo dibujado siempre contiene exactamente su conteo.
+// Post-procesa fusionando clusters cuyo círculo visual quede contenido en otro.
 export const realizarClustering = (puntos, radioMaximo = 50) => {
   if (!Array.isArray(puntos) || puntos.length === 0) return [];
   if (radioMaximo <= 0) {
@@ -111,14 +149,14 @@ export const realizarClustering = (puntos, radioMaximo = 50) => {
     }
   }
 
-  logger.log('🎯 Clustering completado:', clusters.length, 'clusters');
-  return clusters;
+  logger.log('🎯 Clustering inicial:', clusters.length, 'clusters');
+  return fusionarClustersContenidos(clusters);
 };
 
 export const obtenerColorCluster = cantidad => {
-  if (cantidad <= 3) return { color: '#FFB000', fillColor: '#FFD700', fillOpacity: 0.3 };
-  if (cantidad <= 6) return { color: '#FF6600', fillColor: '#FF8C00', fillOpacity: 0.4 };
-  return { color: '#CC0000', fillColor: '#FF4500', fillOpacity: 0.5 };
+  if (cantidad <= 3) return { color: '#d97706', fillColor: '#fbbf24', fillOpacity: 0.55 };
+  if (cantidad <= 6) return { color: '#ea580c', fillColor: '#fb923c', fillOpacity: 0.60 };
+  return { color: '#b91c1c', fillColor: '#ef4444', fillOpacity: 0.65 };
 };
 
 export const contarTiposPorCluster = puntos =>

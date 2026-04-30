@@ -79,9 +79,9 @@ const ClusterIncidencias = ({ visible, filtros = null }) => {
         color: colores.color,
         fillColor: colores.fillColor,
         fillOpacity: colores.fillOpacity,
-        weight: 3,
+        weight: 4,
         opacity: 1,
-        dashArray: '8,4',
+        dashArray: null,
       });
 
       const tipoCounts = {};
