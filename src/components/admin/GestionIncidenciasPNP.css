@@ -252,3 +252,24 @@
   border: 1px solid #e5e7eb;
 }
 .pnp-modal-footer .btn-pnp-secondary:hover { background: #e5e7eb; }
+
+/* ── Responsive ──────────────────────────── */
+@media (max-width: 768px) {
+  .pnp-container { padding: 12px; }
+  .pnp-header { padding: 14px 16px; border-radius: 10px; }
+  .pnp-header-text h1 { font-size: 16px; }
+  .pnp-header-text p { display: none; }
+  .pnp-header-actions { width: 100%; justify-content: flex-end; }
+  .pnp-filters { flex-direction: column; gap: 8px; }
+  .pnp-modal-overlay { padding: 0; align-items: flex-end; }
+  .pnp-modal-content { max-width: 100%; max-height: 92vh; border-radius: 14px 14px 0 0; }
+  .pnp-table th { padding: 10px 12px; font-size: 10px; }
+  .pnp-table td { padding: 10px 12px; font-size: 12px; }
+}
+
+@media (max-width: 480px) {
+  .pnp-container { padding: 8px; }
+  .pnp-header { padding: 12px 14px; }
+  .pnp-header-text h1 { font-size: 14px; }
+  .btn-pnp-primary span { display: none; }
+}

@@ -2,6 +2,7 @@
 .control-camaras {
   position: fixed;
   left: calc(var(--sidebar-width, 70px) + 15px);
+  top: var(--cc-top, 10px);
   background: #ffffff;
   border-radius: 14px;
   box-shadow: 0 6px 32px rgba(0, 0, 0, 0.13), 0 1px 4px rgba(0,0,0,0.07);
@@ -724,11 +725,11 @@
 /* Responsive Mobile */
 @media (max-width: 768px) {
   .control-camaras {
-    left: 5px;
+    left: 66px;
     right: 5px;
     width: auto;
     max-width: none;
-    top: 10px;
+    top: 12px;
   }
 
   .control-camaras-content {
@@ -763,10 +764,10 @@
 /* Responsive Small Mobile */
 @media (max-width: 480px) {
   .control-camaras {
-    left: 5px;
+    left: 66px;
     right: 5px;
     width: auto;
-    top: 8px;
+    top: 12px;
     border-radius: 10px;
   }
 

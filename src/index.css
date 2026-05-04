@@ -44,6 +44,55 @@ html, body, #root {
   transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ============================================
+   Mobile Layout — sidebar se convierte en overlay
+   ============================================ */
+@media (max-width: 768px) {
+  .main-content {
+    left: 0 !important;
+    width: 100% !important;
+  }
+
+  .map-view-inner {
+    left: 0 !important;
+  }
+
+  .leaflet-left {
+    left: 10px !important;
+  }
+}
+
+/* ── Botón FAB para abrir sidebar en móvil ── */
+.mobile-menu-fab {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 18000;
+  width: 42px;
+  height: 42px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  color: #374151;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mobile-menu-fab:hover {
+  background: #f9fafb;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-fab {
+    display: flex;
+  }
+}
+
 /* Ocultar botones de cerrar predeterminados de mapas */
 .leaflet-popup-close-button {
   display: none !important;

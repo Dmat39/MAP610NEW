@@ -9,7 +9,7 @@ import {
 import ConfirmModal from '../Modal/ConfirmModal';
 import './Sidebar.css';
 
-const Sidebar = ({ isExpanded, onToggle }) => {
+const Sidebar = ({ isExpanded, onToggle, isMobile, onClose }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -104,7 +104,7 @@ const Sidebar = ({ isExpanded, onToggle }) => {
         {navItems.map(({ path, icon: Icon, label }) => (
           <button
             key={path}
-            onClick={() => navigate(path)}
+            onClick={() => { navigate(path); if (isMobile) onClose?.(); }}
             className={`nav-item${location.pathname === path ? ' active' : ''}`}
             title={!isExpanded ? label : undefined}
           >

@@ -335,7 +335,7 @@ const ControlCamaras = ({
   return (
     <div
       className={`control-camaras ${mapType}-mode ${isCollapsed ? 'collapsed' : ''}`}
-      style={{ top: `${topPosition}px` }}
+      style={{ '--cc-top': `${topPosition}px` }}
     >
       <div className="control-camaras-header" onClick={toggleCollapse}>
         <div className="header-content">

@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { Menu } from 'lucide-react';
 import './TopHeader.css';
 
 const PAGE_META = {
@@ -39,7 +40,7 @@ const getRoleColor = role => {
   return map[role?.toLowerCase()] || '#6b7280';
 };
 
-const TopHeader = () => {
+const TopHeader = ({ onMenuToggle, isMobile }) => {
   const location = useLocation();
   const { user } = useAuth();
   const meta = PAGE_META[location.pathname] || { title: 'Sistema', sub: '' };
@@ -53,6 +54,11 @@ const TopHeader = () => {
 
   return (
     <header className="top-header">
+      {isMobile && (
+        <button className="top-header-menu-btn" onClick={onMenuToggle} aria-label="Abrir menú">
+          <Menu size={20} strokeWidth={2} />
+        </button>
+      )}
       <div className="top-header-left">
         <h2 className="top-header-title">{meta.title}</h2>
         {meta.sub && <span className="top-header-sub">{meta.sub}</span>}
