@@ -11,6 +11,7 @@ import GestionUsuarios from './components/admin/GestionUsuarios';
 import GestionActividades from './components/admin/GestionActividades';
 import GestionIncidenciasPNP from './components/admin/GestionIncidenciasPNP';
 import GestionAuditoria    from './components/admin/GestionAuditoria';
+import GestionRoles       from './components/admin/GestionRoles';
 import DashboardPNP       from './components/admin/DashboardPNP';
 import DashboardSerenos   from './components/admin/DashboardSerenos';
 
@@ -56,14 +57,51 @@ const AppLayout = ({ sidebarExpanded, onToggle, onClose, isMobile }) => {
       <div className={`main-content${!isMapView ? ' with-top-header' : ''}`}>
         <Routes>
           <Route path="/" element={<MapView />} />
-          <Route path="/admin/camaras-vecinales" element={<GestionCamarasVecinales />} />
-          <Route path="/admin/camaras-municipales" element={<GestionCamarasMunicipales />} />
-          <Route path="/admin/usuarios" element={<GestionUsuarios />} />
-          <Route path="/admin/actividades" element={<GestionActividades />} />
-          <Route path="/admin/incidencias-pnp" element={<GestionIncidenciasPNP />} />
-          <Route path="/admin/auditoria"          element={<GestionAuditoria />} />
-          <Route path="/dashboard/serenos"       element={<DashboardSerenos />} />
-          <Route path="/dashboard/pnp"           element={<DashboardPNP />} />
+          <Route path="/admin/camaras-vecinales" element={
+            <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR']} moduleKey="camaras-vecinales">
+              <GestionCamarasVecinales />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/camaras-municipales" element={
+            <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR']} moduleKey="camaras-municipales">
+              <GestionCamarasMunicipales />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/usuarios" element={
+            <ProtectedRoute allowedRoles={['SUPERADMIN']} moduleKey="usuarios">
+              <GestionUsuarios />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/actividades" element={
+            <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR', 'CODISEC']} moduleKey="actividades">
+              <GestionActividades />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/incidencias-pnp" element={
+            <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR', 'PNP']} moduleKey="incidencias-pnp">
+              <GestionIncidenciasPNP />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/roles" element={
+            <ProtectedRoute allowedRoles={['SUPERADMIN']} moduleKey="roles">
+              <GestionRoles />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/auditoria" element={
+            <ProtectedRoute allowedRoles={['SUPERADMIN']} moduleKey="auditoria">
+              <GestionAuditoria />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard/serenos" element={
+            <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR', 'CODISEC']} moduleKey="dashboard-serenos">
+              <DashboardSerenos />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard/pnp" element={
+            <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR', 'PNP']} moduleKey="dashboard-pnp">
+              <DashboardPNP />
+            </ProtectedRoute>
+          } />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
