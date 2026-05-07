@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Eye, Camera, Download, Lock, User, Hash } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import camarasVecinalesAdminService from '../../services/camarasVecinalesAdminService';
-import authService from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 import UseUrlParamsManager from '../../hooks/UseUrlParamsManager';
 import SearchInput from '../Table/SearchInput';
 import TablePagination from '../Table/TablePagination';
@@ -51,8 +51,9 @@ const GestionCamarasVecinales = () => {
   const leafletMapRef = useRef(null);
   const markerRef = useRef(null);
 
-  const isAdmin = authService.isAdmin();
-  const canWrite = authService.isSuperAdmin();
+  const { hasModuleAccess, hasModuleOp } = useAuth();
+  const isAdmin  = hasModuleAccess('camaras-vecinales');
+  const canWrite = hasModuleOp('camaras-vecinales', 'create');
 
   // Cargar cámaras cuando cambian los parámetros de URL
   useEffect(() => {

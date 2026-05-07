@@ -25,8 +25,10 @@ const authService = {
 
       // Crear objeto de usuario con el formato correcto
       const user = {
-        username: apiData.user,
-        role: apiData.rol || apiData.role,
+        username:         apiData.user,
+        role:             apiData.rol || apiData.role,
+        custom_role_id:   apiData.custom_role_id || null,
+        custom_role_name: apiData.custom_role_name || null,
       };
 
       // Guardar token

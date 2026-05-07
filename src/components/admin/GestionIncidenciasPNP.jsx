@@ -6,7 +6,7 @@ import {
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import pnpIncidenceService from '../../services/pnpIncidenceService';
-import authService from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 import UseUrlParamsManager from '../../hooks/UseUrlParamsManager';
 import SearchInput from '../Table/SearchInput';
 import TablePagination from '../Table/TablePagination';
@@ -120,9 +120,9 @@ const GestionIncidenciasPNP = () => {
   const markerRef     = useRef(null);
   const geojsonCache  = useRef(null);
 
-  const userRole  = authService.getUserRole();
-  const canWrite  = ['SUPERADMIN', 'PNP'].includes(userRole);
-  const hasAccess = ['SUPERADMIN', 'ADMINISTRATOR', 'SUPERVISOR', 'PNP'].includes(userRole);
+  const { hasModuleAccess, hasModuleOp } = useAuth();
+  const hasAccess = hasModuleAccess('incidencias-pnp');
+  const canWrite  = hasModuleOp('incidencias-pnp', 'create');
 
   useEffect(() => {
     if (hasAccess) loadData();

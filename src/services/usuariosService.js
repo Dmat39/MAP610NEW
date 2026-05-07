@@ -27,10 +27,10 @@ const usuariosService = {
 
       const params = new URLSearchParams();
 
-      if (filters.search) params.append('search', filters.search);
-      if (filters.role) params.append('rol', filters.role);
-      if (filters.page) params.append('page', filters.page);
-      if (filters.limit) params.append('limit', filters.limit);
+      if (filters.search)         params.append('search', filters.search);
+      if (filters.custom_role_id) params.append('custom_role_id', filters.custom_role_id);
+      if (filters.page)           params.append('page', filters.page);
+      if (filters.limit)          params.append('limit', filters.limit);
 
       const response = await fetch(`${API_URL}user?${params.toString()}`, {
         method: 'GET',

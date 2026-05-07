@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ClipboardList, RefreshCw, Filter, X, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import auditService from '../../services/auditService';
-import authService from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 import './GestionAuditoria.css';
 
 const ACTION_LABELS = {
@@ -51,7 +51,8 @@ const GestionAuditoria = () => {
   const [filterEntity, setFilterEntity] = useState('');
   const limit = 20;
 
-  const hasAccess = authService.isSuperAdmin();
+  const { hasModuleAccess } = useAuth();
+  const hasAccess = hasModuleAccess('auditoria');
 
   useEffect(() => {
     if (hasAccess) loadLogs();

@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Eye, Target, Video, Download } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import camarasMunicipalesAdminService from '../../services/camarasMunicipalesAdminService';
-import authService from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 import UseUrlParamsManager from '../../hooks/UseUrlParamsManager';
 import SearchInput from '../Table/SearchInput';
 import TablePagination from '../Table/TablePagination';
@@ -59,8 +59,9 @@ const GestionCamarasMunicipales = () => {
   const visionPolygonRef = useRef(null);
   const visionMarkerRef = useRef(null);
 
-  const isAdmin = authService.isAdmin();
-  const canWrite = authService.isSuperAdmin();
+  const { hasModuleAccess, hasModuleOp } = useAuth();
+  const isAdmin  = hasModuleAccess('camaras-municipales');
+  const canWrite = hasModuleOp('camaras-municipales', 'create');
 
   // Cargar cámaras cuando cambian los parámetros de URL
   useEffect(() => {

@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Download, Calendar, User, FileText, Tag } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import actividadesAdminService from '../../services/actividadesAdminService';
-import authService from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 import UseUrlParamsManager from '../../hooks/UseUrlParamsManager';
 import SearchInput from '../Table/SearchInput';
 import TablePagination from '../Table/TablePagination';
@@ -45,10 +45,9 @@ const GestionActividades = () => {
   const leafletMapRef = useRef(null);
   const markerRef = useRef(null);
 
-  // Verificar si es administrador o codisec
-  const userRole = authService.getUserRole();
-  const hasAccess = authService.isAdmin() || userRole === 'CODISEC';
-  const canWrite = authService.isSuperAdmin();
+  const { hasModuleAccess, hasModuleOp } = useAuth();
+  const hasAccess = hasModuleAccess('actividades');
+  const canWrite  = hasModuleOp('actividades', 'create');
 
   // Cargar actividades cuando cambian los parámetros de URL
   useEffect(() => {
