@@ -4,13 +4,13 @@ import { useAuth } from '../../context/AuthContext';
 import {
   LogOut, MapPin, Camera, Map, Video, Users,
   Calendar, ChevronRight, ChevronLeft, Shield, ClipboardList,
-  LayoutDashboard, ShieldCheck,
+  LayoutDashboard, ShieldCheck, KeyRound,
 } from 'lucide-react';
 import ConfirmModal from '../Modal/ConfirmModal';
 import './Sidebar.css';
 
 const Sidebar = ({ isExpanded, onToggle, isMobile, onClose }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, hasModuleAccess, customRolePerms } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -49,7 +49,16 @@ const Sidebar = ({ isExpanded, onToggle, isMobile, onClose }) => {
   const isCodisec = role === 'CODISEC';
   const isPnp = role === 'PNP';
 
-  const getRoleLabel = role => {
+  // Si el usuario tiene rol personalizado, los módulos visibles vienen de sus permisos
+  const canSeeModule = (moduleKey, fallback) => {
+    if (isSuperAdmin) return true;
+    if (customRolePerms) return hasModuleAccess(moduleKey);
+    return fallback;
+  };
+
+  const getRoleLabel = (role) => {
+    // Si el usuario tiene un nombre de rol personalizado, mostrarlo directamente
+    if (user?.custom_role_name) return user.custom_role_name;
     const map = {
       superadmin:    'Superadmin',
       administrator: 'Administrador',
@@ -57,6 +66,9 @@ const Sidebar = ({ isExpanded, onToggle, isMobile, onClose }) => {
       supervisor:    'Supervisor',
       codisec:       'CODISEC',
       ceplan:        'CEPLAN',
+      operator:      'Operador',
+      viewer:        'Visualizador',
+      pnp:           'PNP',
     };
     return map[role?.toLowerCase()] || role?.toUpperCase() || role;
   };
@@ -72,21 +84,24 @@ const Sidebar = ({ isExpanded, onToggle, isMobile, onClose }) => {
       supervisor:    '#f59e0b',
       codisec:       '#8b5cf6',
       ceplan:        '#10b981',
-      pnp:           '#3b82f6',
+      operator:      '#3b82f6',
+      viewer:        '#10b981',
+      pnp:           '#0ea5e9',
     };
     return map[role?.toLowerCase()] || '#6b7280';
   };
 
   const navItems = [
-    { path: '/', icon: Map, label: 'Mapa', show: true },
-    { path: '/dashboard/serenos',     icon: LayoutDashboard, label: 'Dashboard Serenos', show: isAdmin || isCodisec },
-    { path: '/dashboard/pnp',         icon: ShieldCheck,     label: 'Dashboard PNP',     show: isAdmin || isPnp },
-    { path: '/admin/actividades', icon: Calendar, label: 'Actividades', show: isAdmin || isCodisec },
-    { path: '/admin/incidencias-pnp', icon: Shield, label: 'Incidencias PNP', show: isAdmin || isPnp },
-    { path: '/admin/camaras-vecinales', icon: Camera, label: 'Cám. Vecinales', show: isAdmin },
-    { path: '/admin/camaras-municipales', icon: Video, label: 'Cám. Municipales', show: isAdmin },
-    { path: '/admin/usuarios', icon: Users, label: 'Usuarios', show: isSuperAdmin },
-    { path: '/admin/auditoria', icon: ClipboardList, label: 'Auditoría', show: isSuperAdmin },
+    { path: '/',                          icon: Map,            label: 'Mapa',                show: true },
+    { path: '/dashboard/serenos',         icon: LayoutDashboard,label: 'Dashboard Serenos',   show: canSeeModule('dashboard-serenos',  isAdmin || isCodisec) },
+    { path: '/dashboard/pnp',             icon: ShieldCheck,    label: 'Dashboard PNP',       show: canSeeModule('dashboard-pnp',      isAdmin || isPnp) },
+    { path: '/admin/actividades',         icon: Calendar,       label: 'Actividades',          show: canSeeModule('actividades',        isAdmin || isCodisec) },
+    { path: '/admin/incidencias-pnp',     icon: Shield,         label: 'Incidencias PNP',     show: canSeeModule('incidencias-pnp',    isAdmin || isPnp) },
+    { path: '/admin/camaras-vecinales',   icon: Camera,         label: 'Cám. Vecinales',      show: canSeeModule('camaras-vecinales',  isAdmin) },
+    { path: '/admin/camaras-municipales', icon: Video,          label: 'Cám. Municipales',    show: canSeeModule('camaras-municipales',isAdmin) },
+    { path: '/admin/usuarios',            icon: Users,          label: 'Usuarios',             show: canSeeModule('usuarios',           isSuperAdmin) },
+    { path: '/admin/roles',               icon: KeyRound,       label: 'Roles',                show: canSeeModule('roles',              isSuperAdmin) },
+    { path: '/admin/auditoria',           icon: ClipboardList,  label: 'Auditoría',            show: canSeeModule('auditoria',          isSuperAdmin) },
   ].filter(item => item.show);
 
   return (

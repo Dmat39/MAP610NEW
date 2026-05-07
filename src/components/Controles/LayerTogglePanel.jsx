@@ -1,7 +1,6 @@
 import './LayerTogglePanel.css';
 import { Layers, X, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import authService from '../../services/authService';
 import { useMapLayout } from '../../context/MapLayoutContext';
 
 const LayerTogglePanel = ({ capas, onToggle }) => {
@@ -16,9 +15,6 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
   });
 
   const { setDrawerOpen } = useMapLayout();
-  const userRole = authService.getUserRole();
-  const isOperator = userRole === 'OPERATOR';
-  const isPnp = userRole === 'PNP';
 
   useEffect(() => {
     setDrawerOpen(isOpen);
@@ -72,10 +68,9 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
 
   const totalActive = capas.filter(c => c.visible).length;
 
-  const visibleCategories = Object.entries(categories).filter(([key, cat]) => {
-    if (key === 'incidents' && (isOperator || isPnp)) return false;
-    return cat.layers.map(getCapaByName).filter(Boolean).length > 0;
-  });
+  const visibleCategories = Object.entries(categories).filter(([, cat]) =>
+    cat.layers.map(getCapaByName).filter(Boolean).length > 0
+  );
 
   return (
     <>
