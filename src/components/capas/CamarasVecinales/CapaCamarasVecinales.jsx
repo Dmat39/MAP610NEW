@@ -1,6 +1,7 @@
 // CapaCamarasVecinales.jsx
 import { useEffect, useState } from "react";
 import { Marker, Popup, Tooltip, LayerGroup, useMap } from "react-leaflet";
+import { useAuth } from "../../../context/AuthContext";
 import L from "leaflet";
 import { useMapLocationCopy } from "../../../hooks/useMapLocationCopy";
 import { useMapContext } from "../../../context/MapContext";
@@ -10,8 +11,10 @@ import "../../../components/capas/CamarasMunicipales/LocationCopyPopup.css";
 import "./CapaCamarasVecinales.css";
 
 // Componente para el contenido del popup con credenciales ocultables
-const PopupContent = ({ camara }) => {
+const PopupContent = ({ camara, visibleFields }) => {
   const [mostrarCredenciales, setMostrarCredenciales] = useState(false);
+  const canSee = (field) => !visibleFields || visibleFields.length === 0 || visibleFields.includes(field);
+  const hasCredentials = canSee('user') || canSee('password') || canSee('serial');
 
   return (
     <div style={{
@@ -20,78 +23,86 @@ const PopupContent = ({ camara }) => {
       lineHeight: "1.4"
     }}>
       {/* Header compacto */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "6px",
-        marginBottom: "8px",
-        paddingBottom: "6px",
-        borderBottom: "1px solid #e5e7eb"
-      }}>
-        <span style={{ fontSize: "18px" }}>📹</span>
-        <div>
-          <div style={{
-            fontWeight: "700",
-            fontSize: "13px",
-            color: "#1f2937"
-          }}>
-            {camara.neighbor}
-          </div>
-        </div>
-      </div>
-
-      {/* Dirección compacta */}
-      <div style={{
-        fontSize: "11px",
-        color: "#374151",
-        marginBottom: "8px",
-        display: "flex",
-        gap: "4px",
-        alignItems: "start"
-      }}>
-        <span style={{ fontSize: "12px", marginTop: "1px" }}>📍</span>
-        <span>{camara.address}</span>
-      </div>
-
-      {/* Teléfono */}
-      <div style={{
-        fontSize: "11px",
-        color: "#374151",
-        marginBottom: "8px",
-        display: "flex",
-        gap: "4px",
-        alignItems: "center"
-      }}>
-        <span style={{ fontSize: "12px" }}>📞</span>
-        <span>{camara.phone || 'N/A'}</span>
-      </div>
-
-      {/* Botón para mostrar credenciales */}
-      <button
-        onClick={() => setMostrarCredenciales(!mostrarCredenciales)}
-        style={{
-          width: "100%",
-          padding: "6px",
-          background: mostrarCredenciales ? "#f1f5f9" : "#16a34a",
-          color: mostrarCredenciales ? "#475569" : "#fff",
-          border: "1px solid #cbd5e1",
-          borderRadius: "6px",
-          fontSize: "11px",
-          fontWeight: "600",
-          cursor: "pointer",
+      {canSee('neighbor') && (
+        <div style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
+          gap: "6px",
+          marginBottom: "8px",
+          paddingBottom: "6px",
+          borderBottom: "1px solid #e5e7eb"
+        }}>
+          <span style={{ fontSize: "18px" }}>📹</span>
+          <div>
+            <div style={{
+              fontWeight: "700",
+              fontSize: "13px",
+              color: "#1f2937"
+            }}>
+              {camara.neighbor}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dirección compacta */}
+      {canSee('address') && (
+        <div style={{
+          fontSize: "11px",
+          color: "#374151",
+          marginBottom: "8px",
+          display: "flex",
           gap: "4px",
-          transition: "all 0.2s"
-        }}
-      >
-        <span>{mostrarCredenciales ? "🔒" : "🔐"}</span>
-        {mostrarCredenciales ? "Ocultar Credenciales" : "Ver Credenciales"}
-      </button>
+          alignItems: "start"
+        }}>
+          <span style={{ fontSize: "12px", marginTop: "1px" }}>📍</span>
+          <span>{camara.address}</span>
+        </div>
+      )}
+
+      {/* Teléfono */}
+      {canSee('phone') && (
+        <div style={{
+          fontSize: "11px",
+          color: "#374151",
+          marginBottom: "8px",
+          display: "flex",
+          gap: "4px",
+          alignItems: "center"
+        }}>
+          <span style={{ fontSize: "12px" }}>📞</span>
+          <span>{camara.phone || 'N/A'}</span>
+        </div>
+      )}
+
+      {/* Botón para mostrar credenciales */}
+      {hasCredentials && (
+        <button
+          onClick={() => setMostrarCredenciales(!mostrarCredenciales)}
+          style={{
+            width: "100%",
+            padding: "6px",
+            background: mostrarCredenciales ? "#f1f5f9" : "#16a34a",
+            color: mostrarCredenciales ? "#475569" : "#fff",
+            border: "1px solid #cbd5e1",
+            borderRadius: "6px",
+            fontSize: "11px",
+            fontWeight: "600",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "4px",
+            transition: "all 0.2s"
+          }}
+        >
+          <span>{mostrarCredenciales ? "🔒" : "🔐"}</span>
+          {mostrarCredenciales ? "Ocultar Credenciales" : "Ver Credenciales"}
+        </button>
+      )}
 
       {/* Credenciales */}
-      {mostrarCredenciales && (
+      {hasCredentials && mostrarCredenciales && (
         <div style={{
           background: "#f1f5f9",
           padding: "8px",
@@ -100,76 +111,82 @@ const PopupContent = ({ camara }) => {
           marginTop: "8px"
         }}>
           {/* Usuario */}
-          <div style={{ marginBottom: "5px" }}>
-            <div style={{
-              fontSize: "9px",
-              fontWeight: "600",
-              color: "#64748b",
-              marginBottom: "2px"
-            }}>
-              Usuario
+          {canSee('user') && (
+            <div style={{ marginBottom: "5px" }}>
+              <div style={{
+                fontSize: "9px",
+                fontWeight: "600",
+                color: "#64748b",
+                marginBottom: "2px"
+              }}>
+                Usuario
+              </div>
+              <div style={{
+                fontSize: "11px",
+                fontWeight: "600",
+                color: "#0f172a",
+                fontFamily: "monospace",
+                background: "#fff",
+                padding: "3px 6px",
+                borderRadius: "3px",
+                border: "1px solid #cbd5e1"
+              }}>
+                {camara.user || 'N/A'}
+              </div>
             </div>
-            <div style={{
-              fontSize: "11px",
-              fontWeight: "600",
-              color: "#0f172a",
-              fontFamily: "monospace",
-              background: "#fff",
-              padding: "3px 6px",
-              borderRadius: "3px",
-              border: "1px solid #cbd5e1"
-            }}>
-              {camara.user || 'N/A'}
-            </div>
-          </div>
+          )}
 
           {/* Password */}
-          <div style={{ marginBottom: "5px" }}>
-            <div style={{
-              fontSize: "9px",
-              fontWeight: "600",
-              color: "#64748b",
-              marginBottom: "2px"
-            }}>
-              Contraseña
+          {canSee('password') && (
+            <div style={{ marginBottom: "5px" }}>
+              <div style={{
+                fontSize: "9px",
+                fontWeight: "600",
+                color: "#64748b",
+                marginBottom: "2px"
+              }}>
+                Contraseña
+              </div>
+              <div style={{
+                fontSize: "11px",
+                fontWeight: "600",
+                color: "#0f172a",
+                fontFamily: "monospace",
+                background: "#fff",
+                padding: "3px 6px",
+                borderRadius: "3px",
+                border: "1px solid #cbd5e1"
+              }}>
+                {camara.password || 'N/A'}
+              </div>
             </div>
-            <div style={{
-              fontSize: "11px",
-              fontWeight: "600",
-              color: "#0f172a",
-              fontFamily: "monospace",
-              background: "#fff",
-              padding: "3px 6px",
-              borderRadius: "3px",
-              border: "1px solid #cbd5e1"
-            }}>
-              {camara.password || 'N/A'}
-            </div>
-          </div>
+          )}
 
           {/* Serial */}
-          <div>
-            <div style={{
-              fontSize: "9px",
-              fontWeight: "600",
-              color: "#64748b",
-              marginBottom: "2px"
-            }}>
-              Serial (SN)
+          {canSee('serial') && (
+            <div>
+              <div style={{
+                fontSize: "9px",
+                fontWeight: "600",
+                color: "#64748b",
+                marginBottom: "2px"
+              }}>
+                Serial (SN)
+              </div>
+              <div style={{
+                fontSize: "11px",
+                fontWeight: "600",
+                color: "#0f172a",
+                fontFamily: "monospace",
+                background: "#fff",
+                padding: "3px 6px",
+                borderRadius: "3px",
+                border: "1px solid #cbd5e1"
+              }}>
+                {camara.serial || 'N/A'}
+              </div>
             </div>
-            <div style={{
-              fontSize: "11px",
-              fontWeight: "600",
-              color: "#0f172a",
-              fontFamily: "monospace",
-              background: "#fff",
-              padding: "3px 6px",
-              borderRadius: "3px",
-              border: "1px solid #cbd5e1"
-            }}>
-              {camara.serial || 'N/A'}
-            </div>
-          </div>
+          )}
         </div>
       )}
     </div>
@@ -349,6 +366,9 @@ const CapaCamarasVecinales = ({ visible }) => {
   // Obtener el filtro de marcas del contexto
   const { marcasCamarasVisibles, setConteoCamarasVecinales } = useMapContext();
 
+  const { getVisibleFields } = useAuth();
+  const visibleFields = getVisibleFields('camaras-vecinales');
+
   // Usar el hook para habilitar la copia de ubicaciones
   useMapLocationCopy();
 
@@ -472,7 +492,7 @@ const CapaCamarasVecinales = ({ visible }) => {
             icon={crearIconoVecinalModerno(camara.brand, zoomNivel)}
           >
             <Popup maxWidth={260} className="custom-popup-vecinal">
-              <PopupContent camara={camara} />
+              <PopupContent camara={camara} visibleFields={visibleFields} />
             </Popup>
           </Marker>
         );

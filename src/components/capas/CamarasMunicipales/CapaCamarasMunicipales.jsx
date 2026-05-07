@@ -8,6 +8,7 @@ import { getAngleFromCoords, isValidReferencia, parseReferencia, generateVisionF
 import { logger } from '../../../utils/logger.js';
 import camarasService from '../../../services/camarasService';
 import { cargarJurisdicciones, obtenerJurisdiccion } from '../../../utils/jurisdiccionUtils';
+import { useAuth } from '../../../context/AuthContext';
 
 import L from 'leaflet';
 
@@ -158,7 +159,6 @@ const CapaCamarasMunicipales = ({
   limpiarSeguimiento,
   camaraConVision,
   setCamaraConVision,
-  isViewer = false,
 }) => {
   const [camaras, setCamaras] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -171,6 +171,10 @@ const CapaCamarasMunicipales = ({
   const [zoomNivel, setZoomNivel] = useState(1);
   const map = useMap();
   const markersRef = useRef({});
+
+  const { getVisibleFields } = useAuth();
+  const visibleFields = getVisibleFields('camaras-municipales');
+  const canSee = (field) => !visibleFields || visibleFields.length === 0 || visibleFields.includes(field);
 
   // Usar el hook para habilitar la copia de ubicaciones
   useMapLocationCopy();
@@ -557,7 +561,7 @@ const CapaCamarasMunicipales = ({
 
         // Generar campo de visión si corresponde
         let visionPolygonElement = null;
-        if (esSeleccionada || enSeguimiento) {
+        if (canSee('vision') && (esSeleccionada || enSeguimiento)) {
           // PRIORIDAD 1: Si el backend envía geometryVision (polígono pre-calculado), usarlo
           if (props.geometryVision && props.geometryVision.coordinates) {
             const coordinates = props.geometryVision.coordinates[0];
@@ -630,8 +634,10 @@ const CapaCamarasMunicipales = ({
                   });
 
                   // Actualizar la cámara con campo de visión activo
-                  setCamaraConVision(props.name);
-                  logger.log('✅ camaraConVision actualizada a:', props.name);
+                  if (canSee('vision')) {
+                    setCamaraConVision(props.name);
+                    logger.log('✅ camaraConVision actualizada a:', props.name);
+                  }
 
                   if (enSeguimiento) {
                     // Si está en modo seguimiento, crear nuevo círculo centrado en esta cámara
@@ -665,20 +671,27 @@ const CapaCamarasMunicipales = ({
                     {infoDistancia}
                   </strong>
                   <br />
-                  Dirección: {props.direccion}
-                  <br />
+                  {canSee('address') && <>Dirección: {props.direccion}<br /></>}
                   Jurisdicción: {props.jurisdiccion}
-                  {!isViewer && (
+                  {(!visibleFields || visibleFields.length === 0) && (
                     <>
                       <br />
                       Tipo: {props.tipo}
+                    </>
+                  )}
+                  {canSee('megaphone') && (
+                    <>
                       <br />
                       Megáfono: {props.megafono ? '✅' : '❌'}
+                    </>
+                  )}
+                  {canSee('buttom') && (
+                    <>
                       <br />
                       Botón de pánico: {props.boton ? '✅' : '❌'}
                     </>
                   )}
-                  {!isViewer && enSeguimiento && (
+                  {canSee('vision') && enSeguimiento && (
                     <>
                       <br />
                       <br />
@@ -697,7 +710,7 @@ const CapaCamarasMunicipales = ({
                       </div>
                     </>
                   )}
-                  {!isViewer && esSeleccionada && !enSeguimiento && (
+                  {canSee('vision') && esSeleccionada && !enSeguimiento && (
                     <>
                       <br />
                       <br />
