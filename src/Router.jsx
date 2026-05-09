@@ -14,6 +14,7 @@ import GestionAuditoria    from './components/admin/GestionAuditoria';
 import GestionRoles       from './components/admin/GestionRoles';
 import DashboardPNP       from './components/admin/DashboardPNP';
 import DashboardSerenos   from './components/admin/DashboardSerenos';
+import GestionComisarias  from './components/admin/GestionComisarias';
 
 const SIDEBAR_COLLAPSED = '70px';
 const SIDEBAR_EXPANDED  = '220px';
@@ -100,6 +101,11 @@ const AppLayout = ({ sidebarExpanded, onToggle, onClose, isMobile }) => {
           <Route path="/dashboard/pnp" element={
             <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR', 'PNP']} moduleKey="dashboard-pnp">
               <DashboardPNP />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/comisarias" element={
+            <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR']} moduleKey="comisarias">
+              <GestionComisarias />
             </ProtectedRoute>
           } />
           <Route path="*" element={<Navigate to="/" replace />} />

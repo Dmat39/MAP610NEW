@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RotateCcw, Shield, ChevronUp, ChevronDown, Calendar } from 'lucide-react';
+import { RotateCcw, Shield, ChevronUp, ChevronDown, Calendar, X } from 'lucide-react';
 import { DateRange } from 'react-date-range';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
@@ -34,13 +34,6 @@ const TIPO_CONFIG = [
   { event: 'pnpOtrosTotal',             label: 'Otros',         color: '#636e72' },
 ];
 
-const QUICK_OPTIONS = [
-  { label: 'Hoy',        days: 0 },
-  { label: 'Últ. 7d',   days: 6 },
-  { label: 'Últ. 30d',  days: 29 },
-  { label: 'Este mes',  days: null, thisMonth: true },
-];
-
 const fmt = d => {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -55,6 +48,25 @@ const getDefaultRange = () => {
   return { startDate: hace30, endDate: today };
 };
 
+const DATE_PRESETS = [
+  {
+    label: 'Hoy',
+    get: () => { const t = new Date(); return { start: fmt(t), end: fmt(t), startDate: t, endDate: t }; },
+  },
+  {
+    label: '7 días',
+    get: () => { const t = new Date(); const s = new Date(); s.setDate(t.getDate() - 6); return { start: fmt(s), end: fmt(t), startDate: s, endDate: t }; },
+  },
+  {
+    label: '1 mes',
+    get: () => { const t = new Date(); const s = new Date(); s.setDate(t.getDate() - 29); return { start: fmt(s), end: fmt(t), startDate: s, endDate: t }; },
+  },
+  {
+    label: 'Este mes',
+    get: () => { const t = new Date(); const s = new Date(t.getFullYear(), t.getMonth(), 1); const e = new Date(t.getFullYear(), t.getMonth() + 1, 0); return { start: fmt(s), end: fmt(e), startDate: s, endDate: e }; },
+  },
+];
+
 const FiltroIncidenciasPNP = ({ onFiltrar, onLimpiar }) => {
   const defaultRange = getDefaultRange();
   const [filtros, setFiltros] = useState({
@@ -66,8 +78,8 @@ const FiltroIncidenciasPNP = ({ onFiltrar, onLimpiar }) => {
     Object.fromEntries(TIPO_CONFIG.map(t => [t.event, 0]))
   );
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showCustomDates, setShowCustomDates] = useState(false);
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
-  const [dateRange, setDateRange] = useState([{ ...defaultRange, key: 'selection' }]);
   const [tempDateRange, setTempDateRange] = useState([{ ...defaultRange, key: 'selection' }]);
 
   const total = Object.values(contadores).reduce((a, b) => a + b, 0);
@@ -98,56 +110,52 @@ const FiltroIncidenciasPNP = ({ onFiltrar, onLimpiar }) => {
     setFiltros(prev => ({ ...prev, [name]: value }));
   };
 
-  const applyDateFilter = () => {
+  const applyPreset = preset => {
+    const { start, end, startDate, endDate } = preset.get();
+    setFiltros(prev => ({ ...prev, start, end }));
+    setTempDateRange([{ startDate, endDate, key: 'selection' }]);
+  };
+
+  const applyCustomDates = () => {
     const range = tempDateRange[0];
     const start = range.startDate ? fmt(range.startDate) : '';
     const end   = range.endDate   ? fmt(range.endDate)   : '';
-    setDateRange([...tempDateRange]);
     setFiltros(prev => ({ ...prev, start, end }));
     setDateRangeOpen(false);
   };
 
-  const handleQuickSelect = opt => {
-    const today = new Date();
-    let startDate, endDate;
-    if (opt.thisMonth) {
-      startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-      endDate   = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    } else {
-      endDate   = today;
-      startDate = new Date();
-      startDate.setDate(today.getDate() - opt.days);
-    }
-    setTempDateRange([{ startDate, endDate, key: 'selection' }]);
-  };
+  const getActivePreset = () =>
+    DATE_PRESETS.find(p => p.get().start === filtros.start && p.get().end === filtros.end);
 
   const getDateText = () => {
-    const r = dateRange[0];
-    if (!r.startDate || !r.endDate) return 'Seleccionar fechas';
-    const s = r.startDate.toLocaleDateString('es-ES');
-    const e = r.endDate.toLocaleDateString('es-ES');
+    const preset = getActivePreset();
+    if (preset) return preset.label;
+    if (!filtros.start && !filtros.end) return 'Sin filtro';
+    const s = filtros.start ? new Date(filtros.start + 'T00:00:00').toLocaleDateString('es-ES') : '';
+    const e = filtros.end   ? new Date(filtros.end   + 'T00:00:00').toLocaleDateString('es-ES') : '';
     return s === e ? s : `${s} — ${e}`;
   };
 
   const limpiar = () => {
     const def = getDefaultRange();
     setFiltros({ shift: '', jurisdiction: '', horario: '', start: fmt(def.startDate), end: fmt(def.endDate) });
-    setDateRange([{ ...def, key: 'selection' }]);
     setTempDateRange([{ ...def, key: 'selection' }]);
+    setShowCustomDates(false);
     onLimpiar();
   };
 
   const selectStyle = {
-    padding: '7px 10px',
+    padding: '8px 10px',
     borderRadius: 8,
     border: '1.5px solid #e2e8f0',
-    background: 'white',
+    background: '#f8fafc',
     fontSize: 13,
     color: '#1f2937',
     outline: 'none',
     width: '100%',
     boxSizing: 'border-box',
     fontFamily: 'inherit',
+    transition: 'border-color 0.18s',
   };
 
   return (
@@ -201,7 +209,6 @@ const FiltroIncidenciasPNP = ({ onFiltrar, onLimpiar }) => {
                 </div>
               ))}
             </div>
-            {/* Total */}
             <div style={{
               background: '#16a34a', borderRadius: 8, padding: '10px 14px',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
@@ -213,81 +220,119 @@ const FiltroIncidenciasPNP = ({ onFiltrar, onLimpiar }) => {
           </div>
 
           {/* Rango de fechas */}
-          <div style={{ position: 'relative' }} className="pnp-date-range-container">
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
-              Rango de fechas
+          <div className="pnp-date-range-container" style={{ position: 'relative' }}>
+            {/* Label + toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Calendar size={12} color="#64748b" /> Rango de fechas
+              </span>
+              <button
+                onClick={() => { setShowCustomDates(p => !p); setDateRangeOpen(false); }}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  padding: '3px 9px', borderRadius: 12,
+                  border: `1.5px solid ${showCustomDates ? '#86efac' : '#e2e8f0'}`,
+                  background: showCustomDates ? '#f0fdf4' : '#f8fafc',
+                  color: showCustomDates ? '#15803d' : '#64748b',
+                  fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                  textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'inherit',
+                }}
+              >
+                <Calendar size={11} />
+                {showCustomDates ? 'Presets' : 'Personalizado'}
+              </button>
             </div>
-            <button
-              onClick={() => { if (!dateRangeOpen) setTempDateRange([...dateRange]); setDateRangeOpen(p => !p); }}
-              style={{
-                ...selectStyle,
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                cursor: 'pointer', textAlign: 'left', padding: '9px 12px',
-                border: dateRangeOpen ? '1.5px solid #16a34a' : '1.5px solid #e2e8f0',
-                boxShadow: dateRangeOpen ? '0 0 0 3px rgba(22,163,74,0.12)' : 'none',
-              }}
-            >
-              <span style={{ fontSize: 13, color: '#1f2937' }}>{getDateText()}</span>
-              <Calendar size={15} color="#6b7280" />
-            </button>
 
-            {dateRangeOpen && (
-              <div style={{
-                position: 'absolute', bottom: '100%', left: 0, marginBottom: 8,
-                zIndex: 1500, backgroundColor: 'white',
-                border: '1.5px solid #e2e8f0', borderRadius: 12,
-                boxShadow: '0 12px 28px rgba(0,0,0,0.13)',
-                width: 340, display: 'flex', flexDirection: 'column',
-              }}>
-                <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid #f1f5f9' }}>
-                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 7, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Selección rápida
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                    {QUICK_OPTIONS.map(opt => (
+            {!showCustomDates ? (
+              /* Chips de preset */
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {DATE_PRESETS.map(preset => {
+                  const isActive = getActivePreset()?.label === preset.label;
+                  return (
+                    <button
+                      key={preset.label}
+                      onClick={() => applyPreset(preset)}
+                      style={{
+                        padding: '5px 14px', borderRadius: 20,
+                        border: `1.5px solid ${isActive ? '#16a34a' : '#e2e8f0'}`,
+                        background: isActive ? '#16a34a' : '#f8fafc',
+                        color: isActive ? 'white' : '#475569',
+                        fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                        transition: 'all 0.18s', fontFamily: 'inherit',
+                        boxShadow: isActive ? '0 2px 6px rgba(22,163,74,0.3)' : 'none',
+                      }}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+                {/* Indicador si hay rango personalizado activo */}
+                {!getActivePreset() && (filtros.start || filtros.end) && (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    fontSize: 11, color: '#15803d', fontWeight: 600,
+                    padding: '4px 10px', background: '#f0fdf4',
+                    border: '1px dashed #86efac', borderRadius: 12,
+                  }}>
+                    <Calendar size={10} /> {getDateText()}
+                  </span>
+                )}
+              </div>
+            ) : (
+              /* Picker personalizado */
+              <div>
+                <button
+                  onClick={() => setDateRangeOpen(p => !p)}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '9px 12px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                    border: `1.5px solid ${dateRangeOpen ? '#16a34a' : '#e2e8f0'}`,
+                    background: dateRangeOpen ? 'white' : '#f8fafc',
+                    boxShadow: dateRangeOpen ? '0 0 0 3px rgba(22,163,74,0.12)' : 'none',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  <span style={{ fontSize: 13, color: '#1f2937' }}>{getDateText()}</span>
+                  <Calendar size={15} color="#6b7280" />
+                </button>
+
+                {dateRangeOpen && (
+                  <div style={{
+                    position: 'absolute', bottom: '100%', left: 0, marginBottom: 8,
+                    zIndex: 1500, backgroundColor: 'white',
+                    border: '1.5px solid #e2e8f0', borderRadius: 12,
+                    boxShadow: '0 12px 28px rgba(0,0,0,0.13)',
+                    width: 340, display: 'flex', flexDirection: 'column',
+                  }}>
+                    <div style={{ maxHeight: 360, overflowY: 'auto', overflowX: 'hidden' }}>
+                      <DateRange
+                        editableDateInputs
+                        onChange={r => setTempDateRange([r.selection])}
+                        moveRangeOnFirstSelection={false}
+                        ranges={tempDateRange}
+                        maxDate={new Date()}
+                        rangeColors={['#16a34a']}
+                        months={1}
+                        direction="horizontal"
+                        showDateDisplay={false}
+                      />
+                    </div>
+                    <div style={{ padding: '10px 14px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                       <button
-                        key={opt.label}
-                        onClick={() => handleQuickSelect(opt)}
-                        style={{
-                          fontSize: 11, padding: '5px 10px',
-                          border: '1.5px solid #86efac', borderRadius: 6,
-                          background: '#f0fdf4', cursor: 'pointer', color: '#15803d', fontWeight: 500,
-                        }}
+                        onClick={() => setDateRangeOpen(false)}
+                        style={{ fontSize: 12, padding: '8px 16px', border: '1.5px solid #e2e8f0', borderRadius: 8, background: 'white', cursor: 'pointer', color: '#374151', fontWeight: 500, fontFamily: 'inherit' }}
                       >
-                        {opt.label}
+                        Cancelar
                       </button>
-                    ))}
+                      <button
+                        onClick={applyCustomDates}
+                        style={{ fontSize: 12, padding: '8px 18px', border: 'none', borderRadius: 8, background: '#16a34a', color: 'white', cursor: 'pointer', fontWeight: 600, boxShadow: '0 2px 8px rgba(22,163,74,0.25)', fontFamily: 'inherit' }}
+                      >
+                        Aplicar
+                      </button>
+                    </div>
                   </div>
-                </div>
-
-                <div style={{ maxHeight: 360, overflowY: 'auto', overflowX: 'hidden' }}>
-                  <DateRange
-                    editableDateInputs
-                    onChange={r => setTempDateRange([r.selection])}
-                    moveRangeOnFirstSelection={false}
-                    ranges={tempDateRange}
-                    maxDate={new Date()}
-                    rangeColors={['#16a34a']}
-                    months={1}
-                    direction="horizontal"
-                    showDateDisplay={false}
-                  />
-                </div>
-
-                <div style={{ padding: '10px 14px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                  <button
-                    onClick={() => setDateRangeOpen(false)}
-                    style={{ fontSize: 12, padding: '8px 16px', border: '1.5px solid #e2e8f0', borderRadius: 8, background: 'white', cursor: 'pointer', color: '#374151', fontWeight: 500 }}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={applyDateFilter}
-                    style={{ fontSize: 12, padding: '8px 18px', border: 'none', borderRadius: 8, background: '#16a34a', color: 'white', cursor: 'pointer', fontWeight: 600, boxShadow: '0 2px 8px rgba(22,163,74,0.25)' }}
-                  >
-                    Aplicar
-                  </button>
-                </div>
+                )}
               </div>
             )}
           </div>
@@ -295,11 +340,14 @@ const FiltroIncidenciasPNP = ({ onFiltrar, onLimpiar }) => {
           {/* Selectores */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
             {[
-              { name: 'shift',        label: 'Turno',        options: TURNO_OPTIONS },
+              {
+                name: 'shift', label: 'Turno',
+                options: [...TURNO_OPTIONS, { value: 'NO_SHIFT', label: 'Sin turno' }],
+              },
               { name: 'horario',      label: 'Horario',      options: HORARIO_OPTIONS.map(o => ({ value: o, label: o })) },
               { name: 'jurisdiction', label: 'Jurisdicción', options: JURISDICCION_OPTIONS.map(o => ({ value: o, label: o })) },
             ].map(({ name, label, options }) => (
-              <label key={name} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 600, color: '#374151', minWidth: 90, flex: 1, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <label key={name} style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 11, fontWeight: 700, color: '#64748b', minWidth: 90, flex: 1, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {label}
                 <select name={name} value={filtros[name]} onChange={handleChange} style={selectStyle}>
                   <option value="">Todos</option>
@@ -316,7 +364,7 @@ const FiltroIncidenciasPNP = ({ onFiltrar, onLimpiar }) => {
               style={{
                 background: 'white', color: '#dc2626', border: '1.5px solid #fecaca',
                 padding: '7px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, fontFamily: 'inherit',
               }}
             >
               <RotateCcw size={14} /> Limpiar

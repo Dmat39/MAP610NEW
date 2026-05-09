@@ -44,7 +44,7 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
     },
     infrastructure: {
       title: 'Puntos Estratégicos',
-      layers: ['paraderosAutorizados', 'defensaCivil', 'paraderosNoAutorizados', 'residuos', 'sostenimiento', 'actividades'],
+      layers: ['paraderosAutorizados', 'defensaCivil', 'paraderosNoAutorizados', 'residuos', 'sostenimiento', 'actividades', 'comisarias'],
     },
     tools: {
       title: 'Herramientas',

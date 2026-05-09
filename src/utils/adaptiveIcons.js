@@ -216,6 +216,31 @@ export const SVG_PATHS = {
     <path d="M6.308 15.5H10"/>
   `,
 
+  // Comisaría - Escudo policial con estrella
+  COMISARIA: `
+    <!-- Cuerpo principal del escudo/badge policial -->
+    <path d="M12 2 L20 5.5 L20 13 C20 18 16.5 22 12 23 C7.5 22 4 18 4 13 L4 5.5 Z"
+          fill="currentColor" opacity="0.92"/>
+
+    <!-- Borde interior del escudo -->
+    <path d="M12 3.5 L19 6.5 L19 13 C19 17.5 16 21 12 22 C8 21 5 17.5 5 13 L5 6.5 Z"
+          fill="none" stroke="white" stroke-width="0.9" opacity="0.55"/>
+
+    <!-- Franja superior (ribete del badge) -->
+    <path d="M4 5.5 L12 2 L20 5.5 L20 7.5 L4 7.5 Z"
+          fill="white" opacity="0.18"/>
+
+    <!-- Estrella de 5 puntas centrada en el escudo -->
+    <polygon points="12,5.5 13.1,8.5 16.3,8.6 13.7,10.6 14.7,13.6 12,11.8 9.3,13.6 10.3,10.6 7.7,8.6 10.9,8.5"
+             fill="white" opacity="0.95"/>
+
+    <!-- Línea divisoria central -->
+    <line x1="5" y1="15.5" x2="19" y2="15.5" stroke="white" stroke-width="0.8" opacity="0.4"/>
+
+    <!-- Detalle inferior (placa/número) -->
+    <rect x="9" y="17" width="6" height="2" rx="0.8" fill="white" opacity="0.35"/>
+  `,
+
   // Actividades - Calendario/Evento
   ACTIVIDADES: `
     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -273,6 +298,38 @@ export const createDefensaCivilIcon = (size = 36) => {
     baseSize: size,
     strokeWidth: 2.3,
     borderWidth: 3,
+  });
+};
+
+export const createComisariaIcon = () => {
+  const pinSvg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="44" viewBox="0 0 32 44">
+      <!-- Sombra suave debajo del pin -->
+      <ellipse cx="16" cy="43" rx="5" ry="1.8" fill="rgba(21,101,192,0.22)"/>
+      <!-- Cuerpo del pin (teardrop) -->
+      <path d="M16 1 C8 1 1 8 1 16 C1 25 10 36 16 43 C22 36 31 25 31 16 C31 8 24 1 16 1 Z"
+            fill="#BBDEFB" stroke="#1565C0" stroke-width="2.2"/>
+      <!-- Escudo policial dentro del pin -->
+      <g transform="translate(5.5, 3) scale(0.875)">
+        <path d="M12 2 L20 5.5 L20 13 C20 18 16.5 22 12 23 C7.5 22 4 18 4 13 L4 5.5 Z"
+              fill="#1565C0" opacity="0.92"/>
+        <path d="M12 3.5 L19 6.5 L19 13 C19 17.5 16 21 12 22 C8 21 5 17.5 5 13 L5 6.5 Z"
+              fill="none" stroke="white" stroke-width="0.9" opacity="0.55"/>
+        <path d="M4 5.5 L12 2 L20 5.5 L20 7.5 L4 7.5 Z"
+              fill="white" opacity="0.18"/>
+        <polygon points="12,5.5 13.1,8.5 16.3,8.6 13.7,10.6 14.7,13.6 12,11.8 9.3,13.6 10.3,10.6 7.7,8.6 10.9,8.5"
+                 fill="white" opacity="0.95"/>
+        <line x1="5" y1="15.5" x2="19" y2="15.5" stroke="white" stroke-width="0.8" opacity="0.4"/>
+        <rect x="9" y="17" width="6" height="2" rx="0.8" fill="white" opacity="0.35"/>
+      </g>
+    </svg>`;
+
+  return L.divIcon({
+    html: `<div style="filter:none;line-height:0;">${pinSvg}</div>`,
+    className: 'custom-adaptive-marker leaflet-marker-icon',
+    iconSize: [32, 44],
+    iconAnchor: [16, 43],
+    popupAnchor: [0, -44],
   });
 };
 

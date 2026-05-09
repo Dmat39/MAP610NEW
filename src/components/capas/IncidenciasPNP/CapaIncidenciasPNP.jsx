@@ -114,6 +114,14 @@ const CapaIncidenciasPNP = ({ visible, filtros = null, tipo }) => {
 
           const color = SHIFT_COLORS[item.shift] || '#74b9ff';
 
+          const sinHora = !item.shift;
+          const horaDisplay = sinHora
+            ? 'Sin hora'
+            : item.occurred_at
+              ? new Date(item.occurred_at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
+              : '-';
+          const turnoDisplay = item.shift ? (SHIFT_LABELS[item.shift] || item.shift) : 'Sin turno';
+
           return (
             <CircleMarker
               key={`pnp-${tipo}-${item.id || idx}`}
@@ -135,9 +143,9 @@ const CapaIncidenciasPNP = ({ visible, filtros = null, tipo }) => {
                   <br />
                   {item.description}
                   <br />
-                  <strong>Turno:</strong> {SHIFT_LABELS[item.shift] || item.shift}
+                  <strong>Turno:</strong> {turnoDisplay}
                   <br />
-                  <strong>Horario:</strong> {item.horario || '-'}
+                  <strong>Hora:</strong> {horaDisplay}
                   <br />
                   <strong>Jurisdicción:</strong> {item.jurisdiction}
                   <br />
@@ -151,7 +159,7 @@ const CapaIncidenciasPNP = ({ visible, filtros = null, tipo }) => {
               </Popup>
               <Tooltip direction="top" offset={[0, -10]} opacity={0.85}>
                 <div style={{ fontSize: '11px', fontWeight: 'bold' }}>
-                  {item.incidence_type} — {SHIFT_LABELS[item.shift]}
+                  {item.incidence_type} — {turnoDisplay}
                 </div>
               </Tooltip>
             </CircleMarker>

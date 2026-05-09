@@ -30,6 +30,7 @@ const pnpIncidenceService = {
     if (filters.police_station) params.append('police_station', filters.police_station);
     if (filters.case_status) params.append('case_status', filters.case_status);
     if (filters.jurisdiction) params.append('jurisdiction', filters.jurisdiction);
+    if (filters.no_shift) params.append('no_shift', filters.no_shift);
     if (filters.start) params.append('start', filters.start);
     if (filters.end) params.append('end', filters.end);
     if (filters.page) params.append('page', filters.page);

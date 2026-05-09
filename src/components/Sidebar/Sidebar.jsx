@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   LogOut, MapPin, Camera, Map, Video, Users,
   Calendar, ChevronRight, ChevronLeft, Shield, ClipboardList,
-  LayoutDashboard, ShieldCheck, KeyRound,
+  LayoutDashboard, ShieldCheck, KeyRound, Building2,
 } from 'lucide-react';
 import ConfirmModal from '../Modal/ConfirmModal';
 import './Sidebar.css';
@@ -99,6 +99,7 @@ const Sidebar = ({ isExpanded, onToggle, isMobile, onClose }) => {
     { path: '/admin/incidencias-pnp',     icon: Shield,         label: 'Incidencias PNP',     show: canSeeModule('incidencias-pnp',    isAdmin || isPnp) },
     { path: '/admin/camaras-vecinales',   icon: Camera,         label: 'Cám. Vecinales',      show: canSeeModule('camaras-vecinales',  isAdmin) },
     { path: '/admin/camaras-municipales', icon: Video,          label: 'Cám. Municipales',    show: canSeeModule('camaras-municipales',isAdmin) },
+    { path: '/admin/comisarias',          icon: Building2,      label: 'Comisarías',           show: canSeeModule('comisarias',          isAdmin) },
     { path: '/admin/usuarios',            icon: Users,          label: 'Usuarios',             show: canSeeModule('usuarios',           isSuperAdmin) },
     { path: '/admin/roles',               icon: KeyRound,       label: 'Roles',                show: canSeeModule('roles',              isSuperAdmin) },
     { path: '/admin/auditoria',           icon: ClipboardList,  label: 'Auditoría',            show: canSeeModule('auditoria',          isSuperAdmin) },
