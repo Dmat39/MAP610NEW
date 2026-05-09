@@ -8,6 +8,7 @@ import { getAngleFromCoords, isValidReferencia, parseReferencia, generateVisionF
 import { logger } from '../../../utils/logger.js';
 import camarasService from '../../../services/camarasService';
 import { cargarJurisdicciones, obtenerJurisdiccion } from '../../../utils/jurisdiccionUtils';
+import { normalizarNombreJurisdiccion } from '../../../utils/geoUtils';
 import { useAuth } from '../../../context/AuthContext';
 
 import L from 'leaflet';
@@ -155,6 +156,7 @@ const CapaCamarasMunicipales = ({
   visible,
   camaraSeleccionada,
   camarasFiltradas,
+  filtrosCamaras,
   seguimientoCamara,
   limpiarSeguimiento,
   camaraConVision,
@@ -256,8 +258,10 @@ const CapaCamarasMunicipales = ({
               anguloVision = '180';
           }
 
-          // Determinar la jurisdicción basándose en las coordenadas
-          const jurisdiccion = obtenerJurisdiccion(camara.latitude, camara.longitude, jurisdicciones);
+          // Determinar la jurisdicción basándose en las coordenadas (normalizada igual que ControlCamaras)
+          const jurisdiccion = normalizarNombreJurisdiccion(
+            obtenerJurisdiccion(camara.latitude, camara.longitude, jurisdicciones)
+          );
 
           return {
             geometry: {
@@ -291,6 +295,11 @@ const CapaCamarasMunicipales = ({
         logger.log('📍 Total de cámaras a mostrar:', camarasTransformadas.length);
 
         setCamaras(camarasTransformadas);
+        logger.log('🔘 Cámaras con botón de pánico:', camarasTransformadas.filter(f => f.properties.boton).length);
+        logger.log('📷 Cámaras LPR (TIPO III):', camarasTransformadas.filter(f => f.properties.tipo === 'TIPO III').length);
+        logger.log('📢 Cámaras con megáfono:', camarasTransformadas.filter(f => f.properties.megafono).length);
+        const jurisdicciones10 = camarasTransformadas.filter(f => f.properties.jurisdiccion === '10 de Octubre').length;
+        logger.log('🗺️ Cámaras en "10 de Octubre":', jurisdicciones10);
         setCargando(false);
       } catch (err) {
         logger.error('Error cargando cámaras municipales:', err);
@@ -480,13 +489,16 @@ const CapaCamarasMunicipales = ({
     logger.log('🧹 Seguimiento limpiado');
   };
 
-  // Efecto para limpiar seguimiento cuando se cambian los filtros
+  // Efecto para limpiar seguimiento cuando se activa un filtro
   useEffect(() => {
-    if (camarasFiltradas && camarasFiltradas.length > 0 && seguimientoActivo) {
-      // Si se aplican filtros mientras hay seguimiento activo, limpiar seguimiento
+    const isFilterActive = filtrosCamaras && (
+      filtrosCamaras.megafono || filtrosCamaras.boton || filtrosCamaras.lpr ||
+      (filtrosCamaras.jurisdicciones?.length > 0)
+    );
+    if (isFilterActive && seguimientoActivo) {
       limpiarTodoSeguimiento();
     }
-  }, [camarasFiltradas]);
+  }, [filtrosCamaras]);
 
 
   if (!visible) return null;
@@ -509,20 +521,37 @@ const CapaCamarasMunicipales = ({
   }
 
   // Determinar qué cámaras mostrar (seguimiento, filtradas o todas)
+  const hayFiltroActivo = filtrosCamaras && (
+    filtrosCamaras.megafono ||
+    filtrosCamaras.boton ||
+    filtrosCamaras.lpr ||
+    (filtrosCamaras.jurisdicciones?.length > 0)
+  );
+
   let camarasAMostrar;
 
   if (seguimientoActivo && camarasCercanas.length > 0) {
-    // Mostrar solo las cámaras del seguimiento
     camarasAMostrar = camarasCercanas.map(item => item.feature);
     logger.log('📍 Modo: Seguimiento -', camarasAMostrar.length, 'cámaras');
-  } else if (camarasFiltradas && camarasFiltradas.length > 0) {
-    // Mostrar cámaras filtradas (solo si hay filtros activos)
-    camarasAMostrar = camaras.filter(feature =>
-      camarasFiltradas.some(cf => cf.name === feature.properties?.name)
-    );
+  } else if (hayFiltroActivo) {
+    // Características: OR (muestra si cumple CUALQUIERA)
+    // Jurisdicción: AND (acota por zona)
+    camarasAMostrar = camaras.filter(feature => {
+      const props = feature.properties;
+      // Primero acotar por jurisdicción si está activa
+      if (filtrosCamaras.jurisdicciones?.length > 0 &&
+          !filtrosCamaras.jurisdicciones.includes(props.jurisdiccion)) return false;
+      // Luego OR entre características
+      const hayCaracteristica = filtrosCamaras.boton || filtrosCamaras.lpr || filtrosCamaras.megafono;
+      if (hayCaracteristica) {
+        return (filtrosCamaras.boton && !!props.boton) ||
+               (filtrosCamaras.lpr && props.tipo === 'TIPO III') ||
+               (filtrosCamaras.megafono && !!props.megafono);
+      }
+      return true;
+    });
     logger.log('🔍 Modo: Filtradas -', camarasAMostrar.length, 'cámaras');
   } else {
-    // Mostrar todas las cámaras
     camarasAMostrar = camaras;
     logger.log('📷 Modo: Todas -', camarasAMostrar.length, 'cámaras');
   }

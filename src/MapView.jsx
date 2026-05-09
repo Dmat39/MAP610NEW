@@ -7,6 +7,7 @@ import CapaCamarasVecinales from './components/capas/CamarasVecinales/CapaCamara
 import CapaParaderosAutorizados from './components/capas/Paraderos/CapaParaderosAutorizados';
 import CapaParaderosNoAutorizados from './components/capas/Paraderos/CapaParaderosNoAutorizados';
 import CapaDefensaCivil from './components/capas/DefensaCivil/CapaDefensaCivil';
+import CapaComisarias from './components/capas/Comisarias/CapaComisarias';
 import CapaRobos from './components/capas/Incidencias/CapaRobos';
 import FiltroIncidentes from './components/filtros/FiltroIncidentes';
 import LayerTogglePanel from './components/Controles/LayerTogglePanel';
@@ -94,6 +95,7 @@ const MapView = () => {
     barras: false,
     residuos: false,
     defensaCivil: false,
+    comisarias: false,
     sostenimiento: false,
     actividades: false,
     busquedaDirecciones: false,
@@ -133,7 +135,7 @@ const MapView = () => {
   const [rutaInfo, setRutaInfo] = useState(null);
   const [camaraSeleccionada, setCamaraSeleccionada] = useState(null);
   const [camarasFiltradas, setCamarasFiltradas] = useState([]);
-  const [, setFiltrosCamaras] = useState(null);
+  const [filtrosCamaras, setFiltrosCamaras] = useState(null);
   const [seguimientoCamara, setSeguimientoCamara] = useState(null);
   const [limpiarSeguimiento, setLimpiarSeguimiento] = useState(null);
   const [camaraConVision, setCamaraConVision] = useState(null); // Track camera with vision field active
@@ -290,6 +292,7 @@ const MapView = () => {
       visible: capasVisibles.paraderosAutorizados,
     },
     { name: 'defensaCivil', label: 'Defensa Civil', visible: capasVisibles.defensaCivil },
+    { name: 'comisarias', label: 'Comisarías', visible: capasVisibles.comisarias },
     {
       name: 'paraderosNoAutorizados',
       label: 'Paraderos No Autorizados',
@@ -480,6 +483,7 @@ const MapView = () => {
             visible={capasVisibles.camaras}
             camaraSeleccionada={camaraSeleccionada}
             camarasFiltradas={camarasFiltradas}
+            filtrosCamaras={filtrosCamaras}
             seguimientoCamara={seguimientoCamara}
             limpiarSeguimiento={limpiarSeguimiento}
             camaraConVision={camaraConVision}
@@ -510,6 +514,7 @@ const MapView = () => {
           ))}
           <CapaResiduos visible={capasVisibles.residuos} />
           <CapaDefensaCivil visible={capasVisibles.defensaCivil} />
+          <CapaComisarias visible={capasVisibles.comisarias} />
           <CapaSostenimiento visible={capasVisibles.sostenimiento} />
           <CapaActividades visible={capasVisibles.actividades} />
           <CapaJurisdiccionCodisec
@@ -547,6 +552,7 @@ const MapView = () => {
             visible={capasVisibles.camaras}
             camaraSeleccionada={camaraSeleccionada}
             camarasFiltradas={camarasFiltradas}
+            filtrosCamaras={filtrosCamaras}
             seguimientoCamara={seguimientoCamara}
             limpiarSeguimiento={limpiarSeguimiento}
             camaraConVision={camaraConVision}
@@ -574,6 +580,7 @@ const MapView = () => {
             />
           ))}
           <GoogleCapaResiduos visible={capasVisibles.residuos} />
+          <CapaComisarias visible={capasVisibles.comisarias} />
           <GoogleCapaActividades visible={capasVisibles.actividades} />
           <GoogleCapaJurisdiccionCodisec
             visible={capasVisibles.zonasCodisec}
