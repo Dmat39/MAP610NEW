@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronUp, ChevronDown, Search, Trash2, MapPin, AlertCircle, CheckCircle, Eye } from 'lucide-react';
+import { ChevronUp, ChevronDown, Search, Trash2, MapPin, AlertCircle, CheckCircle, Eye, ExternalLink } from 'lucide-react';
 import './ControlBusqueda.css';
 import { logger } from '../../../utils/logger.js';
 
@@ -11,7 +11,6 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
   const [resultados, setResultados] = useState([]);
   const [resultadoSeleccionado, setResultadoSeleccionado] = useState(null);
 
-  // Función para realizar geocodificación usando Nominatim
   const buscarDireccion = async direccion => {
     if (!direccion.trim()) {
       setError('Por favor ingresa una dirección válida');
@@ -24,9 +23,6 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
     try {
       logger.log('🔍 Buscando dirección en Lima:', direccion);
 
-      // Usar Nominatim API para geocodificación restringida a Lima, Perú
-      // Bounding box aproximado para Lima Metropolitana:
-      // Oeste: -77.2, Sur: -12.4, Este: -76.7, Norte: -11.7
       const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion + ', San Juan de Lurigancho, Lima Metropolitana, Perú')}&limit=5&addressdetails=1&countrycodes=pe&bounded=1&viewbox=-77.2,-11.7,-76.7,-12.4`;
 
       const response = await fetch(url, {
@@ -48,12 +44,9 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
         return;
       }
 
-      // Filtrar adicional para asegurar que los resultados estén en Lima
       const resultadosLima = data.filter(item => {
         const address = item.address || {};
         const displayName = (item.display_name || '').toLowerCase();
-
-        // Verificar que mencione Lima en la dirección o en los detalles
         return (
           address.city === 'Lima' ||
           address.state === 'Lima' ||
@@ -72,7 +65,6 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
         return;
       }
 
-      // Procesar resultados
       const resultadosProcesados = resultadosLima.map((item, index) => ({
         id: index + 1,
         lat: parseFloat(item.lat),
@@ -86,9 +78,8 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
 
       setResultados(resultadosProcesados);
 
-      // Notificar al componente padre con los resultados
       if (onBusquedaRealizada) {
-        onBusquedaRealizada(resultadosProcesados, null); // null = ninguno seleccionado inicialmente
+        onBusquedaRealizada(resultadosProcesados, null);
       }
     } catch (err) {
       logger.error('❌ Error en búsqueda:', err);
@@ -99,13 +90,11 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
     }
   };
 
-  // Manejar envío del formulario
   const manejarBusqueda = e => {
     e.preventDefault();
     buscarDireccion(busqueda);
   };
 
-  // Limpiar búsqueda
   const limpiarBusqueda = () => {
     setBusqueda('');
     setResultados([]);
@@ -116,7 +105,6 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
     }
   };
 
-  // Manejar selección de resultado específico
   const seleccionarResultado = resultado => {
     setResultadoSeleccionado(resultado.id);
     if (onBusquedaRealizada) {
@@ -124,7 +112,6 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
     }
   };
 
-  // Mostrar todos los resultados
   const mostrarTodos = () => {
     setResultadoSeleccionado(null);
     if (onBusquedaRealizada) {
@@ -132,9 +119,14 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
     }
   };
 
-  // Alternar colapso
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
+  };
+
+  const abrirEnGoogleMaps = () => {
+    const query = busqueda.trim() || 'San Juan de Lurigancho, Lima';
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query + ', San Juan de Lurigancho, Lima, Perú')}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   if (!visible) return null;
@@ -184,16 +176,25 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
               Limpiar
             </button>
           </div>
+
+          {busqueda.trim() && (
+            <button
+              type="button"
+              onClick={abrirEnGoogleMaps}
+              className="btn-google-maps"
+            >
+              <ExternalLink size={13} />
+              Buscar mejor en Google Maps
+            </button>
+          )}
         </form>
 
-        {/* Mostrar error */}
         {error && (
           <div className="error-message">
             <AlertCircle size={14} style={{ flexShrink: 0 }} /> {error}
           </div>
         )}
 
-        {/* Mostrar estadísticas de resultados */}
         {resultados.length > 0 && (
           <div className="resultados-stats">
             <CheckCircle size={14} style={{ flexShrink: 0 }} />
@@ -201,7 +202,6 @@ const ControlBusqueda = ({ visible, onBusquedaRealizada, mapType = 'leaflet', to
           </div>
         )}
 
-        {/* Mostrar lista de resultados */}
         {resultados.length > 0 && (
           <div className="resultados-lista">
             <div className="resultados-header">
