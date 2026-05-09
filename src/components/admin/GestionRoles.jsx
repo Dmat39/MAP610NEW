@@ -22,6 +22,7 @@ const AVAILABLE_MODULES = [
   { key: 'auditoria',            label: 'Auditoría' },
   { key: 'usuarios',             label: 'Usuarios' },
   { key: 'roles',                label: 'Roles' },
+  { key: 'comisarias',           label: 'Comisarías' },
 ];
 
 const AVAILABLE_LAYERS = [
@@ -35,6 +36,7 @@ const AVAILABLE_LAYERS = [
   { key: 'residuos',                 label: 'Residuos Sólidos',           group: 'Infraestructura' },
   { key: 'sostenimiento',            label: 'Sostenimiento',              group: 'Infraestructura' },
   { key: 'actividades',              label: 'Actividades',                group: 'Infraestructura' },
+  { key: 'comisarias',               label: 'Comisarías',                 group: 'Infraestructura' },
   { key: 'robos',                    label: 'Robos',                      group: 'Incidencias Serenos' },
   { key: 'extorsiones',              label: 'Extorsiones',                group: 'Incidencias Serenos' },
   { key: 'homicidios',               label: 'Homicidios',                 group: 'Incidencias Serenos' },
@@ -83,12 +85,16 @@ const MODULE_VISIBLE_FIELDS = {
     { key: 'password',  label: 'Contraseña' },
     { key: 'serial',    label: 'Serial del Dispositivo' },
   ],
+  'comisarias': [
+    { key: 'name', label: 'Nombre' },
+  ],
 };
 
 // Vincula cada capa de cámara con su módulo y sus campos configurables
 const LAYER_CAMERA_CONFIG = {
   camaras:          { moduleKey: 'camaras-municipales', label: 'Cámaras Municipales', fields: MODULE_VISIBLE_FIELDS['camaras-municipales'] },
   camarasVecinales: { moduleKey: 'camaras-vecinales',   label: 'Cámaras Vecinales',   fields: MODULE_VISIBLE_FIELDS['camaras-vecinales']   },
+  comisarias:       { moduleKey: 'comisarias',          label: 'Comisarías',          fields: MODULE_VISIBLE_FIELDS['comisarias']          },
 };
 
 const buildInitialModuleState = () =>

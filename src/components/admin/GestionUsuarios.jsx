@@ -388,113 +388,129 @@ const GestionUsuarios = () => {
       </div>
 
       {showModal && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) closeModal(); }}>
           <div className="modal-content">
+
+            {/* Header */}
             <div className="modal-header">
-              <h2>
-                {modalMode === 'create'
-                  ? <><Plus size={24} /><span>Crear Usuario</span></>
-                  : <><Edit2 size={24} /><span>Editar Usuario</span></>
-                }
-              </h2>
-              <button onClick={closeModal} className="btn-icon"><X size={20} /></button>
+              <div className="modal-header-left">
+                <div className="modal-header-icon">
+                  {modalMode === 'create' ? <Plus size={20} /> : <Edit2 size={20} />}
+                </div>
+                <div className="modal-header-text">
+                  <h2>{modalMode === 'create' ? 'Nuevo Usuario' : 'Editar Usuario'}</h2>
+                  <p>{modalMode === 'create' ? 'Completa los datos para registrar al usuario' : `Modificando: ${selectedUser?.username}`}</p>
+                </div>
+              </div>
+              <button onClick={closeModal} className="btn-icon"><X size={18} /></button>
             </div>
 
-            <form onSubmit={handleSubmit} className="modal-body">
-              {error && (
-                <div className="alert alert-error" style={{ marginBottom: '16px' }}>
-                  <X size={18} />
-                  <span>{error}</span>
-                  <button onClick={() => setError(null)} className="alert-close"><X size={16} /></button>
-                </div>
-              )}
+            <form onSubmit={handleSubmit}>
+              <div className="modal-body">
 
-              <div className="form-group">
-                <label htmlFor="name"><User size={16} /><span>Nombre *</span></label>
-                <input type="text" id="name" name="name" value={formData.name}
-                  onChange={handleInputChange} placeholder="Ej: Juan" required />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="lastname"><User size={16} /><span>Apellido *</span></label>
-                <input type="text" id="lastname" name="lastname" value={formData.lastname}
-                  onChange={handleInputChange} placeholder="Ej: Pérez" required />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="username"><User size={16} /><span>Nombre de Usuario *</span></label>
-                <input type="text" id="username" name="username" value={formData.username}
-                  onChange={handleInputChange} placeholder="Ej: jperez" required
-                  disabled={modalMode === 'edit'} className={modalMode === 'edit' ? 'disabled' : ''} />
-                {modalMode === 'edit' && (
-                  <small className="form-hint">El nombre de usuario no se puede modificar</small>
+                {error && (
+                  <div className="alert alert-error" style={{ marginBottom: 18 }}>
+                    <X size={16} />
+                    <span>{error}</span>
+                    <button onClick={() => setError(null)} className="alert-close"><X size={14} /></button>
+                  </div>
                 )}
-              </div>
 
-              <div className="form-group">
-                <label htmlFor="email"><Mail size={16} /><span>Correo Electrónico *</span></label>
-                <input type="email" id="email" name="email" value={formData.email}
-                  onChange={handleInputChange} placeholder="usuario@ejemplo.com" required />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="dni"><User size={16} /><span>DNI *</span></label>
-                <input type="text" id="dni" name="dni" value={formData.dni}
-                  onChange={handleInputChange} placeholder="Ej: 12345678" required maxLength="8" />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="phone"><Phone size={16} /><span>Teléfono *</span></label>
-                <input type="tel" id="phone" name="phone" value={formData.phone}
-                  onChange={handleInputChange} placeholder="Ej: 999999999" required maxLength="9" />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="password">
-                  <Shield size={16} />
-                  <span>Contraseña {modalMode === 'edit' && '(Dejar vacío para no cambiar)'}</span>
-                </label>
-                <div className="password-input-wrapper">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="password" name="password" value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder={modalMode === 'create' ? 'Ingrese la contraseña' : 'Nueva contraseña (opcional)'}
-                    required={modalMode === 'create'}
-                  />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="password-toggle">
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
+                {/* ── Sección: Datos Personales ───────── */}
+                <div className="user-form-section">
+                  <div className="user-form-section-header">
+                    <User size={13} /> Datos Personales
+                  </div>
+                  <div className="user-form-grid">
+                    <div className="form-group">
+                      <label htmlFor="name"><User size={12} /> Nombre *</label>
+                      <input type="text" id="name" name="name" value={formData.name}
+                        onChange={handleInputChange} placeholder="Ej: Juan" required />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="lastname"><User size={12} /> Apellido *</label>
+                      <input type="text" id="lastname" name="lastname" value={formData.lastname}
+                        onChange={handleInputChange} placeholder="Ej: Pérez" required />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="dni"><Shield size={12} /> DNI *</label>
+                      <input type="text" id="dni" name="dni" value={formData.dni}
+                        onChange={handleInputChange} placeholder="12345678" required maxLength="8" />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="phone"><Phone size={12} /> Teléfono *</label>
+                      <input type="tel" id="phone" name="phone" value={formData.phone}
+                        onChange={handleInputChange} placeholder="999999999" required maxLength="9" />
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div className="form-group">
-                <label htmlFor="custom_role_id"><Shield size={16} /><span>Rol *</span></label>
-                <select
-                  id="custom_role_id"
-                  name="custom_role_id"
-                  value={formData.custom_role_id}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Seleccionar rol...</option>
-                  {customRoles.map(cr => (
-                    <option key={cr.id} value={cr.id}>{cr.name}</option>
-                  ))}
-                </select>
-                {customRoles.length === 0 && (
-                  <small className="form-hint" style={{ color: '#ef4444' }}>
-                    No hay roles disponibles. Crea roles en la sección Roles primero.
-                  </small>
-                )}
+                {/* ── Sección: Acceso al Sistema ──────── */}
+                <div className="user-form-section" style={{ marginBottom: 0 }}>
+                  <div className="user-form-section-header">
+                    <Shield size={13} /> Acceso al Sistema
+                  </div>
+                  <div className="user-form-grid">
+                    <div className="form-group">
+                      <label htmlFor="username"><User size={12} /> Usuario *</label>
+                      <input type="text" id="username" name="username" value={formData.username}
+                        onChange={handleInputChange} placeholder="jperez" required
+                        disabled={modalMode === 'edit'} />
+                      {modalMode === 'edit' && (
+                        <span className="form-hint">El usuario no se puede modificar</span>
+                      )}
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="email"><Mail size={12} /> Correo Electrónico *</label>
+                      <input type="email" id="email" name="email" value={formData.email}
+                        onChange={handleInputChange} placeholder="usuario@ejemplo.com" required />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="password">
+                        <Eye size={12} />
+                        Contraseña {modalMode === 'edit' && <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#94a3b8' }}>(opcional)</span>}
+                      </label>
+                      <div className="password-input-wrapper">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          id="password" name="password" value={formData.password}
+                          onChange={handleInputChange}
+                          placeholder={modalMode === 'create' ? 'Ingresa la contraseña' : 'Sin cambios si se deja vacío'}
+                          required={modalMode === 'create'}
+                        />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="password-toggle">
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="custom_role_id"><Shield size={12} /> Rol *</label>
+                      <select id="custom_role_id" name="custom_role_id"
+                        value={formData.custom_role_id} onChange={handleInputChange} required>
+                        <option value="">Seleccionar rol...</option>
+                        {customRoles.map(cr => (
+                          <option key={cr.id} value={cr.id}>{cr.name}</option>
+                        ))}
+                      </select>
+                      {customRoles.length === 0 && (
+                        <span className="form-hint" style={{ color: '#ef4444' }}>
+                          No hay roles. Crea uno en la sección Roles.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
               <div className="modal-footer">
-                <button type="button" onClick={closeModal} className="btn-secondary">Cancelar</button>
+                <button type="button" onClick={closeModal} className="btn-secondary">
+                  <X size={14} /> Cancelar
+                </button>
                 <button type="submit" className="btn-primary" disabled={loading}>
                   {loading
-                    ? <><RefreshCw size={18} className="spinning" /><span>Guardando...</span></>
-                    : <><Save size={18} /><span>{modalMode === 'create' ? 'Crear Usuario' : 'Guardar Cambios'}</span></>
+                    ? <><RefreshCw size={15} className="spinning" /> Guardando...</>
+                    : <><Save size={15} /> {modalMode === 'create' ? 'Crear Usuario' : 'Guardar Cambios'}</>
                   }
                 </button>
               </div>
