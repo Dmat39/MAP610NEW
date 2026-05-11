@@ -26,7 +26,9 @@ const pnpIncidenceService = {
     const params = new URLSearchParams();
     if (filters.search) params.append('search', filters.search);
     if (filters.shift) params.append('shift', filters.shift);
-    if (filters.incidence_type) params.append('incidence_type', filters.incidence_type);
+    if (filters.type_id) params.append('type_id', filters.type_id);
+    if (filters.subtype_id) params.append('subtype_id', filters.subtype_id);
+    if (filters.modality_id) params.append('modality_id', filters.modality_id);
     if (filters.police_station) params.append('police_station', filters.police_station);
     if (filters.case_status) params.append('case_status', filters.case_status);
     if (filters.jurisdiction) params.append('jurisdiction', filters.jurisdiction);

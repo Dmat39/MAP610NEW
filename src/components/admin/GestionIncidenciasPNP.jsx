@@ -5,8 +5,11 @@ import {
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import pnpIncidenceService from '../../services/pnpIncidenceService';
-import comisariasService   from '../../services/comisariasService';
+import pnpIncidenceService      from '../../services/pnpIncidenceService';
+import comisariasService         from '../../services/comisariasService';
+import incidenceTypeService      from '../../services/incidenceTypeService';
+import incidenceSubtypeService   from '../../services/incidenceSubtypeService';
+import incidenceModalityService  from '../../services/incidenceModalityService';
 import { useInvalidatePnpIncidencias } from '../../hooks/usePnpIncidenciasQuery';
 import { useAuth } from '../../context/AuthContext';
 import UseUrlParamsManager from '../../hooks/UseUrlParamsManager';
@@ -45,12 +48,6 @@ const STATUS_COLORS = {
   CLOSED:        '#10b981',
 };
 
-const INCIDENCE_TYPES = [
-  'Robo al paso', 'Robo agravado', 'Microcomercialización de drogas',
-  'Violencia familiar', 'Accidente de tránsito', 'Violencia sexual',
-  'Homicidio', 'Lesiones', 'Hurto', 'Otros',
-];
-
 const JURISDICTIONS = [
   'Caja de Agua', 'Zárate', 'Huayrona', 'Canto Rey',
   'Santa Elizabeth', 'Bayóvar', 'Mariscal Cáceres', '10 de Octubre',
@@ -58,7 +55,9 @@ const JURISDICTIONS = [
 
 const EMPTY_FORM = {
   description: '',
-  incidence_type: '',
+  type_id: '',
+  subtype_id: '',
+  modality_id: '',
   address: '',
   latitude: '',
   longitude: '',
@@ -161,6 +160,14 @@ const GestionIncidenciasPNP = () => {
   // Lista de comisarías desde la API
   const [comisariasList, setComisariasList] = useState([]);
 
+  // Catálogo jerárquico tipo → subtipo → modalidad
+  const [tipos, setTipos]           = useState([]);
+  const [subtipos, setSubtipos]     = useState([]);   // modal
+  const [modalidades, setModalidades] = useState([]); // modal
+  // Catálogo para panel de filtros
+  const [filterSubtipos, setFilterSubtipos]       = useState([]);
+  const [filterModalidades, setFilterModalidades] = useState([]);
+
   // Búsqueda de direcciones en el mapa
   const [searchQuery, setSearchQuery]     = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -181,7 +188,7 @@ const GestionIncidenciasPNP = () => {
     if (hasAccess) loadData();
   }, [location.search, update]);
 
-  // Cargar lista de comisarías una sola vez
+  // Cargar comisarías y tipos una sola vez al montar
   useEffect(() => {
     comisariasService.getAll({ page: 1, limit: 100 })
       .then(res => {
@@ -190,7 +197,36 @@ const GestionIncidenciasPNP = () => {
         comisariasRef.current = list;
       })
       .catch(() => {});
+    incidenceTypeService.getAll({ limit: 200 })
+      .then(res => setTipos(Array.isArray(res.data) ? res.data : []))
+      .catch(() => {});
   }, []);
+
+  // Cargar subtipos para filtro cuando cambia type_id en URL
+  useEffect(() => {
+    const typeId = params.type_id;
+    if (typeId) {
+      incidenceSubtypeService.getAll({ type_id: typeId, limit: 200 })
+        .then(res => setFilterSubtipos(Array.isArray(res.data) ? res.data : []))
+        .catch(() => setFilterSubtipos([]));
+    } else {
+      setFilterSubtipos([]);
+      if (params.subtype_id) addParams({ subtype_id: '', modality_id: '', page: 1 });
+    }
+  }, [params.type_id]);
+
+  // Cargar modalidades para filtro cuando cambia subtype_id en URL
+  useEffect(() => {
+    const subtypeId = params.subtype_id;
+    if (subtypeId) {
+      incidenceModalityService.getAll({ subtype_id: subtypeId, limit: 200 })
+        .then(res => setFilterModalidades(Array.isArray(res.data) ? res.data : []))
+        .catch(() => setFilterModalidades([]));
+    } else {
+      setFilterModalidades([]);
+      if (params.modality_id) addParams({ modality_id: '', page: 1 });
+    }
+  }, [params.subtype_id]);
 
   const loadData = async () => {
     try {
@@ -198,15 +234,17 @@ const GestionIncidenciasPNP = () => {
       setError(null);
       const isNoShift = params.shift === 'NO_SHIFT';
       const filters = {
-        search:         params.search         || '',
-        shift:          isNoShift ? '' : (params.shift || ''),
-        no_shift:       isNoShift ? 'true' : '',
-        incidence_type: params.incidence_type || '',
-        jurisdiction:   params.jurisdiction   || '',
-        start:          params.start          || '',
-        end:            params.end            || '',
-        page:           parseInt(params.page)  || 1,
-        limit:          parseInt(params.limit) || 20,
+        search:       params.search       || '',
+        shift:        isNoShift ? '' : (params.shift || ''),
+        no_shift:     isNoShift ? 'true' : '',
+        type_id:      params.type_id      || '',
+        subtype_id:   params.subtype_id   || '',
+        modality_id:  params.modality_id  || '',
+        jurisdiction: params.jurisdiction || '',
+        start:        params.start        || '',
+        end:          params.end          || '',
+        page:         parseInt(params.page)  || 1,
+        limit:        parseInt(params.limit) || 20,
       };
       const response = await pnpIncidenceService.getAll(filters);
       setIncidencias(Array.isArray(response.data) ? response.data : []);
@@ -337,6 +375,26 @@ const GestionIncidenciasPNP = () => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  // ─── Handlers selects encadenados tipo → subtipo → modalidad ───────────────
+
+  const handleTypeChange = async typeId => {
+    setFormData(p => ({ ...p, type_id: typeId, subtype_id: '', modality_id: '' }));
+    setSubtipos([]); setModalidades([]);
+    if (typeId) {
+      const res = await incidenceSubtypeService.getAll({ type_id: typeId, limit: 200 }).catch(() => ({ data: [] }));
+      setSubtipos(Array.isArray(res.data) ? res.data : []);
+    }
+  };
+
+  const handleSubtypeChange = async subtypeId => {
+    setFormData(p => ({ ...p, subtype_id: subtypeId, modality_id: '' }));
+    setModalidades([]);
+    if (subtypeId) {
+      const res = await incidenceModalityService.getAll({ subtype_id: subtypeId, limit: 200 }).catch(() => ({ data: [] }));
+      setModalidades(Array.isArray(res.data) ? res.data : []);
+    }
+  };
+
   // ─── Modal create ───────────────────────────────────────────────────────────
 
   const openCreateModal = () => {
@@ -355,17 +413,21 @@ const GestionIncidenciasPNP = () => {
     setShowModal(true);
   };
 
-  const openEditModal = item => {
+  const openEditModal = async item => {
     setModalMode('edit');
     setSelectedItem(item);
     const dateTimePart = item.occurred_at ? item.occurred_at.substring(0, 16) : '';
     const occurred_date = dateTimePart.substring(0, 10);
     const rawTime = dateTimePart.length >= 16 ? dateTimePart.substring(11, 16) : '';
-    // Si no tiene turno fue registrado "sin hora" — el tiempo UTC no es confiable para detectarlo
     const occurred_time = !item.shift ? '' : rawTime;
+    const type_id     = item.modality?.subtype?.type?.id || '';
+    const subtype_id  = item.modality?.subtype?.id       || '';
+    const modality_id = item.modality?.id                || '';
     setFormData({
       description:      item.description      || '',
-      incidence_type:   item.incidence_type   || '',
+      type_id,
+      subtype_id,
+      modality_id,
       address:          item.address          || '',
       latitude:         item.latitude         ?? '',
       longitude:        item.longitude        ?? '',
@@ -377,6 +439,14 @@ const GestionIncidenciasPNP = () => {
       occurred_date,
       occurred_time,
     });
+    if (type_id) {
+      const resSub = await incidenceSubtypeService.getAll({ type_id, limit: 200 }).catch(() => ({ data: [] }));
+      setSubtipos(Array.isArray(resSub.data) ? resSub.data : []);
+    }
+    if (subtype_id) {
+      const resMod = await incidenceModalityService.getAll({ subtype_id, limit: 200 }).catch(() => ({ data: [] }));
+      setModalidades(Array.isArray(resMod.data) ? resMod.data : []);
+    }
     setShiftAutoFilled(false);
     setJurisdictionAutoFilled(false);
     setStationAutoFilled(false);
@@ -395,6 +465,8 @@ const GestionIncidenciasPNP = () => {
     setStationAutoFilled(false);
     setCoordsAutoFilled(false);
     setAddressAutoFilled(false);
+    setSubtipos([]);
+    setModalidades([]);
     setSearchQuery('');
     setSearchResults([]);
     if (leafletMapRef.current) {
@@ -460,7 +532,7 @@ const GestionIncidenciasPNP = () => {
     e.preventDefault();
     if (!canWrite) return;
 
-    const required = ['description', 'incidence_type', 'latitude', 'longitude', 'jurisdiction', 'police_station', 'occurred_date'];
+    const required = ['description', 'latitude', 'longitude', 'jurisdiction', 'police_station', 'occurred_date'];
     for (const field of required) {
       if (!formData[field] && formData[field] !== 0) {
         showMessage(`El campo "${field}" es requerido`, true);
@@ -475,7 +547,7 @@ const GestionIncidenciasPNP = () => {
         : `${formData.occurred_date}T00:00:00`;
       const payload = {
         description:      formData.description,
-        incidence_type:   formData.incidence_type,
+        modality_id:      formData.modality_id || undefined,
         address:          formData.address || undefined,
         latitude:         parseFloat(formData.latitude),
         longitude:        parseFloat(formData.longitude),
@@ -628,7 +700,7 @@ const GestionIncidenciasPNP = () => {
           >
             <Filter size={15} />
             Filtros
-            {(params.search || params.incidence_type || params.shift || params.jurisdiction || params.start || params.end) && (
+            {(params.search || params.type_id || params.subtype_id || params.modality_id || params.shift || params.jurisdiction || params.start || params.end) && (
               <span className="pnp-filter-dot" />
             )}
           </button>
@@ -656,10 +728,10 @@ const GestionIncidenciasPNP = () => {
             <SlidersHorizontal size={15} />
             Filtros
           </span>
-          {(params.search || params.incidence_type || params.shift || params.jurisdiction || params.start || params.end) && (
+          {(params.search || params.type_id || params.subtype_id || params.modality_id || params.shift || params.jurisdiction || params.start || params.end) && (
             <button
               className="pnp-btn-reset-filters"
-              onClick={() => addParams({ search: '', incidence_type: '', shift: '', jurisdiction: '', start: '', end: '', page: 1 })}
+              onClick={() => addParams({ search: '', type_id: '', subtype_id: '', modality_id: '', shift: '', jurisdiction: '', start: '', end: '', page: 1 })}
             >
               <X size={12} /> Limpiar todo
             </button>
@@ -682,13 +754,43 @@ const GestionIncidenciasPNP = () => {
             <label className="pnp-filter-label"><Shield size={12} /> Tipo</label>
             <select
               className="pnp-select-filter"
-              value={params.incidence_type || ''}
-              onChange={e => addParams({ incidence_type: e.target.value, page: 1 })}
+              value={params.type_id || ''}
+              onChange={e => addParams({ type_id: e.target.value, subtype_id: '', modality_id: '', page: 1 })}
             >
               <option value="">Todos los tipos</option>
-              {INCIDENCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              {tipos.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </div>
+
+          {/* Subtipo */}
+          {params.type_id && (
+            <div className="pnp-filter-group">
+              <label className="pnp-filter-label"><Shield size={12} /> Subtipo</label>
+              <select
+                className="pnp-select-filter"
+                value={params.subtype_id || ''}
+                onChange={e => addParams({ subtype_id: e.target.value, modality_id: '', page: 1 })}
+              >
+                <option value="">Todos los subtipos</option>
+                {filterSubtipos.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+          )}
+
+          {/* Modalidad */}
+          {params.subtype_id && (
+            <div className="pnp-filter-group">
+              <label className="pnp-filter-label"><Shield size={12} /> Modalidad</label>
+              <select
+                className="pnp-select-filter"
+                value={params.modality_id || ''}
+                onChange={e => addParams({ modality_id: e.target.value, page: 1 })}
+              >
+                <option value="">Todas las modalidades</option>
+                {filterModalidades.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+          )}
 
           {/* Turno */}
           <div className="pnp-filter-group">
@@ -798,7 +900,7 @@ const GestionIncidenciasPNP = () => {
           <table className="pnp-table">
             <thead>
               <tr>
-                <th>Tipo</th>
+                <th>Tipo / Subtipo / Modalidad</th>
                 <th>Descripción</th>
                 <th>Turno</th>
                 <th>Jurisdicción</th>
@@ -811,7 +913,14 @@ const GestionIncidenciasPNP = () => {
             <tbody>
               {incidencias.map(item => (
                 <tr key={item.id}>
-                  <td>{item.incidence_type}</td>
+                  <td>
+                    <div style={{ fontSize: 12, lineHeight: 1.6 }}>
+                      {item.modality?.subtype?.type?.name && <div style={{ color: '#374151', fontWeight: 500 }}>{item.modality.subtype.type.name}</div>}
+                      {item.modality?.subtype?.name && <div style={{ color: '#6b7280' }}>{item.modality.subtype.name}</div>}
+                      {item.modality?.name && <div style={{ color: '#94a3b8', fontSize: 11 }}>{item.modality.name}</div>}
+                      {!item.modality && <span style={{ color: '#cbd5e1' }}>—</span>}
+                    </div>
+                  </td>
                   <td className="pnp-desc-cell">{item.description}</td>
                   <td>
                     {item.shift ? (
@@ -1045,10 +1154,32 @@ const GestionIncidenciasPNP = () => {
                   </div>
                   <div className="pnp-form-grid">
                     <div className="pnp-form-group">
-                      <label>Tipo de Incidencia *</label>
-                      <select name="incidence_type" value={formData.incidence_type} onChange={handleFormChange} required>
-                        <option value="">Seleccionar...</option>
-                        {INCIDENCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      <label>Tipo</label>
+                      <select value={formData.type_id} onChange={e => handleTypeChange(e.target.value)}>
+                        <option value="">Seleccionar tipo...</option>
+                        {tipos.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                    </div>
+                    <div className="pnp-form-group">
+                      <label>Subtipo</label>
+                      <select
+                        value={formData.subtype_id}
+                        onChange={e => handleSubtypeChange(e.target.value)}
+                        disabled={!formData.type_id}
+                      >
+                        <option value="">{formData.type_id ? 'Seleccionar subtipo...' : 'Primero elige un tipo'}</option>
+                        {subtipos.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
+                    </div>
+                    <div className="pnp-form-group">
+                      <label>Modalidad</label>
+                      <select
+                        value={formData.modality_id}
+                        onChange={e => setFormData(p => ({ ...p, modality_id: e.target.value }))}
+                        disabled={!formData.subtype_id}
+                      >
+                        <option value="">{formData.subtype_id ? 'Seleccionar modalidad...' : 'Primero elige un subtipo'}</option>
+                        {modalidades.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                       </select>
                     </div>
                     <div className="pnp-form-group">
