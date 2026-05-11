@@ -335,7 +335,7 @@ const CapaCamarasMunicipales = ({
 
         // Abrir popup después de la navegación
         setTimeout(() => {
-          const markerId = `marker-${camaraSeleccionada.id}`;
+          const markerId = `marker-${camaraSeleccionada.name}`;
           const marker = markersRef.current[markerId];
           if (marker) {
             marker.openPopup();
@@ -565,12 +565,11 @@ const CapaCamarasMunicipales = ({
 
         // En GeoJSON, las coordenadas están como [lng, lat]
         const [lng, lat] = coords;
-        const markerId = `marker-${idx}`;
+        const markerId = `marker-${props.name}`;
 
         // Determinar si esta cámara está seleccionada (por prop o por click local)
         const esSeleccionada =
-          (camaraSeleccionada &&
-            (camaraSeleccionada.name === props.name || camaraSeleccionada.id === idx)) ||
+          (camaraSeleccionada && camaraSeleccionada.name === props.name) ||
           camaraConVision === props.name;
 
         // Determinar si esta cámara está en modo seguimiento
