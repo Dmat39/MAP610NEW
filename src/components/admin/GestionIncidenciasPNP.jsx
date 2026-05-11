@@ -846,7 +846,7 @@ const GestionIncidenciasPNP = () => {
 
       {/* Create / Edit Modal */}
       {showModal && (
-        <div className="pnp-modal-overlay" onClick={e => { if (e.target === e.currentTarget) closeModal(); }}>
+        <div className="pnp-modal-overlay">
           <div className="pnp-modal">
 
             {/* Header */}

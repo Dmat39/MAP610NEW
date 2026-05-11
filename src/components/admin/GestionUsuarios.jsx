@@ -388,7 +388,7 @@ const GestionUsuarios = () => {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) closeModal(); }}>
+        <div className="modal-overlay">
           <div className="modal-content">
 
             {/* Header */}

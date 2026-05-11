@@ -345,7 +345,7 @@ const GestionComisarias = () => {
 
       {/* ── Modal ──────────────────────────────────────────────────────────── */}
       {showModal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay">
           <div className="comisarias-modal" onClick={e => e.stopPropagation()}>
 
             <div className="modal-header">
