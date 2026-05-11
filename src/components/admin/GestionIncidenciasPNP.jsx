@@ -166,11 +166,12 @@ const GestionIncidenciasPNP = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching]         = useState(false);
 
-  const mapRef           = useRef(null);
-  const leafletMapRef    = useRef(null);
-  const markerRef        = useRef(null);
-  const geojsonCache     = useRef(null);
-  const comisariasRef    = useRef([]);
+  const mapRef              = useRef(null);
+  const leafletMapRef       = useRef(null);
+  const markerRef           = useRef(null);
+  const geojsonCache        = useRef(null);
+  const comisariasRef       = useRef([]);
+  const coordAutoFillTimer  = useRef(null);
 
   const { hasModuleAccess, hasModuleOp } = useAuth();
   const hasAccess = hasModuleAccess('incidencias-pnp');
@@ -410,8 +411,40 @@ const GestionIncidenciasPNP = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
     if (name === 'shift')          setShiftAutoFilled(false);
     if (name === 'police_station') setStationAutoFilled(false);
-    if (name === 'latitude' || name === 'longitude') setCoordsAutoFilled(false);
     if (name === 'address') setAddressAutoFilled(false);
+    if (name === 'latitude' || name === 'longitude') {
+      setCoordsAutoFilled(false);
+      const newLat = name === 'latitude'  ? value : formData.latitude;
+      const newLng = name === 'longitude' ? value : formData.longitude;
+      const lat = parseFloat(newLat);
+      const lng = parseFloat(newLng);
+      clearTimeout(coordAutoFillTimer.current);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        coordAutoFillTimer.current = setTimeout(async () => {
+          // Geocodificación inversa → dirección
+          try {
+            const revRes = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=es`,
+              { headers: { 'User-Agent': 'MapaPrediccion/1.0' } }
+            );
+            if (revRes.ok) {
+              const revData = await revRes.json();
+              if (revData.display_name) {
+                setFormData(prev => ({ ...prev, address: revData.display_name }));
+                setAddressAutoFilled(true);
+              }
+            }
+          } catch { /* silencioso */ }
+          // Auto-detección de jurisdicción y comisaría
+          const jurisdiccion = await autoDetectarJurisdiccion(lat, lng);
+          if (jurisdiccion) {
+            setFormData(prev => ({ ...prev, jurisdiction: jurisdiccion }));
+            setJurisdictionAutoFilled(true);
+            autoFillStation(jurisdiccion, comisariasRef.current);
+          }
+        }, 800);
+      }
+    }
     if (name === 'jurisdiction') {
       setJurisdictionAutoFilled(false);
       autoFillStation(value, comisariasRef.current);
