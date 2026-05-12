@@ -17,6 +17,22 @@ import SearchInput from '../Table/SearchInput';
 import TablePagination from '../Table/TablePagination';
 import './GestionIncidenciasPNP.css';
 
+// Convierte un string ISO UTC a fecha/hora en zona Lima (America/Lima = UTC-5)
+const utcToLimaDateTime = isoStr => {
+  if (!isoStr) return { date: '', time: '' };
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Lima',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  });
+  const parts = fmt.formatToParts(new Date(isoStr));
+  const get = t => parts.find(p => p.type === t)?.value ?? '';
+  return {
+    date: `${get('year')}-${get('month')}-${get('day')}`,
+    time: `${get('hour')}:${get('minute')}`,
+  };
+};
+
 const SHIFT_OPTIONS = [
   { value: 'MORNING',   label: 'Mañana' },
   { value: 'AFTERNOON', label: 'Tarde' },
@@ -416,9 +432,7 @@ const GestionIncidenciasPNP = () => {
   const openEditModal = async item => {
     setModalMode('edit');
     setSelectedItem(item);
-    const dateTimePart = item.occurred_at ? item.occurred_at.substring(0, 16) : '';
-    const occurred_date = dateTimePart.substring(0, 10);
-    const rawTime = dateTimePart.length >= 16 ? dateTimePart.substring(11, 16) : '';
+    const { date: occurred_date, time: rawTime } = utcToLimaDateTime(item.occurred_at);
     const occurred_time = !item.shift ? '' : rawTime;
     const type_id     = item.modality?.subtype?.type?.id || '';
     const subtype_id  = item.modality?.subtype?.id       || '';
@@ -543,9 +557,10 @@ const GestionIncidenciasPNP = () => {
 
     try {
       setLoading(true);
+      // Se agrega -05:00 (Lima) para que el backend interprete la hora correctamente
       const dateTimeStr = formData.occurred_time
-        ? `${formData.occurred_date}T${formData.occurred_time}:00`
-        : `${formData.occurred_date}T00:00:00`;
+        ? `${formData.occurred_date}T${formData.occurred_time}:00-05:00`
+        : `${formData.occurred_date}T00:00:00-05:00`;
       const payload = {
         description:      formData.description,
         modality_id:      formData.modality_id || undefined,
