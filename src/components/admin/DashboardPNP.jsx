@@ -151,7 +151,10 @@ const DashboardPNP = () => {
 
   const byType = useMemo(() => {
     const map = {};
-    incidents.forEach(i => { const t = i.incidence_type || 'Otros'; map[t] = (map[t] || 0) + 1; });
+    incidents.forEach(i => {
+      const t = i.modality?.subtype?.type?.name || i.incidence_type || 'Sin clasificar';
+      map[t] = (map[t] || 0) + 1;
+    });
     return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
   }, [incidents]);
 
@@ -364,7 +367,12 @@ const DashboardPNP = () => {
                         <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 700, color: PRIMARY, fontSize: 12 }}>
                           {inc.complaint_number || `#${inc.id}`}
                         </td>
-                        <td style={{ padding: '10px 14px', color: TEXT_DARK, fontWeight: 500 }}>{inc.incidence_type}</td>
+                        <td style={{ padding: '10px 14px', color: TEXT_DARK, fontWeight: 500 }}>
+                          {inc.modality?.subtype?.type?.name || inc.incidence_type || '—'}
+                          {inc.modality?.subtype?.name && (
+                            <div style={{ fontSize: 11, color: TEXT_LIGHT, marginTop: 2 }}>{inc.modality.subtype.name}</div>
+                          )}
+                        </td>
                         <td style={{ padding: '10px 14px', color: TEXT_MID }}>{inc.jurisdiction}</td>
                         <td style={{ padding: '10px 14px', color: TEXT_LIGHT, fontSize: 12 }}>{inc.police_station}</td>
                         <td style={{ padding: '10px 14px' }}>

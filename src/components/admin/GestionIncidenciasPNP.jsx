@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
-  Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Shield, Zap, Search, ExternalLink, Calendar, Filter, SlidersHorizontal,
+  Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Shield, Zap, Search, ExternalLink, Calendar, Filter, SlidersHorizontal, CheckCircle2, AlertCircle,
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -260,7 +260,7 @@ const GestionIncidenciasPNP = () => {
   const showMessage = (msg, isError = false) => {
     if (isError) setError(msg);
     else setSuccess(msg);
-    setTimeout(() => { setError(null); setSuccess(null); }, 4000);
+    setTimeout(() => { setError(null); setSuccess(null); }, 500);
   };
 
   // ─── Auto-relleno de comisaría según jurisdicción ───────────────────────────
@@ -532,10 +532,11 @@ const GestionIncidenciasPNP = () => {
     e.preventDefault();
     if (!canWrite) return;
 
-    const required = ['description', 'latitude', 'longitude', 'jurisdiction', 'police_station', 'occurred_date'];
+    const required = ['modality_id', 'description', 'latitude', 'longitude', 'jurisdiction', 'police_station', 'occurred_date'];
+    const LABELS = { modality_id: 'Modalidad', description: 'Descripción', latitude: 'Latitud', longitude: 'Longitud', jurisdiction: 'Jurisdicción', police_station: 'Comisaría', occurred_date: 'Fecha' };
     for (const field of required) {
       if (!formData[field] && formData[field] !== 0) {
-        showMessage(`El campo "${field}" es requerido`, true);
+        showMessage(`El campo "${LABELS[field] || field}" es requerido`, true);
         return;
       }
     }
@@ -712,14 +713,83 @@ const GestionIncidenciasPNP = () => {
         </div>
       </div>
 
-      {/* Alerts */}
-      {error && (
-        <div className="pnp-alert pnp-alert-error">
-          <X size={16} onClick={() => setError(null)} style={{ cursor: 'pointer', float: 'right' }} />
-          {error}
+      {/* Toast centrado */}
+      {(error || success) && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(15,23,42,0.35)', backdropFilter: 'blur(3px)',
+          pointerEvents: error ? 'all' : 'none',
+        }}>
+          {error && (
+            <div style={{
+              background: '#fff', borderRadius: 20, padding: '36px 44px',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.22)', maxWidth: 400, width: '90%',
+              textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
+              animation: 'pnpToastIn 0.25s cubic-bezier(.22,1,.36,1)',
+            }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: '50%',
+                background: 'linear-gradient(135deg,#fef2f2,#fee2e2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '2px solid #fca5a5',
+              }}>
+                <AlertCircle size={32} color="#ef4444" strokeWidth={2} />
+              </div>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>
+                  Ocurrió un error
+                </div>
+                <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.5 }}>{error}</div>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                style={{
+                  marginTop: 4, padding: '10px 32px', borderRadius: 10, border: 'none',
+                  background: 'linear-gradient(135deg,#ef4444,#dc2626)', color: '#fff',
+                  fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(239,68,68,0.35)',
+                }}
+              >
+                Entendido
+              </button>
+            </div>
+          )}
+          {success && (
+            <div style={{
+              background: '#fff', borderRadius: 20, padding: '36px 44px',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.22)', maxWidth: 400, width: '90%',
+              textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
+              animation: 'pnpToastIn 0.25s cubic-bezier(.22,1,.36,1)',
+            }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: '50%',
+                background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '2px solid #86efac',
+              }}>
+                <CheckCircle2 size={32} color="#22c55e" strokeWidth={2} />
+              </div>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>
+                  ¡Operación exitosa!
+                </div>
+                <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.5 }}>{success}</div>
+              </div>
+            </div>
+          )}
         </div>
       )}
-      {success && <div className="pnp-alert pnp-alert-success">{success}</div>}
+      <style>{`
+        @keyframes pnpToastIn {
+          from { opacity: 0; transform: scale(0.88) translateY(16px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes pnpToastBar {
+          from { width: 100%; }
+          to   { width: 0%; }
+        }
+      `}</style>
 
       {/* Filters */}
       {showFilters && <div className="pnp-filters-card">
@@ -1172,11 +1242,12 @@ const GestionIncidenciasPNP = () => {
                       </select>
                     </div>
                     <div className="pnp-form-group">
-                      <label>Modalidad</label>
+                      <label>Modalidad <span style={{ color: '#ef4444' }}>*</span></label>
                       <select
                         value={formData.modality_id}
                         onChange={e => setFormData(p => ({ ...p, modality_id: e.target.value }))}
                         disabled={!formData.subtype_id}
+                        style={!formData.modality_id ? { borderColor: '#fca5a5' } : {}}
                       >
                         <option value="">{formData.subtype_id ? 'Seleccionar modalidad...' : 'Primero elige un subtipo'}</option>
                         {modalidades.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
