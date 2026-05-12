@@ -50,6 +50,14 @@ const pnpIncidenceService = {
     };
   },
 
+  async getJurisdictions() {
+    const response = await fetch(`${API_URL}pnp-incidence/jurisdictions`, {
+      headers: getHeaders(),
+    });
+    const result = await handleResponse(response);
+    return result.data || result;
+  },
+
   async getById(id) {
     const response = await fetch(`${API_URL}pnp-incidence/${id}`, {
       headers: getHeaders(),

@@ -5,6 +5,7 @@ import {
   Layers, Settings, Users, ChevronDown, ChevronUp, Camera,
 } from 'lucide-react';
 import rolesService from '../../services/rolesService';
+import pnpIncidenceService from '../../services/pnpIncidenceService';
 import UseUrlParamsManager from '../../hooks/UseUrlParamsManager';
 import SearchInput from '../Table/SearchInput';
 import TablePagination from '../Table/TablePagination';
@@ -187,6 +188,9 @@ const GestionRoles = () => {
   // Form
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
+  const [formJurisdictions, setFormJurisdictions] = useState([]);
+  const [availableJurisdictions, setAvailableJurisdictions] = useState([]);
+  const [jurisdictionsLoading, setJurisdictionsLoading] = useState(false);
   const [moduleState, setModuleState] = useState(buildInitialModuleState);
   const [layerState, setLayerState] = useState(buildInitialLayerState);
 
@@ -220,13 +224,27 @@ const GestionRoles = () => {
 
   const refreshData = () => setUpdate(p => !p);
 
+  const loadJurisdictions = async () => {
+    try {
+      setJurisdictionsLoading(true);
+      const data = await pnpIncidenceService.getJurisdictions();
+      setAvailableJurisdictions(Array.isArray(data) ? data : []);
+    } catch {
+      setAvailableJurisdictions([]);
+    } finally {
+      setJurisdictionsLoading(false);
+    }
+  };
+
   const openCreateModal = () => {
     setModalMode('create');
     setSelectedRole(null);
     setFormName('');
     setFormDescription('');
+    setFormJurisdictions([]);
     setModuleState(buildInitialModuleState());
     setLayerState(buildInitialLayerState());
+    loadJurisdictions();
     setShowModal(true);
   };
 
@@ -239,8 +257,10 @@ const GestionRoles = () => {
       setSelectedRole(full);
       setFormName(full.name || '');
       setFormDescription(full.description || '');
+      setFormJurisdictions(full.allowed_jurisdictions || []);
       setModuleState(apiToModuleState(full.module_permissions));
       setLayerState(apiToLayerState(full.layer_permissions));
+      loadJurisdictions();
       setShowModal(true);
     } catch (err) {
       setError(err.message);
@@ -263,10 +283,11 @@ const GestionRoles = () => {
       setLoading(true);
       setError(null);
       const payload = {
-        name:        formName.trim(),
-        description: formDescription.trim() || undefined,
-        modules:     moduleStateToApi(moduleState, layerState),
-        layers:      layerStateToApi(layerState),
+        name:                  formName.trim(),
+        description:           formDescription.trim() || undefined,
+        allowed_jurisdictions: formJurisdictions,
+        modules:               moduleStateToApi(moduleState, layerState),
+        layers:                layerStateToApi(layerState),
       };
 
       if (modalMode === 'create') {
@@ -551,6 +572,62 @@ const GestionRoles = () => {
                       placeholder="Descripción opcional del rol..."
                       rows={2}
                     />
+                  </div>
+                  <div className="jurisdiction-section">
+                    <div className="jurisdiction-header">
+                      <div className="jurisdiction-header-left">
+                        <span className="jurisdiction-title">Filtro de Jurisdicciones PNP</span>
+                        <span className="jurisdiction-badge">
+                          {formJurisdictions.length === 0
+                            ? 'Acceso a todas'
+                            : `${formJurisdictions.length} / ${availableJurisdictions.length}`}
+                        </span>
+                      </div>
+                      {!jurisdictionsLoading && availableJurisdictions.length > 0 && (
+                        <div className="jurisdiction-actions">
+                          <button type="button" className="jur-action-btn jur-action-all"
+                            onClick={() => setFormJurisdictions([...availableJurisdictions])}>
+                            Todas
+                          </button>
+                          <button type="button" className="jur-action-btn jur-action-none"
+                            onClick={() => setFormJurisdictions([])}>
+                            Ninguna
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="jurisdiction-body">
+                      {jurisdictionsLoading ? (
+                        <div className="jurisdiction-loading">
+                          <RefreshCw size={14} className="spinning" />
+                          <span>Cargando jurisdicciones...</span>
+                        </div>
+                      ) : availableJurisdictions.length === 0 ? (
+                        <div className="jurisdiction-empty">No hay jurisdicciones registradas aún.</div>
+                      ) : (
+                        <div className="jurisdiction-grid">
+                          {availableJurisdictions.map(j => {
+                            const checked = formJurisdictions.includes(j);
+                            return (
+                              <label key={j} className={`jurisdiction-item${checked ? ' checked' : ''}`}>
+                                <input
+                                  type="checkbox"
+                                  className="perm-checkbox"
+                                  checked={checked}
+                                  onChange={() =>
+                                    setFormJurisdictions(prev =>
+                                      prev.includes(j) ? prev.filter(x => x !== j) : [...prev, j]
+                                    )
+                                  }
+                                />
+                                <span className="jurisdiction-item-label">{j}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
