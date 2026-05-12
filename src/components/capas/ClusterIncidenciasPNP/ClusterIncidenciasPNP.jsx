@@ -6,16 +6,16 @@ import { realizarClustering } from '../../../utils/clustering.utils.js';
 
 // ─── Colores por tipo de incidencia PNP ────────────────────────────────────────
 const TIPO_COLORS = {
-  'Robo al paso':                    { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
-  'Robo agravado':                   { bg: '#fee2e2', color: '#b91c1c', border: '#fca5a5' },
-  'Microcomercialización de drogas': { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
-  'Violencia familiar':              { bg: '#faf5ff', color: '#7c3aed', border: '#e9d5ff' },
-  'Accidente de tránsito':           { bg: '#fff7ed', color: '#ea580c', border: '#fed7aa' },
-  'Violencia sexual':                { bg: '#fdf2f8', color: '#a21caf', border: '#f5d0fe' },
-  'Homicidio':                       { bg: '#f1f5f9', color: '#1e293b', border: '#cbd5e1' },
-  'Lesiones':                        { bg: '#fefce8', color: '#a16207', border: '#fef08a' },
-  'Hurto':                           { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
-  'Otros':                           { bg: '#f9fafb', color: '#6b7280', border: '#e5e7eb' },
+  'PATRIMONIO (DELITO)':                  { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
+  'SEGURIDAD PÚBLICA (DELITO)':           { bg: '#fff7ed', color: '#ea580c', border: '#fed7aa' },
+  'VIDA, EL CUERPO Y LA SALUD (DELITO)': { bg: '#fdf4ff', color: '#9333ea', border: '#e9d5ff' },
+  'LIBERTAD (DELITO)':                    { bg: '#fdf2f8', color: '#a21caf', border: '#f5d0fe' },
+  'ADMINISTRACIÓN PÚBLICA (DELITO)':      { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
+  'TRÁFICO ILÍCITO DE DROGAS':            { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
+  'FAMILIA (DELITO)':                     { bg: '#faf5ff', color: '#7c3aed', border: '#ede9fe' },
+  'MENOR INFRACTOR DE LA LEY PENAL':      { bg: '#fefce8', color: '#a16207', border: '#fef08a' },
+  'FE PÚBLICA (DELITO)':                  { bg: '#f0f9ff', color: '#0369a1', border: '#bae6fd' },
+  'TRANQUILIDAD PÚBLICA (DELITO)':        { bg: '#f8fafc', color: '#475569', border: '#cbd5e1' },
 };
 const COLOR_DEF = { bg: '#f8fafc', color: '#374151', border: '#e2e8f0' };
 
@@ -165,7 +165,7 @@ const ClusterIncidenciasPNP = ({ visible, radio = 50, fechas }) => {
           .map(item => ({
             Latitud:      parseFloat(item.latitude),
             Longitud:     parseFloat(item.longitude),
-            Tipo:         item.incidence_type    || 'Otros',
+            Tipo:         item.modality?.subtype?.type?.name || 'Sin clasificar',
             Denuncia:     item.complaint_number  || '',
             Jurisdiccion: item.jurisdiction      || '',
             Fecha:        item.occurred_at       || item.created_at,

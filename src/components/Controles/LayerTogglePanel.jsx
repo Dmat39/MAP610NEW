@@ -37,9 +37,9 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
     incidentsPnp: {
       title: 'Incidencias PNP',
       layers: [
-        'pnpRoboAlPaso', 'pnpRoboAgravado', 'pnpDrogas', 'pnpViolenciaFamiliar',
-        'pnpAccidente', 'pnpViolenciaSexual', 'pnpHomicidio', 'pnpLesiones',
-        'pnpHurto', 'pnpOtros',
+        'pnpPatrimonio', 'pnpSeguridadPublica', 'pnpVidaSalud', 'pnpLibertad',
+        'pnpAdminPublica', 'pnpTrafico', 'pnpFamilia', 'pnpMenorInfractor',
+        'pnpFePublica', 'pnpTranquilidad',
       ],
     },
     infrastructure: {

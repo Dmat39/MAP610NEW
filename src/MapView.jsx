@@ -62,16 +62,16 @@ import ClusterIncidenciasPNP from './components/capas/ClusterIncidenciasPNP/Clus
 import ControlClusterPNP from './components/Controles/Cluster_PNP/ControlClusterPNP';
 
 const PNP_TIPOS = [
-  { key: 'pnpRoboAlPaso',        tipo: 'Robo al paso',                    label: 'Robo al paso' },
-  { key: 'pnpRoboAgravado',      tipo: 'Robo agravado',                   label: 'Robo agravado' },
-  { key: 'pnpDrogas',            tipo: 'Microcomercialización de drogas', label: 'Drogas PNP' },
-  { key: 'pnpViolenciaFamiliar', tipo: 'Violencia familiar',              label: 'Violencia Familiar' },
-  { key: 'pnpAccidente',         tipo: 'Accidente de tránsito',           label: 'Accidente de Tránsito' },
-  { key: 'pnpViolenciaSexual',   tipo: 'Violencia sexual',                label: 'Violencia Sexual' },
-  { key: 'pnpHomicidio',         tipo: 'Homicidio',                       label: 'Homicidio PNP' },
-  { key: 'pnpLesiones',          tipo: 'Lesiones',                        label: 'Lesiones PNP' },
-  { key: 'pnpHurto',             tipo: 'Hurto',                           label: 'Hurto PNP' },
-  { key: 'pnpOtros',             tipo: 'Otros',                           label: 'Otros PNP' },
+  { key: 'pnpPatrimonio',       tipo: 'PATRIMONIO (DELITO)',                  label: 'Patrimonio' },
+  { key: 'pnpSeguridadPublica', tipo: 'SEGURIDAD PÚBLICA (DELITO)',           label: 'Seguridad Pública' },
+  { key: 'pnpVidaSalud',        tipo: 'VIDA, EL CUERPO Y LA SALUD (DELITO)', label: 'Vida y Salud' },
+  { key: 'pnpLibertad',         tipo: 'LIBERTAD (DELITO)',                    label: 'Libertad' },
+  { key: 'pnpAdminPublica',     tipo: 'ADMINISTRACIÓN PÚBLICA (DELITO)',      label: 'Adm. Pública' },
+  { key: 'pnpTrafico',          tipo: 'TRÁFICO ILÍCITO DE DROGAS',            label: 'Tráfico Drogas' },
+  { key: 'pnpFamilia',          tipo: 'FAMILIA (DELITO)',                     label: 'Familia' },
+  { key: 'pnpMenorInfractor',   tipo: 'MENOR INFRACTOR DE LA LEY PENAL',     label: 'Menor Infractor' },
+  { key: 'pnpFePublica',        tipo: 'FE PÚBLICA (DELITO)',                  label: 'Fe Pública' },
+  { key: 'pnpTranquilidad',     tipo: 'TRANQUILIDAD PÚBLICA (DELITO)',        label: 'Tranquilidad Pública' },
 ];
 
 const MapView = () => {
@@ -106,16 +106,16 @@ const MapView = () => {
     clusterPNP: false,
     zonasCodisec: false,
     jurisdicciones: true,
-    pnpRoboAlPaso: false,
-    pnpRoboAgravado: false,
-    pnpDrogas: false,
-    pnpViolenciaFamiliar: false,
-    pnpAccidente: false,
-    pnpViolenciaSexual: false,
-    pnpHomicidio: false,
-    pnpLesiones: false,
-    pnpHurto: false,
-    pnpOtros: false,
+    pnpPatrimonio: false,
+    pnpSeguridadPublica: false,
+    pnpVidaSalud: false,
+    pnpLibertad: false,
+    pnpAdminPublica: false,
+    pnpTrafico: false,
+    pnpFamilia: false,
+    pnpMenorInfractor: false,
+    pnpFePublica: false,
+    pnpTranquilidad: false,
   });
 
   const [payloadFiltros, setPayloadFiltros] = useState(null);

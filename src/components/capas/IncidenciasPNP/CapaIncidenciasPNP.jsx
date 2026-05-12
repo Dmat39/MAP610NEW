@@ -10,16 +10,16 @@ const SHIFT_COLORS = {
 };
 
 const TIPO_EVENTS = {
-  'Robo al paso':                    'pnpRoboAlPasoTotal',
-  'Robo agravado':                   'pnpRoboAgravadoTotal',
-  'Microcomercialización de drogas': 'pnpDrogasTotal',
-  'Violencia familiar':              'pnpViolenciaFamiliarTotal',
-  'Accidente de tránsito':           'pnpAccidenteTotal',
-  'Violencia sexual':                'pnpViolenciaSexualTotal',
-  'Homicidio':                       'pnpHomicidioTotal',
-  'Lesiones':                        'pnpLesionesTotal',
-  'Hurto':                           'pnpHurtoTotal',
-  'Otros':                           'pnpOtrosTotal',
+  'PATRIMONIO (DELITO)':                  'pnpPatrimonioTotal',
+  'SEGURIDAD PÚBLICA (DELITO)':           'pnpSeguridadPublicaTotal',
+  'VIDA, EL CUERPO Y LA SALUD (DELITO)': 'pnpVidaSaludTotal',
+  'LIBERTAD (DELITO)':                    'pnpLibertadTotal',
+  'ADMINISTRACIÓN PÚBLICA (DELITO)':      'pnpAdminPublicaTotal',
+  'TRÁFICO ILÍCITO DE DROGAS':            'pnpTraficoTotal',
+  'FAMILIA (DELITO)':                     'pnpFamiliaTotal',
+  'MENOR INFRACTOR DE LA LEY PENAL':      'pnpMenorInfractorTotal',
+  'FE PÚBLICA (DELITO)':                  'pnpFePublicaTotal',
+  'TRANQUILIDAD PÚBLICA (DELITO)':        'pnpTranquilidadTotal',
 };
 
 const SHIFT_LABELS = {
@@ -43,9 +43,12 @@ const CapaIncidenciasPNP = ({ visible, filtros = null, tipo }) => {
     error,
   } = usePnpIncidenciasQuery(filtros, visible);
 
-  const incidencias = tipo
-    ? allIncidencias.filter(i => i.incidence_type === tipo)
-    : allIncidencias;
+  const incidencias = allIncidencias.filter(i => {
+    if (tipo && i.modality?.subtype?.type?.name !== tipo) return false;
+    if (filtros?.subtype_id && i.modality?.subtype?.id !== filtros.subtype_id) return false;
+    if (filtros?.modality_id && i.modality?.id !== filtros.modality_id) return false;
+    return true;
+  });
 
   useEffect(() => {
     if (!visible || !tipo) return;
@@ -133,33 +136,54 @@ const CapaIncidenciasPNP = ({ visible, filtros = null, tipo }) => {
               weight={2}
             >
               <Popup>
-                <div style={{ fontSize: '13px', maxWidth: '260px' }}>
-                  <strong>🛡️ {item.incidence_type}</strong>
-                  <br />
-                  <strong>N° Denuncia:</strong>{' '}
-                  {item.complaint_number || <span style={{ color: '#9ca3af' }}>Sin número</span>}
-                  <br />
-                  <strong>Descripción:</strong>
-                  <br />
-                  {item.description}
-                  <br />
-                  <strong>Turno:</strong> {turnoDisplay}
-                  <br />
-                  <strong>Hora:</strong> {horaDisplay}
-                  <br />
-                  <strong>Jurisdicción:</strong> {item.jurisdiction}
-                  <br />
-                  <strong>Comisaría:</strong> {item.police_station}
-                  <br />
-                  <strong>Estado:</strong> {CASE_STATUS_LABELS[item.case_status] || item.case_status}
-                  <br />
-                  <strong>Fecha:</strong>{' '}
-                  {item.occurred_at ? new Date(item.occurred_at).toLocaleDateString('es-PE') : '-'}
+                <div style={{ fontFamily: "'Segoe UI',system-ui,sans-serif", fontSize: 13, maxWidth: 280, lineHeight: 1.5 }}>
+                  {/* Cabecera */}
+                  <div style={{ borderBottom: '2px solid #2563eb', paddingBottom: 6, marginBottom: 8 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: '#1e293b' }}>
+                      🛡️ {item.modality?.subtype?.type?.name || '—'}
+                    </div>
+                    {item.modality?.subtype?.name && (
+                      <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                        {item.modality.subtype.name}
+                      </div>
+                    )}
+                    {item.modality?.name && (
+                      <div style={{ fontSize: 11, background: '#eff6ff', color: '#1d4ed8', borderRadius: 4, padding: '1px 6px', display: 'inline-block', marginTop: 3 }}>
+                        {item.modality.name}
+                      </div>
+                    )}
+                  </div>
+                  {/* Datos */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '3px 8px' }}>
+                    <span style={{ color: '#64748b', fontSize: 12 }}>N° Denuncia:</span>
+                    <span style={{ fontSize: 12 }}>{item.complaint_number || <span style={{ color: '#9ca3af' }}>Sin número</span>}</span>
+                    <span style={{ color: '#64748b', fontSize: 12 }}>Turno:</span>
+                    <span style={{ fontSize: 12 }}>{turnoDisplay}</span>
+                    <span style={{ color: '#64748b', fontSize: 12 }}>Hora:</span>
+                    <span style={{ fontSize: 12 }}>{horaDisplay}</span>
+                    <span style={{ color: '#64748b', fontSize: 12 }}>Jurisdicción:</span>
+                    <span style={{ fontSize: 12 }}>{item.jurisdiction}</span>
+                    <span style={{ color: '#64748b', fontSize: 12 }}>Comisaría:</span>
+                    <span style={{ fontSize: 12 }}>{item.police_station}</span>
+                    <span style={{ color: '#64748b', fontSize: 12 }}>Estado:</span>
+                    <span style={{ fontSize: 12 }}>{CASE_STATUS_LABELS[item.case_status] || item.case_status || '—'}</span>
+                    <span style={{ color: '#64748b', fontSize: 12 }}>Fecha:</span>
+                    <span style={{ fontSize: 12 }}>{item.occurred_at ? new Date(item.occurred_at).toLocaleDateString('es-PE') : '-'}</span>
+                  </div>
+                  {/* Descripción */}
+                  {item.description && (
+                    <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px solid #f1f5f9', fontSize: 12, color: '#374151' }}>
+                      {item.description}
+                    </div>
+                  )}
                 </div>
               </Popup>
-              <Tooltip direction="top" offset={[0, -10]} opacity={0.85}>
-                <div style={{ fontSize: '11px', fontWeight: 'bold' }}>
-                  {item.incidence_type} — {turnoDisplay}
+              <Tooltip direction="top" offset={[0, -10]} opacity={0.92}>
+                <div style={{ fontFamily: "'Segoe UI',system-ui,sans-serif", fontSize: 12, textAlign: 'center' }}>
+                  <div style={{ fontWeight: 700, color: '#1e293b' }}>{item.modality?.subtype?.type?.name || '—'}</div>
+                  {item.modality?.subtype?.name && <div style={{ color: '#64748b', fontSize: 11 }}>{item.modality.subtype.name}</div>}
+                  {item.modality?.name && <div style={{ color: '#2563eb', fontSize: 11 }}>{item.modality.name}</div>}
+                  <div style={{ color: '#94a3b8', fontSize: 10, marginTop: 2 }}>{turnoDisplay}</div>
                 </div>
               </Tooltip>
             </CircleMarker>
