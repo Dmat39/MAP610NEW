@@ -235,7 +235,7 @@ const ClusterCombinado = ({ visible, radio = 50, fechas }) => {
               Denuncia: item.complaint_number || '',
               Latitud:  parseFloat(item.latitude),
               Longitud: parseFloat(item.longitude),
-              Tipo:     item.incidence_type || 'PNP',
+              Tipo:     item.modality?.subtype?.type?.name || item.incidence_type || 'PNP',
               Fecha:    item.occurred_at || item.date || item.fecha || '',
               Origen:   'PNP',
             }))
