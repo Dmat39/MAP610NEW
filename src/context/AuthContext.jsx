@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import authService from '../services/authService';
 import rolesService from '../services/rolesService';
@@ -40,6 +40,48 @@ export const AuthProvider = ({ children }) => {
       .then(data => setCustomRolePerms(data || null))
       .catch(() => setCustomRolePerms(null))
       .finally(() => setCustomRoleLoading(false));
+  }, [user?.username]);
+
+  // Ref para acceder a customRolePerms sin reiniciar el intervalo
+  const customRolePermsRef = useRef(customRolePerms);
+  useEffect(() => { customRolePermsRef.current = customRolePerms; }, [customRolePerms]);
+
+  // Polling: detecta cambios de permisos y recarga la página si el admin modificó el rol
+  useEffect(() => {
+    if (!user) return;
+
+    const toFingerprint = (perms) => {
+      if (!perms) return '';
+      const layers = (perms.layer_permissions || []).map(p => p.layer_key).sort().join(',');
+      const modules = (perms.module_permissions || []).map(p => `${p.module_key}:${Number(p.can_access)}`).sort().join(',');
+      return `${layers}|${modules}`;
+    };
+
+    const checkPerms = async () => {
+      try {
+        const fresh = await rolesService.getMine();
+        if (!fresh) return;
+        if (toFingerprint(customRolePermsRef.current) !== toFingerprint(fresh)) {
+          window.location.reload();
+        }
+      } catch {
+        // Ignorar errores de red temporales
+      }
+    };
+
+    // Verificar al recuperar el foco de la ventana
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') checkPerms();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    // Polling cada 10 segundos para detección casi inmediata
+    const interval = setInterval(checkPerms, 10_000);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [user?.username]);
 
   const login = async (username, password) => {
