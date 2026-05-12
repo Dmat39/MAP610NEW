@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
-import { RotateCcw, Shield, ChevronUp, ChevronDown, Calendar, X } from 'lucide-react';
+import { RotateCcw, Shield, ChevronUp, ChevronDown, Calendar, Filter } from 'lucide-react';
 import { DateRange } from 'react-date-range';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
+import incidenceTypeService     from '../../services/incidenceTypeService';
+import incidenceSubtypeService  from '../../services/incidenceSubtypeService';
+import incidenceModalityService from '../../services/incidenceModalityService';
 
 const TURNO_OPTIONS = [
   { value: 'MORNING',   label: 'Turno Mañana' },
@@ -22,16 +25,16 @@ const JURISDICCION_OPTIONS = [
 ];
 
 const TIPO_CONFIG = [
-  { event: 'pnpRoboAlPasoTotal',        label: 'Robo al paso',  color: '#e74c3c' },
-  { event: 'pnpRoboAgravadoTotal',      label: 'Robo agrav.',   color: '#c0392b' },
-  { event: 'pnpDrogasTotal',            label: 'Drogas',        color: '#8e44ad' },
-  { event: 'pnpViolenciaFamiliarTotal', label: 'V. Familiar',   color: '#e67e22' },
-  { event: 'pnpAccidenteTotal',         label: 'Accidente',     color: '#f39c12' },
-  { event: 'pnpViolenciaSexualTotal',   label: 'V. Sexual',     color: '#d63031' },
-  { event: 'pnpHomicidioTotal',         label: 'Homicidio',     color: '#2d3436' },
-  { event: 'pnpLesionesTotal',          label: 'Lesiones',      color: '#e17055' },
-  { event: 'pnpHurtoTotal',             label: 'Hurto',         color: '#b8860b' },
-  { event: 'pnpOtrosTotal',             label: 'Otros',         color: '#636e72' },
+  { event: 'pnpPatrimonioTotal',       label: 'Patrimonio',      color: '#dc2626' },
+  { event: 'pnpSeguridadPublicaTotal', label: 'Seg. Pública',    color: '#ea580c' },
+  { event: 'pnpVidaSaludTotal',        label: 'Vida y Salud',    color: '#9333ea' },
+  { event: 'pnpLibertadTotal',         label: 'Libertad',        color: '#a21caf' },
+  { event: 'pnpAdminPublicaTotal',     label: 'Adm. Pública',    color: '#1d4ed8' },
+  { event: 'pnpTraficoTotal',          label: 'Tráfico Drogas',  color: '#15803d' },
+  { event: 'pnpFamiliaTotal',          label: 'Familia',         color: '#7c3aed' },
+  { event: 'pnpMenorInfractorTotal',   label: 'Menor Infractor', color: '#a16207' },
+  { event: 'pnpFePublicaTotal',        label: 'Fe Pública',      color: '#0369a1' },
+  { event: 'pnpTranquilidadTotal',     label: 'Tranquilidad',    color: '#475569' },
 ];
 
 const fmt = d => {
@@ -73,6 +76,7 @@ const FiltroIncidenciasPNP = ({ onFiltrar, onLimpiar }) => {
     shift: '', jurisdiction: '', horario: '',
     start: fmt(defaultRange.startDate),
     end:   fmt(defaultRange.endDate),
+    subtype_id: '', modality_id: '',
   });
   const [contadores, setContadores] = useState(() =>
     Object.fromEntries(TIPO_CONFIG.map(t => [t.event, 0]))
@@ -81,6 +85,12 @@ const FiltroIncidenciasPNP = ({ onFiltrar, onLimpiar }) => {
   const [showCustomDates, setShowCustomDates] = useState(false);
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
   const [tempDateRange, setTempDateRange] = useState([{ ...defaultRange, key: 'selection' }]);
+
+  const [tipos, setTipos]         = useState([]);
+  const [subtipos, setSubtipos]   = useState([]);
+  const [modalidades, setModalidades] = useState([]);
+  const [selectedTipoId, setSelectedTipoId] = useState('');
+  const [clasificacionExpanded, setClasificacionExpanded] = useState(false);
 
   const total = Object.values(contadores).reduce((a, b) => a + b, 0);
 
@@ -103,11 +113,45 @@ const FiltroIncidenciasPNP = ({ onFiltrar, onLimpiar }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [dateRangeOpen]);
 
+  useEffect(() => {
+    incidenceTypeService.getAll({ limit: 100 }).then(res => setTipos(res.data)).catch(() => {});
+  }, []);
+
   useEffect(() => { onFiltrar(filtros); }, [filtros]);
 
   const handleChange = e => {
     const { name, value } = e.target;
     setFiltros(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleTipoChange = async e => {
+    const tipoId = e.target.value;
+    setSelectedTipoId(tipoId);
+    setSubtipos([]);
+    setModalidades([]);
+    setFiltros(prev => ({ ...prev, subtype_id: '', modality_id: '' }));
+    if (tipoId) {
+      try {
+        const res = await incidenceSubtypeService.getAll({ type_id: tipoId, limit: 100 });
+        setSubtipos(res.data);
+      } catch {}
+    }
+  };
+
+  const handleSubtipoChange = async e => {
+    const subtypeId = e.target.value;
+    setModalidades([]);
+    setFiltros(prev => ({ ...prev, subtype_id: subtypeId, modality_id: '' }));
+    if (subtypeId) {
+      try {
+        const res = await incidenceModalityService.getAll({ subtype_id: subtypeId, limit: 200 });
+        setModalidades(res.data);
+      } catch {}
+    }
+  };
+
+  const handleModalidadChange = e => {
+    setFiltros(prev => ({ ...prev, modality_id: e.target.value }));
   };
 
   const applyPreset = preset => {
@@ -138,7 +182,10 @@ const FiltroIncidenciasPNP = ({ onFiltrar, onLimpiar }) => {
 
   const limpiar = () => {
     const def = getDefaultRange();
-    setFiltros({ shift: '', jurisdiction: '', horario: '', start: fmt(def.startDate), end: fmt(def.endDate) });
+    setFiltros({ shift: '', jurisdiction: '', horario: '', start: fmt(def.startDate), end: fmt(def.endDate), subtype_id: '', modality_id: '' });
+    setSelectedTipoId('');
+    setSubtipos([]);
+    setModalidades([]);
     setTempDateRange([{ ...def, key: 'selection' }]);
     setShowCustomDates(false);
     onLimpiar();
@@ -333,6 +380,76 @@ const FiltroIncidenciasPNP = ({ onFiltrar, onLimpiar }) => {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+
+          {/* Clasificación PNP: Tipo → Subtipo → Modalidad */}
+          <div style={{ background: '#f0f9ff', borderRadius: 10, border: '1.5px solid #bae6fd', overflow: 'hidden' }}>
+            {/* Header colapsable */}
+            <div
+              onClick={() => setClasificacionExpanded(p => !p)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', cursor: 'pointer', userSelect: 'none' }}
+            >
+              <Filter size={12} color="#0369a1" />
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#0369a1', textTransform: 'uppercase', letterSpacing: '0.05em', flex: 1 }}>
+                Clasificación
+              </span>
+              {(selectedTipoId || filtros.subtype_id || filtros.modality_id) && (
+                <span style={{ background: '#0369a1', color: 'white', fontSize: 10, fontWeight: 700, borderRadius: 10, padding: '1px 8px' }}>
+                  Activo
+                </span>
+              )}
+              <ChevronDown
+                size={14}
+                color="#0369a1"
+                style={{ transform: clasificacionExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+              />
+            </div>
+
+            {clasificacionExpanded && (
+              <div style={{ padding: '0 14px 12px', display: 'flex', flexDirection: 'column', gap: 8, borderTop: '1px solid #bae6fd' }}>
+                <div style={{ height: 8 }} />
+                {/* Tipo */}
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Tipo
+                  <select
+                    value={selectedTipoId}
+                    onChange={handleTipoChange}
+                    style={{ ...selectStyle, borderColor: selectedTipoId ? '#7dd3fc' : '#e2e8f0', background: selectedTipoId ? '#f0f9ff' : '#f8fafc' }}
+                  >
+                    <option value="">Todos los tipos</option>
+                    {tipos.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                </label>
+
+                {/* Subtipo */}
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: subtipos.length === 0 ? 0.45 : 1 }}>
+                  Subtipo
+                  <select
+                    value={filtros.subtype_id}
+                    onChange={handleSubtipoChange}
+                    disabled={subtipos.length === 0}
+                    style={{ ...selectStyle, borderColor: filtros.subtype_id ? '#7dd3fc' : '#e2e8f0', background: filtros.subtype_id ? '#f0f9ff' : '#f8fafc', cursor: subtipos.length === 0 ? 'not-allowed' : 'pointer' }}
+                  >
+                    <option value="">Todos los subtipos</option>
+                    {subtipos.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </label>
+
+                {/* Modalidad */}
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: modalidades.length === 0 ? 0.45 : 1 }}>
+                  Modalidad
+                  <select
+                    value={filtros.modality_id}
+                    onChange={handleModalidadChange}
+                    disabled={modalidades.length === 0}
+                    style={{ ...selectStyle, borderColor: filtros.modality_id ? '#7dd3fc' : '#e2e8f0', background: filtros.modality_id ? '#f0f9ff' : '#f8fafc', cursor: modalidades.length === 0 ? 'not-allowed' : 'pointer' }}
+                  >
+                    <option value="">Todas las modalidades</option>
+                    {modalidades.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  </select>
+                </label>
               </div>
             )}
           </div>

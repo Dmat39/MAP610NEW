@@ -34,12 +34,12 @@ export const usePnpIncidenciasQuery = (filtros, enabled = true) => {
     queryKey: ['pnpIncidencias', filtros],
     queryFn: () => fetchPnpIncidencias(filtros),
     enabled,
-    staleTime: 30 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     retry: 2,
     retryDelay: i => Math.min(1000 * 2 ** i, 5000),
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
     refetchOnReconnect: true,
   });
 };
