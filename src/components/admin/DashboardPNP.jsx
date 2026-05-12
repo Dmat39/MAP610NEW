@@ -354,7 +354,7 @@ const DashboardPNP = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: BG }}>
-                      {['N° Denuncia', 'Tipo', 'Jurisdicción', 'Comisaría', 'Turno', 'Estado', 'Fecha / Hora'].map(h => (
+                      {['Tipo', 'Jurisdicción', 'Comisaría', 'Turno', 'Estado', 'Fecha / Hora'].map(h => (
                         <th key={h} style={{ padding: '11px 14px', textAlign: 'left', color: TEXT_MID, fontWeight: 700, fontSize: 11, whiteSpace: 'nowrap', borderBottom: `2px solid #e2e8f0`, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                           {h}
                         </th>
@@ -364,9 +364,6 @@ const DashboardPNP = () => {
                   <tbody>
                     {recent.map((inc, i) => (
                       <tr key={inc.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 700, color: PRIMARY, fontSize: 12 }}>
-                          {inc.complaint_number || `#${inc.id}`}
-                        </td>
                         <td style={{ padding: '10px 14px', color: TEXT_DARK, fontWeight: 500 }}>
                           {inc.modality?.subtype?.type?.name || inc.incidence_type || '—'}
                           {inc.modality?.subtype?.name && (
@@ -402,7 +399,7 @@ const DashboardPNP = () => {
                     ))}
                     {recent.length === 0 && (
                       <tr>
-                        <td colSpan={7} style={{ padding: 48, textAlign: 'center', color: TEXT_LIGHT, fontSize: 15 }}>
+                        <td colSpan={6} style={{ padding: 48, textAlign: 'center', color: TEXT_LIGHT, fontSize: 15 }}>
                           No hay incidencias en el período seleccionado
                         </td>
                       </tr>
