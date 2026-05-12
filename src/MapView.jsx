@@ -79,9 +79,12 @@ const MapView = () => {
   const userRole = user?.role;
   const isViewer = userRole === 'VIEWER';
 
+  const canSeeCamaras = hasLayerAccess('camaras');
+  const canSeeCamarasVecinales = hasLayerAccess('camarasVecinales');
+
   const [mapType, setMapType] = useState('leaflet'); // 'leaflet' o 'google'
   const [capasVisibles, setCapasVisibles] = useState({
-    camaras: true, // Visible por defecto
+    camaras: canSeeCamaras, // Solo visible si tiene permiso de capa
     camarasVecinales: false,
     paraderosAutorizados: false,
     paraderosNoAutorizados: false,
@@ -412,21 +415,23 @@ const MapView = () => {
         mapType={mapType}
         topPosition={capasVisibles.busquedaDirecciones ? 450 : 10}
       />
-      <ControlCamaras
-        visible={capasVisibles.camaras}
-        onCamaraSeleccionada={handleCamaraSeleccionada}
-        onFiltroAplicado={handleFiltrosCamaras}
-        onSeguimientoCamara={handleSeguimientoCamara}
-        onLimpiarSeguimiento={handleLimpiarSeguimiento}
-        onLimpiarSeleccion={handleLimpiarSeleccion}
-        mapType={mapType}
-        isViewer={isViewer}
-        topPosition={
-          (capasVisibles.busquedaDirecciones ? 450 : 0) +
-          (capasVisibles.rutas ? 280 : 0) +
-          10
-        }
-      />
+      {canSeeCamaras && (
+        <ControlCamaras
+          visible={capasVisibles.camaras}
+          onCamaraSeleccionada={handleCamaraSeleccionada}
+          onFiltroAplicado={handleFiltrosCamaras}
+          onSeguimientoCamara={handleSeguimientoCamara}
+          onLimpiarSeguimiento={handleLimpiarSeguimiento}
+          onLimpiarSeleccion={handleLimpiarSeleccion}
+          mapType={mapType}
+          isViewer={isViewer}
+          topPosition={
+            (capasVisibles.busquedaDirecciones ? 450 : 0) +
+            (capasVisibles.rutas ? 280 : 0) +
+            10
+          }
+        />
+      )}
       <ControlClusters
         visible={capasVisibles.clusters}
         mapType={mapType}
@@ -479,18 +484,22 @@ const MapView = () => {
               camaraSeleccionada={camaraSeleccionada}
             />
           )}
-          <CapaCamarasMunicipales
-            visible={capasVisibles.camaras}
-            camaraSeleccionada={camaraSeleccionada}
-            camarasFiltradas={camarasFiltradas}
-            filtrosCamaras={filtrosCamaras}
-            seguimientoCamara={seguimientoCamara}
-            limpiarSeguimiento={limpiarSeguimiento}
-            camaraConVision={camaraConVision}
-            setCamaraConVision={setCamaraConVision}
-            isViewer={isViewer}
-          />
-          <CapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
+          {canSeeCamaras && (
+            <CapaCamarasMunicipales
+              visible={capasVisibles.camaras}
+              camaraSeleccionada={camaraSeleccionada}
+              camarasFiltradas={camarasFiltradas}
+              filtrosCamaras={filtrosCamaras}
+              seguimientoCamara={seguimientoCamara}
+              limpiarSeguimiento={limpiarSeguimiento}
+              camaraConVision={camaraConVision}
+              setCamaraConVision={setCamaraConVision}
+              isViewer={isViewer}
+            />
+          )}
+          {canSeeCamarasVecinales && (
+            <CapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
+          )}
           <CapaParaderosAutorizados visible={capasVisibles.paraderosAutorizados} />
           <CapaParaderosNoAutorizados visible={capasVisibles.paraderosNoAutorizados} />
           <CapaRobos visible={capasVisibles.robos} filtros={filtrosRobos} />
@@ -548,18 +557,22 @@ const MapView = () => {
               camaraSeleccionada={camaraSeleccionada}
             />
           )}
-          <GoogleCapaCamarasMunicipales
-            visible={capasVisibles.camaras}
-            camaraSeleccionada={camaraSeleccionada}
-            camarasFiltradas={camarasFiltradas}
-            filtrosCamaras={filtrosCamaras}
-            seguimientoCamara={seguimientoCamara}
-            limpiarSeguimiento={limpiarSeguimiento}
-            camaraConVision={camaraConVision}
-            setCamaraConVision={setCamaraConVision}
-            isViewer={isViewer}
-          />
-          <GoogleCapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
+          {canSeeCamaras && (
+            <GoogleCapaCamarasMunicipales
+              visible={capasVisibles.camaras}
+              camaraSeleccionada={camaraSeleccionada}
+              camarasFiltradas={camarasFiltradas}
+              filtrosCamaras={filtrosCamaras}
+              seguimientoCamara={seguimientoCamara}
+              limpiarSeguimiento={limpiarSeguimiento}
+              camaraConVision={camaraConVision}
+              setCamaraConVision={setCamaraConVision}
+              isViewer={isViewer}
+            />
+          )}
+          {canSeeCamarasVecinales && (
+            <GoogleCapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
+          )}
           <GoogleCapaRobos visible={capasVisibles.robos} filtros={filtrosRobos} />
           <GoogleCapaExtorsion visible={capasVisibles.extorsiones} filtros={filtrosExtorsion} />
           <GoogleCapaHomicidios visible={capasVisibles.homicidios} filtros={filtrosHomicidios} />
@@ -610,13 +623,15 @@ const MapView = () => {
       )}
 
           {/* Leyenda de Cámaras Vecinales */}
-          <LeyendaCamaras
-            camarasVecinalesVisible={capasVisibles.camarasVecinales}
-            isPanelExpanded={false}
-          />
+          {canSeeCamarasVecinales && (
+            <LeyendaCamaras
+              camarasVecinalesVisible={capasVisibles.camarasVecinales}
+              isPanelExpanded={false}
+            />
+          )}
 
           {/* Leyenda de Cámaras Municipales */}
-          {!isViewer && (
+          {canSeeCamaras && !isViewer && (
             <LeyendaCamarasMunicipales
               visible={capasVisibles.camaras}
               isPanelExpanded={false}
