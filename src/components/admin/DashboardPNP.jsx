@@ -4,23 +4,22 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import {
-  Shield, TrendingUp, AlertTriangle, CheckCircle, Clock,
-  FileText, RefreshCw, BarChart2,
+  TrendingUp, AlertTriangle, CheckCircle, Clock,
+  FileText, BarChart2, CalendarDays, RefreshCw,
 } from 'lucide-react';
 import pnpIncidenceService from '../../services/pnpIncidenceService';
 
-// ── Tokens de diseño ──────────────────────────────────────────────────────────
-const PRIMARY    = '#1e3a5f';   // azul marino PNP
-const PRIMARY_LT = '#eff6ff';
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const PRIMARY    = '#1e3a5f';
 const ACCENT     = '#2563eb';
-const BG         = '#f1f5f9';
-const CARD       = 'white';
-const BORDER     = '1px solid #e2e8f0';
-const SHADOW     = '0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.02)';
-const RADIUS     = 12;
-const TEXT_DARK  = '#0f172a';
-const TEXT_MID   = '#475569';
-const TEXT_LIGHT = '#94a3b8';
+const BG         = '#f8fafc';
+const CARD       = '#ffffff';
+const BORDER     = '1px solid #e8edf2';
+const SHADOW     = '0 2px 8px rgba(0,0,0,0.06)';
+const RADIUS     = 14;
+const TEXT_DARK  = '#111827';
+const TEXT_MID   = '#6b7280';
+const TEXT_LIGHT = '#9ca3af';
 
 const STATUS_COLORS = { INVESTIGATING: '#ef4444', REFERRED: '#f59e0b', CLOSED: '#22c55e' };
 const STATUS_LABELS = { INVESTIGATING: 'Investigando', REFERRED: 'Derivado', CLOSED: 'Cerrado' };
@@ -54,42 +53,61 @@ const fillDates = (start, end, map) => {
 };
 
 const QUICK = [
-  { label: 'Hoy',    fn: () => { const t = fmt(new Date()); return { start: t, end: t }; } },
-  { label: 'Semana', fn: () => { const e = new Date(); const s = new Date(e); const day = s.getDay(); s.setDate(s.getDate() - (day === 0 ? 6 : day - 1)); return { start: fmt(s), end: fmt(e) }; } },
-  { label: 'Mes',    fn: () => { const n = new Date(); return { start: fmt(new Date(n.getFullYear(), n.getMonth(), 1)), end: fmt(n) }; } },
+  { label: 'Hoy',     fn: () => { const t = fmt(new Date()); return { start: t, end: t }; } },
+  { label: 'Semana',  fn: () => { const e = new Date(); const s = new Date(e); const day = s.getDay(); s.setDate(s.getDate() - (day === 0 ? 6 : day - 1)); return { start: fmt(s), end: fmt(e) }; } },
+  { label: 'Mes',     fn: () => { const n = new Date(); return { start: fmt(new Date(n.getFullYear(), n.getMonth(), 1)), end: fmt(n) }; } },
+  { label: '30 días', fn: () => { const e = new Date(); const s = new Date(e); s.setDate(s.getDate() - 29); return { start: fmt(s), end: fmt(e) }; } },
 ];
 
-// ── Componentes de UI ─────────────────────────────────────────────────────────
+// ── UI components ─────────────────────────────────────────────────────────────
 
 const KpiCard = ({ title, value, icon: Icon, color, sub }) => (
   <div style={{
-    background: CARD, borderRadius: RADIUS, border: BORDER, boxShadow: SHADOW,
-    padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 16,
-    flex: 1, minWidth: 155, borderLeft: `4px solid ${color}`,
+    background: CARD,
+    borderRadius: RADIUS,
+    border: BORDER,
+    boxShadow: SHADOW,
+    padding: '20px 22px',
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 14,
+    flex: 1,
+    minWidth: 148,
   }}>
     <div style={{
-      background: `${color}14`, padding: 12, borderRadius: 10, flexShrink: 0,
-      border: `1px solid ${color}22`,
+      width: 44, height: 44, borderRadius: 11, flexShrink: 0,
+      background: `${color}14`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      <Icon size={24} color={color} strokeWidth={2} />
+      <Icon size={22} color={color} strokeWidth={1.8} />
     </div>
-    <div>
-      <div style={{ fontSize: 36, fontWeight: 800, color: TEXT_DARK, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: 13, color: TEXT_MID, marginTop: 5, fontWeight: 500 }}>{title}</div>
-      {sub && <div style={{ fontSize: 11, color, marginTop: 3, fontWeight: 700 }}>{sub}</div>}
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: TEXT_LIGHT, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+        {title}
+      </div>
+      <div style={{ fontSize: 30, fontWeight: 700, color: TEXT_DARK, lineHeight: 1.1 }}>
+        {value}
+      </div>
+      {sub && (
+        <div style={{ fontSize: 11, color: TEXT_MID, marginTop: 4, fontWeight: 500 }}>
+          {sub}
+        </div>
+      )}
     </div>
   </div>
 );
 
-const Section = ({ title, children, style = {} }) => (
+const SectionCard = ({ title, children, style = {} }) => (
   <div style={{ background: CARD, borderRadius: RADIUS, border: BORDER, boxShadow: SHADOW, overflow: 'hidden', ...style }}>
     <div style={{
-      padding: '14px 20px', borderBottom: `1px solid ${BG}`,
-      fontSize: 14, fontWeight: 700, color: TEXT_DARK,
+      padding: '14px 20px 12px',
+      borderBottom: '1px solid #f1f5f9',
     }}>
-      {title}
+      <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_DARK, letterSpacing: '0.01em' }}>
+        {title}
+      </span>
     </div>
-    <div style={{ padding: '18px 20px' }}>
+    <div style={{ padding: '16px 20px' }}>
       {children}
     </div>
   </div>
@@ -98,10 +116,10 @@ const Section = ({ title, children, style = {} }) => (
 const ChartTip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: CARD, border: BORDER, borderRadius: 10, padding: '10px 16px', boxShadow: '0 4px 20px rgba(0,0,0,0.12)' }}>
-      <p style={{ margin: 0, fontWeight: 700, color: TEXT_DARK, fontSize: 13 }}>{label}</p>
+    <div style={{ background: CARD, border: BORDER, borderRadius: 10, padding: '9px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.10)' }}>
+      <p style={{ margin: 0, fontWeight: 700, color: TEXT_DARK, fontSize: 12 }}>{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ margin: '4px 0 0', color: p.color || p.fill || ACCENT, fontSize: 13 }}>
+        <p key={i} style={{ margin: '3px 0 0', color: p.color || p.fill || ACCENT, fontSize: 12 }}>
           {p.name}: <strong>{p.value}</strong>
         </p>
       ))}
@@ -109,15 +127,17 @@ const ChartTip = ({ active, payload, label }) => {
   );
 };
 
-const pct = (v, t) => t ? `${((v / t) * 100).toFixed(1)}% del total` : '—';
+const pct  = (v, t) => t ? `${((v / t) * 100).toFixed(1)}% del total` : '—';
+const fmtN = n => (n ?? 0).toLocaleString('es-PE');
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 const DashboardPNP = () => {
-  const [incidents, setIncidents] = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState(null);
-  const [range, setRange]         = useState(getDefault);
-  const [activeQ, setActiveQ]     = useState('30 días');
+  const [incidents, setIncidents]     = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState(null);
+  const [range, setRange]             = useState(getDefault);
+  const [activeQ, setActiveQ]         = useState('30 días');
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true); setError(null);
@@ -127,7 +147,7 @@ const DashboardPNP = () => {
     } catch (e) {
       setError(e.message);
     } finally {
-      setLoading(false);
+      setLoading(false); setLastUpdated(new Date());
     }
   }, [range]);
 
@@ -170,192 +190,212 @@ const DashboardPNP = () => {
       .filter(i => i.value > 0),
     [incidents]);
 
-  const byStatus = useMemo(() =>
-    ['INVESTIGATING', 'REFERRED', 'CLOSED']
-      .map(k => ({ name: STATUS_LABELS[k], value: incidents.filter(i => i.case_status === k).length, color: STATUS_COLORS[k] }))
-      .filter(i => i.value > 0),
-    [incidents]);
+  const byStatus = useMemo(() => {
+    const mapped = ['INVESTIGATING', 'REFERRED', 'CLOSED']
+      .map(k => ({ name: STATUS_LABELS[k], value: incidents.filter(i => i.case_status === k).length, color: STATUS_COLORS[k] }));
+    const sinEstado = incidents.filter(i => !i.case_status).length;
+    if (sinEstado > 0) mapped.push({ name: 'Sin estado', value: sinEstado, color: '#d1d5db' });
+    return mapped.filter(i => i.value > 0);
+  }, [incidents]);
 
   const recent = useMemo(() =>
     [...incidents].sort((a, b) => new Date(b.occurred_at) - new Date(a.occurred_at)).slice(0, 10),
     [incidents]);
 
-  const fmtDt = iso => iso ? new Date(iso).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+  const fmtDt = iso => iso ? new Date(iso).toLocaleString('es-PE', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  }) : '—';
 
   const qBtnStyle = active => ({
-    padding: '7px 16px', borderRadius: 7, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+    padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600,
     transition: 'all 0.15s',
-    border: `1px solid ${active ? PRIMARY : '#e2e8f0'}`,
-    background: active ? PRIMARY : CARD,
+    border: `1px solid ${active ? ACCENT : '#e2e8f0'}`,
+    background: active ? ACCENT : CARD,
     color: active ? 'white' : TEXT_MID,
+    lineHeight: 1,
   });
 
   const inputStyle = {
-    padding: '7px 11px', borderRadius: 7, border: BORDER,
-    background: CARD, color: TEXT_DARK, fontSize: 13, outline: 'none',
+    padding: '6px 10px', borderRadius: 8, border: BORDER,
+    background: CARD, color: TEXT_DARK, fontSize: 12, outline: 'none',
+    fontFamily: 'inherit',
   };
 
   return (
-    <div style={{ background: BG, minHeight: '100vh', fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+    <div style={{ background: BG, minHeight: '100vh' }}>
 
-      {/* ── Header ── */}
-      <div style={{ background: CARD, borderBottom: BORDER, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-        {/* Franja de color superior */}
-        <div style={{ height: 5, background: `linear-gradient(90deg, ${PRIMARY} 0%, ${ACCENT} 100%)` }} />
+      {/* ── Barra de filtros ── */}
+      <div style={{
+        background: CARD, borderBottom: BORDER, padding: '10px 28px',
+        display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+      }}>
+        <CalendarDays size={15} color={TEXT_LIGHT} strokeWidth={2} style={{ flexShrink: 0 }} />
+        <span style={{ fontSize: 12, color: TEXT_LIGHT, fontWeight: 500 }}>Desde</span>
+        <input type="date" value={range.start} style={inputStyle}
+          onChange={e => { setRange(p => ({ ...p, start: e.target.value })); setActiveQ(''); }} />
+        <span style={{ fontSize: 12, color: TEXT_LIGHT, fontWeight: 500 }}>Hasta</span>
+        <input type="date" value={range.end} style={inputStyle}
+          onChange={e => { setRange(p => ({ ...p, end: e.target.value })); setActiveQ(''); }} />
+        <div style={{ display: 'flex', gap: 4, marginLeft: 4 }}>
+          {QUICK.map(q => (
+            <button key={q.label} style={qBtnStyle(activeQ === q.label)}
+              onClick={() => { setActiveQ(q.label); setRange(q.fn()); }}>
+              {q.label}
+            </button>
+          ))}
+        </div>
 
-        <div style={{ padding: '20px 36px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          {/* Logo + Título */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{
-              width: 52, height: 52, borderRadius: 12,
-              background: PRIMARY_LT, border: `2px solid ${PRIMARY}30`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}>
-              <Shield size={28} color={PRIMARY} strokeWidth={2} />
-            </div>
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: TEXT_DARK, letterSpacing: '-0.4px' }}>
-                Panel de Control — Incidencias PNP
-              </div>
-              <div style={{ fontSize: 12, color: TEXT_LIGHT, marginTop: 3, fontWeight: 500 }}>
-                Policía Nacional del Perú &nbsp;·&nbsp; San Juan de Lurigancho &nbsp;·&nbsp; Sistema de Gestión de Seguridad
-              </div>
-            </div>
-          </div>
-
-          {/* Filtros — una sola fila */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: TEXT_LIGHT, fontWeight: 500 }}>Desde</span>
-            <input type="date" value={range.start} style={inputStyle}
-              onChange={e => { setRange(p => ({ ...p, start: e.target.value })); setActiveQ(''); }} />
-            <span style={{ fontSize: 12, color: TEXT_LIGHT, fontWeight: 500 }}>Hasta</span>
-            <input type="date" value={range.end} style={inputStyle}
-              onChange={e => { setRange(p => ({ ...p, end: e.target.value })); setActiveQ(''); }} />
-            <div style={{ display: 'flex', gap: 4 }}>
-              {QUICK.map(q => (
-                <button key={q.label} style={qBtnStyle(activeQ === q.label)}
-                  onClick={() => { setActiveQ(q.label); setRange(q.fn()); }}>
-                  {q.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Refresh + timestamp — empujados a la derecha */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          {lastUpdated && (
+            <span style={{ fontSize: 11, color: TEXT_LIGHT, fontWeight: 500 }}>
+              Actualizado: {lastUpdated.toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+          <button
+            onClick={fetchData} disabled={loading}
+            title="Actualizar datos"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 32, height: 32, borderRadius: 8, border: BORDER,
+              background: CARD, cursor: loading ? 'not-allowed' : 'pointer',
+              color: TEXT_MID, transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = BG; }}
+            onMouseLeave={e => { e.currentTarget.style.background = CARD; }}
+          >
+            <RefreshCw size={14} strokeWidth={2} style={{ animation: loading ? 'spin 0.9s linear infinite' : 'none' }} />
+          </button>
         </div>
       </div>
 
       {/* ── Cuerpo ── */}
-      <div style={{ padding: '28px 36px' }}>
+      <div style={{ padding: '24px 28px' }}>
         {error && (
-          <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 10, padding: '13px 18px', marginBottom: 22, color: '#991b1b', fontWeight: 500 }}>
-            ⚠ Error al cargar datos: {error}
+          <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 10, padding: '11px 16px', marginBottom: 20, color: '#991b1b', fontWeight: 500, fontSize: 13 }}>
+            Error al cargar datos: {error}
           </div>
         )}
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 100, color: TEXT_LIGHT }}>
-            <div style={{ width: 44, height: 44, border: `3px solid ${PRIMARY}`, borderTop: '3px solid transparent', borderRadius: '50%', animation: 'spin 0.9s linear infinite', margin: '0 auto 16px' }} />
-            <div style={{ fontSize: 15, fontWeight: 500, color: TEXT_MID }}>Cargando datos de incidencias PNP...</div>
+          <div style={{ textAlign: 'center', padding: '80px 0', color: TEXT_LIGHT }}>
+            <div style={{
+              width: 40, height: 40, border: `3px solid ${ACCENT}20`, borderTop: `3px solid ${ACCENT}`,
+              borderRadius: '50%', animation: 'spin 0.9s linear infinite', margin: '0 auto 16px',
+            }} />
+            <div style={{ fontSize: 14, fontWeight: 500, color: TEXT_MID }}>Cargando datos de incidencias PNP…</div>
           </div>
         ) : (
           <>
             {/* KPI Cards */}
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 24 }}>
-              <KpiCard title="Total Incidencias"  value={kpis.total}         icon={BarChart2}     color={PRIMARY} />
-              <KpiCard title="Investigando"        value={kpis.investigating} icon={AlertTriangle}  color="#ef4444" sub={pct(kpis.investigating, kpis.total)} />
-              <KpiCard title="Derivado"            value={kpis.referred}      icon={Clock}          color="#f59e0b" sub={pct(kpis.referred, kpis.total)} />
-              <KpiCard title="Cerrado"             value={kpis.closed}        icon={CheckCircle}    color="#22c55e" sub={pct(kpis.closed, kpis.total)} />
-              <KpiCard title="Con N° Denuncia"     value={kpis.withComplaint} icon={FileText}       color="#8b5cf6" />
-              <KpiCard title="Registradas Hoy"     value={kpis.today}         icon={TrendingUp}     color="#06b6d4" />
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+              <KpiCard title="Total Incidencias"  value={fmtN(kpis.total)}         icon={BarChart2}     color={PRIMARY} />
+              <KpiCard title="Investigando"        value={fmtN(kpis.investigating)} icon={AlertTriangle}  color="#ef4444" sub={pct(kpis.investigating, kpis.total)} />
+              <KpiCard title="Derivado"            value={fmtN(kpis.referred)}      icon={Clock}          color="#f59e0b" sub={pct(kpis.referred, kpis.total)} />
+              <KpiCard title="Cerrado"             value={fmtN(kpis.closed)}        icon={CheckCircle}    color="#22c55e" sub={pct(kpis.closed, kpis.total)} />
+              <KpiCard title="Con N° Denuncia"     value={fmtN(kpis.withComplaint)} icon={FileText}       color="#8b5cf6" />
+              <KpiCard title="Registradas Hoy"     value={fmtN(kpis.today)}         icon={TrendingUp}     color="#06b6d4" />
             </div>
 
-            {/* Tendencia + Estado */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 20 }}>
-              <Section title="📈 Tendencia Diaria de Incidencias">
-                <ResponsiveContainer debounce={50} width="100%" height={240}>
-                  <AreaChart data={trend} margin={{ top: 5, right: 10, bottom: 20, left: -10 }}>
-                    <defs>
-                      <linearGradient id="gradPNP" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor={ACCENT} stopOpacity={0.25} />
-                        <stop offset="95%" stopColor={ACCENT} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="date" tick={{ fontSize: 9, fill: TEXT_LIGHT }} interval={0} angle={-55} textAnchor="end" height={60} />
-                    <YAxis tick={{ fontSize: 11, fill: TEXT_LIGHT }} allowDecimals={false} />
-                    <Tooltip content={<ChartTip />} />
-                    <Area type="monotone" dataKey="count" name="Incidencias"
-                      stroke={ACCENT} fill="url(#gradPNP)" strokeWidth={2.5}
-                      dot={false} activeDot={{ r: 5, strokeWidth: 0, fill: ACCENT }} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </Section>
+            {/* Tendencia — ancho completo */}
+            <SectionCard title="Tendencia Diaria de Incidencias" style={{ marginBottom: 16 }}>
+              <ResponsiveContainer debounce={50} width="100%" height={260}>
+                <AreaChart data={trend} margin={{ top: 4, right: 8, bottom: 18, left: -14 }}>
+                  <defs>
+                    <linearGradient id="gradPNP" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor={ACCENT} stopOpacity={0.18} />
+                      <stop offset="95%" stopColor={ACCENT} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: TEXT_LIGHT }} interval={0} angle={-55} textAnchor="end" height={55} />
+                  <YAxis tick={{ fontSize: 10, fill: TEXT_LIGHT }} allowDecimals={false} axisLine={false} tickLine={false} />
+                  <Tooltip content={<ChartTip />} />
+                  <Area type="monotone" dataKey="count" name="Incidencias"
+                    stroke={ACCENT} fill="url(#gradPNP)" strokeWidth={2}
+                    dot={false} activeDot={{ r: 4, strokeWidth: 0, fill: ACCENT }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </SectionCard>
 
-              <Section title="⚖️ Estado de Casos">
-                <ResponsiveContainer debounce={50} width="100%" height={240}>
-                  <PieChart>
-                    <Pie data={byStatus} cx="50%" cy="45%" innerRadius={56} outerRadius={84}
-                      dataKey="value" nameKey="name" paddingAngle={4}>
-                      {byStatus.map((e, i) => <Cell key={i} fill={e.color} />)}
-                    </Pie>
-                    <Tooltip formatter={(v, n) => [v, n]} contentStyle={{ borderRadius: 10, border: BORDER }} />
-                    <Legend formatter={v => <span style={{ fontSize: 12, color: TEXT_MID }}>{v}</span>} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Section>
-            </div>
-
-            {/* Tipo + Jurisdicción + Turno */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, marginBottom: 20 }}>
-              <Section title="🔍 Por Tipo de Incidencia">
-                <ResponsiveContainer debounce={50} width="100%" height={280}>
-                  <BarChart data={byType} layout="vertical" margin={{ top: 0, right: 28, bottom: 0, left: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: TEXT_LIGHT }} allowDecimals={false} />
-                    <YAxis type="category" dataKey="name" width={86} tick={{ fontSize: 11, fill: TEXT_MID }} />
+            {/* Tipo + Jurisdicción — 2 columnas */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <SectionCard title="Por Tipo de Incidencia">
+                <ResponsiveContainer debounce={50} width="100%" height={290}>
+                  <BarChart data={byType} layout="vertical" margin={{ top: 0, right: 28, bottom: 0, left: 4 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 10, fill: TEXT_LIGHT }} allowDecimals={false} axisLine={false} tickLine={false} />
+                    <YAxis type="category" dataKey="name" width={86} tick={{ fontSize: 11, fill: TEXT_MID }} axisLine={false} tickLine={false} />
                     <Tooltip content={<ChartTip />} />
-                    <Bar dataKey="count" name="Casos" radius={[0, 6, 6, 0]}>
+                    <Bar dataKey="count" name="Casos" radius={[0, 5, 5, 0]}>
                       {byType.map((_, i) => <Cell key={i} fill={TYPE_PALETTE[i % TYPE_PALETTE.length]} />)}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-              </Section>
+              </SectionCard>
 
-              <Section title="📍 Por Jurisdicción">
-                <ResponsiveContainer debounce={50} width="100%" height={280}>
-                  <BarChart data={byJur} layout="vertical" margin={{ top: 0, right: 28, bottom: 0, left: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: TEXT_LIGHT }} allowDecimals={false} />
-                    <YAxis type="category" dataKey="name" width={86} tick={{ fontSize: 11, fill: TEXT_MID }} />
+              <SectionCard title="Por Jurisdicción">
+                <ResponsiveContainer debounce={50} width="100%" height={290}>
+                  <BarChart data={byJur} layout="vertical" margin={{ top: 0, right: 28, bottom: 0, left: 4 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 10, fill: TEXT_LIGHT }} allowDecimals={false} axisLine={false} tickLine={false} />
+                    <YAxis type="category" dataKey="name" width={86} tick={{ fontSize: 11, fill: TEXT_MID }} axisLine={false} tickLine={false} />
                     <Tooltip content={<ChartTip />} />
-                    <Bar dataKey="count" name="Casos" fill={ACCENT} radius={[0, 6, 6, 0]} />
+                    <Bar dataKey="count" name="Casos" fill={ACCENT} radius={[0, 5, 5, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </Section>
+              </SectionCard>
+            </div>
 
-              <Section title="🌅 Distribución por Turno">
-                <ResponsiveContainer debounce={50} width="100%" height={280}>
+            {/* Estado + Turno — 2 columnas */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <SectionCard title="Estado de Casos">
+                {byStatus.length === 0 ? (
+                  <div style={{ height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center', color: TEXT_LIGHT, fontSize: 13 }}>
+                    Sin datos de estado en este período
+                  </div>
+                ) : (
+                  <ResponsiveContainer debounce={50} width="100%" height={260}>
+                    <PieChart>
+                      <Pie data={byStatus} cx="50%" cy="42%" innerRadius={60} outerRadius={96}
+                        dataKey="value" nameKey="name" paddingAngle={3}>
+                        {byStatus.map((e, i) => <Cell key={i} fill={e.color} />)}
+                      </Pie>
+                      <Tooltip formatter={(v, n) => [v, n]} contentStyle={{ borderRadius: 10, border: BORDER, fontSize: 12 }} />
+                      <Legend formatter={v => <span style={{ fontSize: 11, color: TEXT_MID }}>{v}</span>} iconSize={10} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </SectionCard>
+
+              <SectionCard title="Distribución por Turno">
+                <ResponsiveContainer debounce={50} width="100%" height={260}>
                   <PieChart>
-                    <Pie data={byShift} cx="50%" cy="42%" innerRadius={54} outerRadius={82}
-                      dataKey="value" nameKey="name" paddingAngle={4}
+                    <Pie data={byShift} cx="50%" cy="42%" innerRadius={60} outerRadius={96}
+                      dataKey="value" nameKey="name" paddingAngle={3}
                       label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
                       labelLine={false}>
                       {byShift.map((e, i) => <Cell key={i} fill={e.color} />)}
                     </Pie>
-                    <Tooltip formatter={(v, n) => [v, n]} contentStyle={{ borderRadius: 10, border: BORDER }} />
-                    <Legend formatter={v => <span style={{ fontSize: 12, color: TEXT_MID }}>{v}</span>} />
+                    <Tooltip formatter={(v, n) => [v, n]} contentStyle={{ borderRadius: 10, border: BORDER, fontSize: 12 }} />
+                    <Legend formatter={v => <span style={{ fontSize: 11, color: TEXT_MID }}>{v}</span>} iconSize={10} />
                   </PieChart>
                 </ResponsiveContainer>
-              </Section>
+              </SectionCard>
             </div>
 
             {/* Tabla */}
-            <Section title="📋 Últimas Incidencias Registradas">
+            <SectionCard title="Últimas Incidencias Registradas">
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
-                    <tr style={{ background: BG }}>
+                    <tr>
                       {['Tipo', 'Jurisdicción', 'Comisaría', 'Turno', 'Estado', 'Fecha / Hora'].map(h => (
-                        <th key={h} style={{ padding: '11px 14px', textAlign: 'left', color: TEXT_MID, fontWeight: 700, fontSize: 11, whiteSpace: 'nowrap', borderBottom: `2px solid #e2e8f0`, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <th key={h} style={{
+                          padding: '9px 14px', textAlign: 'left', fontWeight: 600, fontSize: 10,
+                          color: TEXT_LIGHT, textTransform: 'uppercase', letterSpacing: '0.06em',
+                          whiteSpace: 'nowrap', borderBottom: '1px solid #f1f5f9',
+                        }}>
                           {h}
                         </th>
                       ))}
@@ -363,43 +403,44 @@ const DashboardPNP = () => {
                   </thead>
                   <tbody>
                     {recent.map((inc, i) => (
-                      <tr key={inc.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '10px 14px', color: TEXT_DARK, fontWeight: 500 }}>
+                      <tr key={inc.id ?? i}
+                        style={{ borderBottom: '1px solid #f8fafc', transition: 'background 0.1s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                        <td style={{ padding: '9px 14px', color: TEXT_DARK, fontWeight: 500 }}>
                           {inc.modality?.subtype?.type?.name || inc.incidence_type || '—'}
                           {inc.modality?.subtype?.name && (
                             <div style={{ fontSize: 11, color: TEXT_LIGHT, marginTop: 2 }}>{inc.modality.subtype.name}</div>
                           )}
                         </td>
-                        <td style={{ padding: '10px 14px', color: TEXT_MID }}>{inc.jurisdiction}</td>
-                        <td style={{ padding: '10px 14px', color: TEXT_LIGHT, fontSize: 12 }}>{inc.police_station}</td>
-                        <td style={{ padding: '10px 14px' }}>
+                        <td style={{ padding: '9px 14px', color: TEXT_MID }}>{inc.jurisdiction}</td>
+                        <td style={{ padding: '9px 14px', color: TEXT_LIGHT, fontSize: 11 }}>{inc.police_station}</td>
+                        <td style={{ padding: '9px 14px' }}>
                           <span style={{
-                            padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                            background: `${SHIFT_COLORS[inc.shift] || '#94a3b8'}18`,
+                            padding: '2px 9px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                            background: `${SHIFT_COLORS[inc.shift] || '#9ca3af'}14`,
                             color: SHIFT_COLORS[inc.shift] || TEXT_LIGHT,
-                            border: `1px solid ${SHIFT_COLORS[inc.shift] || '#94a3b8'}30`,
                           }}>
                             {SHIFT_LABELS[inc.shift] || inc.shift || '—'}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 14px' }}>
+                        <td style={{ padding: '9px 14px' }}>
                           <span style={{
-                            padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                            background: `${STATUS_COLORS[inc.case_status] || '#94a3b8'}18`,
+                            padding: '2px 9px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                            background: `${STATUS_COLORS[inc.case_status] || '#9ca3af'}14`,
                             color: STATUS_COLORS[inc.case_status] || TEXT_LIGHT,
-                            border: `1px solid ${STATUS_COLORS[inc.case_status] || '#94a3b8'}30`,
                           }}>
                             {STATUS_LABELS[inc.case_status] || inc.case_status}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 14px', color: TEXT_MID, fontSize: 12, whiteSpace: 'nowrap', fontWeight: 500 }}>
+                        <td style={{ padding: '9px 14px', color: TEXT_MID, fontSize: 11, whiteSpace: 'nowrap', fontWeight: 500 }}>
                           {fmtDt(inc.occurred_at)}
                         </td>
                       </tr>
                     ))}
                     {recent.length === 0 && (
                       <tr>
-                        <td colSpan={6} style={{ padding: 48, textAlign: 'center', color: TEXT_LIGHT, fontSize: 15 }}>
+                        <td colSpan={6} style={{ padding: 48, textAlign: 'center', color: TEXT_LIGHT, fontSize: 13 }}>
                           No hay incidencias en el período seleccionado
                         </td>
                       </tr>
@@ -407,17 +448,19 @@ const DashboardPNP = () => {
                   </tbody>
                 </table>
               </div>
-            </Section>
+            </SectionCard>
 
             {/* Footer */}
-            <div style={{ marginTop: 20, textAlign: 'right', fontSize: 11, color: TEXT_LIGHT }}>
+            <div style={{ marginTop: 16, textAlign: 'right', fontSize: 11, color: TEXT_LIGHT }}>
               Policía Nacional del Perú &nbsp;·&nbsp; San Juan de Lurigancho &nbsp;·&nbsp; Sistema de Gestión de Seguridad Ciudadana
             </div>
           </>
         )}
       </div>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 };
