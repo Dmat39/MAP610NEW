@@ -339,11 +339,10 @@ const ControlCamaras = ({
     setJurisdiccionesCollapsed(!jurisdiccionesCollapsed);
   };
 
-  // Click fuera del panel: colapsar y limpiar
+  // Click fuera del panel: solo colapsar, sin limpiar filtros (el usuario puede tener cámaras filtradas y hacer clic en el mapa)
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (panelRef.current && !panelRef.current.contains(e.target) && !isCollapsed) {
-        limpiarTodo();
         setIsCollapsed(true);
       }
     };
