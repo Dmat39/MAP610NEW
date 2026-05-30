@@ -11,6 +11,8 @@ import {
 
 const TIPO_COLORS = {
   'Robo':        { bg: '#fee2e2', color: '#dc2626', border: '#fecaca' },
+  'Hurto':       { bg: '#ede9fe', color: '#6d28d9', border: '#c4b5fd' },
+  'Daño':        { bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' },
   'Extorsión':   { bg: '#fff7ed', color: '#ea580c', border: '#fed7aa' },
   'Homicidio':   { bg: '#f1f5f9', color: '#1e293b', border: '#cbd5e1' },
   'Feminicidio': { bg: '#fdf2f8', color: '#a21caf', border: '#f5d0fe' },
@@ -29,29 +31,107 @@ const fmtFecha = d => {
   } catch { return String(d); }
 };
 
-const buildDetalleRows = puntos => {
-  const sorted = [...puntos].sort((a, b) => {
+// ── Registro global de clusters para el drill-down ───────────────────────────
+if (!window.__clusterReg) window.__clusterReg = new Map();
+
+const _applyPopupContent = (circle, html) => {
+  // Diferir el cambio de contenido para que Leaflet no detecte
+  // el click como "fuera del popup" y lo cierre
+  setTimeout(() => {
+    const popup = circle.getPopup();
+    if (!popup) return;
+    popup.setContent(html);
+    popup.update();
+  }, 0);
+};
+
+window.__clusterDetail = (cid, idx) => {
+  const entry = window.__clusterReg.get(cid);
+  if (!entry) return;
+  const sorted = [...entry.puntos].sort((a, b) => {
     if (!a.Fecha && !b.Fecha) return 0;
-    if (!a.Fecha) return 1;
-    if (!b.Fecha) return -1;
+    if (!a.Fecha) return 1; if (!b.Fecha) return -1;
+    return new Date(b.Fecha) - new Date(a.Fecha);
+  });
+  const p = sorted.slice(0, 10)[idx];
+  if (!p) return;
+  const c = TIPO_COLORS[p.Tipo] || COLOR_DEF;
+  const badge = `<span style="background:${c.bg};color:${c.color};border:1px solid ${c.border};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">${p.Tipo}</span>`;
+  _applyPopupContent(entry.circle, `
+    <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;max-width:300px;line-height:1.5;">
+      <div style="display:flex;align-items:center;gap:8px;padding-bottom:8px;margin-bottom:10px;border-bottom:2px solid #16a34a;">
+        <button onclick="event.stopPropagation();window.__clusterList('${cid}')"
+          style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;padding:3px 8px;font-size:11px;font-weight:700;color:#374151;white-space:nowrap;">
+          ← Volver
+        </button>
+        <span style="font-weight:700;font-size:13px;color:#1f2937;">Detalle</span>
+      </div>
+      <div style="margin-bottom:8px;">${badge}</div>
+      ${p.Id ? `<div style="margin-bottom:4px;"><span style="font-size:10px;text-transform:uppercase;color:#9ca3af;font-weight:600;">Código</span><div style="font-size:13px;font-weight:700;color:#1f2937;font-family:monospace;">${p.Id}</div></div>` : ''}
+      ${p.Descripcion ? `<div style="margin-bottom:4px;"><span style="font-size:10px;text-transform:uppercase;color:#9ca3af;font-weight:600;">Descripción</span><div style="font-size:12px;color:#374151;">${p.Descripcion}</div></div>` : ''}
+      ${p.Fecha ? `<div style="margin-bottom:4px;"><span style="font-size:10px;text-transform:uppercase;color:#9ca3af;font-weight:600;">Fecha</span><div style="font-size:12px;color:#374151;">${fmtFecha(p.Fecha)}</div></div>` : ''}
+      ${p.Jurisdiccion ? `<div style="margin-bottom:4px;"><span style="font-size:10px;text-transform:uppercase;color:#9ca3af;font-weight:600;">Jurisdicción</span><div style="font-size:12px;color:#374151;">${p.Jurisdiccion}</div></div>` : ''}
+    </div>
+  `);
+};
+
+window.__clusterList = (cid) => {
+  const entry = window.__clusterReg.get(cid);
+  if (!entry) return;
+  _applyPopupContent(entry.circle, buildListHTML(cid, entry));
+};
+
+const buildListHTML = (cid, entry) => {
+  const { cluster } = entry;
+  const tipoCounts = {};
+  cluster.puntos.forEach(p => { tipoCounts[p.Tipo] = (tipoCounts[p.Tipo] || 0) + 1; });
+  const tiposBadges = Object.entries(tipoCounts).map(([tipo, cnt]) => {
+    const c = TIPO_COLORS[tipo] || COLOR_DEF;
+    return `<span style="background:${c.bg};color:${c.color};border:1px solid ${c.border};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;white-space:nowrap;">${tipo} ×${cnt}</span>`;
+  }).join('');
+
+  const sorted = [...cluster.puntos].sort((a, b) => {
+    if (!a.Fecha && !b.Fecha) return 0;
+    if (!a.Fecha) return 1; if (!b.Fecha) return -1;
     return new Date(b.Fecha) - new Date(a.Fecha);
   });
   const shown = sorted.slice(0, 10);
   const remaining = sorted.length - shown.length;
 
-  const rows = shown.map(p => {
+  const rows = shown.map((p, idx) => {
     const c = TIPO_COLORS[p.Tipo] || COLOR_DEF;
     const badge = `<span style="background:${c.bg};color:${c.color};border:1px solid ${c.border};border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;flex-shrink:0;white-space:nowrap;">${p.Tipo}</span>`;
     const idLine = p.Id ? `<div style="font-size:12px;font-weight:600;color:#1f2937;">${p.Id}</div>` : '';
     const fechaLine = p.Fecha ? `<div style="font-size:11px;color:#6b7280;">${fmtFecha(p.Fecha)}</div>` : '';
-    return `<div style="display:flex;align-items:flex-start;gap:7px;padding:5px 0;border-bottom:1px solid #f1f5f9;">${badge}<div style="flex:1;min-width:0;">${idLine}${fechaLine}</div></div>`;
+    return `
+      <div onclick="event.stopPropagation();window.__clusterDetail('${cid}',${idx})"
+        style="display:flex;align-items:flex-start;gap:7px;padding:5px 0;border-bottom:1px solid #f1f5f9;cursor:pointer;border-radius:4px;transition:background 0.1s;"
+        onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
+        ${badge}
+        <div style="flex:1;min-width:0;">${idLine}${fechaLine}</div>
+        <span style="color:#9ca3af;font-size:12px;align-self:center;">›</span>
+      </div>`;
   }).join('');
 
   const masRow = remaining > 0
     ? `<div style="text-align:center;font-size:11px;color:#94a3b8;padding-top:6px;font-style:italic;">+${remaining} incidencia${remaining !== 1 ? 's' : ''} más</div>`
     : '';
 
-  return rows + masRow;
+  return `
+    <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;max-width:300px;line-height:1.5;">
+      <div style="font-weight:700;font-size:14px;color:#1f2937;padding-bottom:6px;margin-bottom:8px;border-bottom:2px solid #16a34a;">
+        Cluster de Incidencias
+      </div>
+      <div style="display:flex;gap:16px;margin-bottom:10px;">
+        <span style="color:#374151;"><b>Total:</b> ${cluster.cantidad}</span>
+        <span style="color:#6b7280;font-size:12px;">Radio: ${Math.round(cluster.radio)} m</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">${tiposBadges}</div>
+      <div style="font-weight:600;font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;padding-top:6px;border-top:1px solid #e2e8f0;">
+        Detalle — clic para ver más
+      </div>
+      ${rows}${masRow}
+    </div>`;
 };
 
 const ClusterIncidencias = ({ visible, filtros = null }) => {
@@ -69,11 +149,12 @@ const ClusterIncidencias = ({ visible, filtros = null }) => {
   };
 
   const crearCirculosCluster = clustersData => {
+    // Limpiar registro anterior de este componente
+    window.__clusterReg.forEach((v, k) => { if (v.owner === map._leaflet_id) window.__clusterReg.delete(k); });
     limpiarCirculos();
 
-    clustersData.forEach(cluster => {
+    clustersData.forEach((cluster, ci) => {
       const colores = obtenerColorCluster(cluster.cantidad);
-
       const circle = L.circle([cluster.centroide.lat, cluster.centroide.lng], {
         radius: cluster.radio,
         color: colores.color,
@@ -84,35 +165,17 @@ const ClusterIncidencias = ({ visible, filtros = null }) => {
         dashArray: null,
       });
 
-      const tipoCounts = {};
-      cluster.puntos.forEach(p => { tipoCounts[p.Tipo] = (tipoCounts[p.Tipo] || 0) + 1; });
-      const tiposBadges = Object.entries(tipoCounts)
-        .map(([tipo, cnt]) => {
-          const c = TIPO_COLORS[tipo] || COLOR_DEF;
-          return `<span style="background:${c.bg};color:${c.color};border:1px solid ${c.border};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;white-space:nowrap;">${tipo} ×${cnt}</span>`;
-        }).join('');
+      // Registrar el cluster para drill-down
+      const cid = `c_${map._leaflet_id}_${ci}_${Date.now()}`;
+      const entry = { cluster, circle, puntos: cluster.puntos, owner: map._leaflet_id };
+      window.__clusterReg.set(cid, entry);
 
-      circle.bindPopup(`
-        <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;max-width:300px;line-height:1.5;">
-          <div style="font-weight:700;font-size:14px;color:#1f2937;padding-bottom:6px;margin-bottom:8px;border-bottom:2px solid #16a34a;">
-            Cluster de Incidencias
-          </div>
-          <div style="display:flex;gap:16px;margin-bottom:10px;">
-            <span style="color:#374151;"><b>Total:</b> ${cluster.cantidad}</span>
-            <span style="color:#6b7280;font-size:12px;">Radio: ${Math.round(cluster.radio)} m</span>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">${tiposBadges}</div>
-          <div style="font-weight:600;font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;padding-top:6px;border-top:1px solid #e2e8f0;">
-            Detalle de incidencias
-          </div>
-          ${buildDetalleRows(cluster.puntos)}
-        </div>
-      `, { maxWidth: 320 });
+      circle.bindPopup(buildListHTML(cid, entry), { maxWidth: 320 });
 
       circle.bindTooltip(
-        `<div style="font-family:'Segoe UI',system-ui,sans-serif; font-size:12px; font-weight:600; text-align:center; color:#1f2937;">
+        `<div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:12px;font-weight:600;text-align:center;color:#1f2937;">
           ${cluster.cantidad} incidencias<br/>
-          <span style="color:#16a34a; font-size:11px;">${Math.round(cluster.radio)} m radio</span>
+          <span style="color:#16a34a;font-size:11px;">${Math.round(cluster.radio)} m radio</span>
         </div>`,
         { direction: 'top', offset: [0, -10], opacity: 0.95 }
       );
@@ -168,8 +231,9 @@ const ClusterIncidencias = ({ visible, filtros = null }) => {
           return d.toISOString().split('T')[0];
         })();
         const defaultEnd = new Date().toISOString().split('T')[0];
-        const startDate = filtros?.fechaInicio || fechasClusters.fechaInicio || defaultStart;
-        const endDate   = filtros?.fechaFin    || fechasClusters.fechaFin    || defaultEnd;
+        // Fechas: siempre del panel del cluster (independiente del panel de incidencias)
+        const startDate = fechasClusters.fechaInicio || defaultStart;
+        const endDate   = fechasClusters.fechaFin    || defaultEnd;
         const params = new URLSearchParams();
         params.append('type', tipo);
         if (subtype) params.append('subtype', subtype);
@@ -190,20 +254,36 @@ const ClusterIncidencias = ({ visible, filtros = null }) => {
       const headers = { 'Content-Type': 'application/json' };
       if (TOKEN) headers['Authorization'] = `Bearer ${TOKEN}`;
 
-      // Tipos y subtypes exactos que usa useIncidenciasQuery.js
-      // IMPORTANTE: Extorsión va ANTES que Robo para que el dedup priorice la etiqueta correcta
       const todasTipologias = [
-        { tipo: 3, subtype: 24,   nombre: 'Extorsión',   key: 'extorsiones' },
-        { tipo: 3, subtype: null, nombre: 'Robo',        key: 'robos' },
-        { tipo: 1, subtype: 1,    nombre: 'Homicidio',   key: 'homicidios' },
-        { tipo: 1, subtype: 2,    nombre: 'Feminicidio', key: 'feminicidios' },
-        { tipo: 1, subtype: 3,    nombre: 'Sicariato',   key: 'sicariatos' },
-        { tipo: 2, subtype: 6,    nombre: 'Secuestro',   key: 'secuestros' },
-        { tipo: 5, subtype: 28,   nombre: 'Drogas',      key: 'drogas' },
-        { tipo: 7, subtype: 31,   nombre: 'Barras',      key: 'barras' },
+        // Robos — clave individual por subtipo
+        { tipo: 3, subtype: 10, nombre: 'Robo', key: 'roboPersonas'   },
+        { tipo: 3, subtype: 11, nombre: 'Robo', key: 'roboCasa'       },
+        { tipo: 3, subtype: 12, nombre: 'Robo', key: 'roboGanado'     },
+        { tipo: 3, subtype: 13, nombre: 'Robo', key: 'roboEmpresas'   },
+        { tipo: 3, subtype: 14, nombre: 'Robo', key: 'roboVehiculos'  },
+        { tipo: 3, subtype: 15, nombre: 'Robo', key: 'roboAutopartes' },
+        { tipo: 3, subtype: 16, nombre: 'Robo', key: 'roboPasajeros'  },
+        // Hurtos — clave individual por subtipo
+        { tipo: 3, subtype: 18, nombre: 'Hurto', key: 'hurtoPersonas'  },
+        { tipo: 3, subtype: 19, nombre: 'Hurto', key: 'hurtoCasa'      },
+        { tipo: 3, subtype: 20, nombre: 'Hurto', key: 'hurtoGanado'    },
+        { tipo: 3, subtype: 21, nombre: 'Hurto', key: 'hurtoEmpresas'  },
+        { tipo: 3, subtype: 22, nombre: 'Hurto', key: 'hurtoVehiculos' },
+        { tipo: 3, subtype: 23, nombre: 'Hurto', key: 'hurtoPasajeros' },
+        // Daños
+        { tipo: 3, subtype: 17, nombre: 'Daño', key: 'danos' },
+        // Otros tipos
+        { tipo: 3, subtype: 24, nombre: 'Extorsión',   key: 'extorsiones' },
+        { tipo: 1, subtype: 1,  nombre: 'Homicidio',   key: 'homicidios'  },
+        { tipo: 1, subtype: 2,  nombre: 'Feminicidio', key: 'feminicidios'},
+        { tipo: 1, subtype: 3,  nombre: 'Sicariato',   key: 'sicariatos'  },
+        { tipo: 2, subtype: 6,  nombre: 'Secuestro',   key: 'secuestros'  },
+        { tipo: 5, subtype: 28, nombre: 'Drogas',      key: 'drogas'      },
+        { tipo: 7, subtype: 31, nombre: 'Barras',      key: 'barras'      },
       ];
 
-      const tipologias = todasTipologias.filter(t => tiposIncidenciasCluster[t.key]);
+      // Si el key no existe en el estado (ej. migración de keys) se incluye por defecto
+      const tipologias = todasTipologias.filter(t => tiposIncidenciasCluster[t.key] !== false);
 
       Promise.all(
         tipologias.map(({ tipo, subtype, nombre }) =>
@@ -285,7 +365,7 @@ const ClusterIncidencias = ({ visible, filtros = null }) => {
       clearTimeout(debounceTimer);
       abortControllerRef.current?.abort();
     };
-  }, [visible, radioCluster, filtros, tiposIncidenciasCluster, fechasClusters]);
+  }, [visible, radioCluster, tiposIncidenciasCluster, fechasClusters]);
 
   if (!visible) return null;
 

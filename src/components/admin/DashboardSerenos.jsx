@@ -40,14 +40,39 @@ const normalizeShift = v => {
 };
 
 const TIPOS = [
-  { tipo: 3, subtype: 24,   nombre: 'Extorsión' },
-  { tipo: 3, subtype: null, nombre: 'Robo' },
-  { tipo: 1, subtype: 1,    nombre: 'Homicidio' },
-  { tipo: 1, subtype: 2,    nombre: 'Feminicidio' },
-  { tipo: 1, subtype: 3,    nombre: 'Sicariato' },
-  { tipo: 2, subtype: 6,    nombre: 'Secuestro' },
-  { tipo: 5, subtype: 28,   nombre: 'Drogas' },
-  { tipo: 7, subtype: 31,   nombre: 'Barras' },
+  // ── Robo (tipo 3 — subtipo por subtipo) ───────────────────────────────────
+  { tipo: 3, subtype: 10, nombre: 'Robo a Personas',    grupo: 'Robo' },
+  { tipo: 3, subtype: 11, nombre: 'Robo Casa Habitada', grupo: 'Robo' },
+  { tipo: 3, subtype: 12, nombre: 'Robo de Ganado',     grupo: 'Robo' },
+  { tipo: 3, subtype: 13, nombre: 'Robo a Empresas',    grupo: 'Robo' },
+  { tipo: 3, subtype: 14, nombre: 'Robo de Vehículos',  grupo: 'Robo' },
+  { tipo: 3, subtype: 15, nombre: 'Robo de Autopartes', grupo: 'Robo' },
+  { tipo: 3, subtype: 16, nombre: 'Robo a Pasajeros',   grupo: 'Robo' },
+  { tipo: 3, subtype: 17, nombre: 'Daños',              grupo: 'Robo' },
+  { tipo: 3, subtype: 18, nombre: 'Hurto a Personas',   grupo: 'Robo' },
+  { tipo: 3, subtype: 19, nombre: 'Hurto Casa Habitada',grupo: 'Robo' },
+  { tipo: 3, subtype: 20, nombre: 'Hurto de Ganado',    grupo: 'Robo' },
+  { tipo: 3, subtype: 21, nombre: 'Hurto a Empresas',   grupo: 'Robo' },
+  { tipo: 3, subtype: 22, nombre: 'Hurto de Vehículos', grupo: 'Robo' },
+  { tipo: 3, subtype: 23, nombre: 'Hurto a Pasajeros',  grupo: 'Robo' },
+  // ── Otros tipos ───────────────────────────────────────────────────────────
+  { tipo: 3, subtype: 24, nombre: 'Extorsión',   grupo: null },
+  { tipo: 1, subtype: 1,  nombre: 'Homicidio',   grupo: null },
+  { tipo: 1, subtype: 2,  nombre: 'Feminicidio', grupo: null },
+  { tipo: 1, subtype: 3,  nombre: 'Sicariato',   grupo: null },
+  { tipo: 2, subtype: 6,  nombre: 'Secuestro',   grupo: null },
+  { tipo: 5, subtype: 28, nombre: 'Drogas',      grupo: null },
+  { tipo: 7, subtype: 31, nombre: 'Barras',      grupo: null },
+];
+
+const ROBO_SUBTIPOS  = TIPOS.filter(t => t.grupo === 'Robo').map(t => t.nombre);
+const NON_ROBO_TIPOS = TIPOS.filter(t => !t.grupo);
+
+// Azules para robos, naranja para daños, morados para hurtos
+const ROBO_PALETTE = [
+  '#1e3a8a','#1d4ed8','#2563eb','#3b82f6','#0ea5e9','#0284c7','#0369a1',
+  '#f97316',
+  '#7c3aed','#6d28d9','#8b5cf6','#a78bfa','#9333ea','#7e22ce',
 ];
 
 const fmt = d => {
@@ -186,6 +211,26 @@ const ChartTip = ({ active, payload, label }) => {
   );
 };
 
+// Tooltip para el gráfico apilado — filtra segmentos con valor 0
+const StackedTip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  const visible = payload.filter(p => (p.value ?? 0) > 0);
+  if (!visible.length) return null;
+  const total = visible.reduce((s, p) => s + p.value, 0);
+  return (
+    <div style={{ background: CARD, border: BORDER, borderRadius: 10, padding: '9px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.10)', maxWidth: 240 }}>
+      <p style={{ margin: '0 0 4px', fontWeight: 700, color: TEXT_DARK, fontSize: 12 }}>
+        {label} — <strong>{total}</strong> casos
+      </p>
+      {visible.map((p, i) => (
+        <p key={i} style={{ margin: '2px 0 0', color: p.fill || PRIMARY, fontSize: 11 }}>
+          {p.name}: <strong>{p.value}</strong>
+        </p>
+      ))}
+    </div>
+  );
+};
+
 const pct  = (v, t) => t ? `${((v / t) * 100).toFixed(1)}% del total` : '—';
 const fmtN = n => (n ?? 0).toLocaleString('es-PE');
 
@@ -197,6 +242,7 @@ const DashboardSerenos = () => {
   const [range, setRange]           = useState(getDefault);
   const [activeQ, setActiveQ]       = useState('30 días');
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [showRoboDetail, setShowRoboDetail] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true); setError(null);
@@ -249,6 +295,40 @@ const DashboardSerenos = () => {
   const byTypeForBar = useMemo(() =>
     byType.map((t, i) => ({ ...t, fill: TYPE_PALETTE[i % TYPE_PALETTE.length] })),
     [byType]);
+
+  // Gráfico principal: Robo como una sola barra (total), resto igual
+  const mainChartData = useMemo(() => {
+    const counts = {};
+    incidents.forEach(i => { counts[i.tipo] = (counts[i.tipo] || 0) + 1; });
+
+    const roboTotal = ROBO_SUBTIPOS.reduce((s, k) => s + (counts[k] || 0), 0);
+    const roboEntry = { name: 'Robo', count: roboTotal, fill: PRIMARY, isRobo: true };
+
+    const others = NON_ROBO_TIPOS
+      .map((t, i) => ({ name: t.nombre, count: counts[t.nombre] || 0, fill: TYPE_PALETTE[(i + 1) % TYPE_PALETTE.length], isRobo: false }))
+      .filter(r => r.count > 0);
+
+    return [roboEntry, ...others].sort((a, b) => b.count - a.count);
+  }, [incidents]);
+
+  // Desglose de subtipos de Robo para el panel expandible
+  const roboBreakdown = useMemo(() => {
+    const counts = {};
+    incidents.forEach(i => { counts[i.tipo] = (counts[i.tipo] || 0) + 1; });
+    return ROBO_SUBTIPOS
+      .map((s, i) => ({ name: s, count: counts[s] || 0, fill: ROBO_PALETTE[i] }))
+      .filter(r => r.count > 0)
+      .sort((a, b) => b.count - a.count);
+  }, [incidents]);
+
+  // Nº de categorías principales activas (Robo cuenta como 1)
+  const tiposActivosCount = useMemo(() => {
+    const seen = new Set(incidents.map(i => {
+      const t = TIPOS.find(t => t.nombre === i.tipo);
+      return t?.grupo || i.tipo;
+    }));
+    return seen.size;
+  }, [incidents]);
 
   const recent = useMemo(() =>
     [...incidents].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10),
@@ -342,7 +422,7 @@ const DashboardSerenos = () => {
               <KpiCard title="Turno Tarde"         value={fmtN(kpis.afternoon)} icon={Activity}      color="#3b82f6" sub={pct(kpis.afternoon, kpis.total)} />
               <KpiCard title="Turno Noche"         value={fmtN(kpis.night)}     icon={Users}         color="#7c3aed" sub={pct(kpis.night, kpis.total)} />
               <KpiCard title="Registradas Hoy"     value={fmtN(kpis.today)}     icon={TrendingUp}    color="#22c55e" />
-              <KpiCard title="Tipos Registrados"   value={fmtN(byType.length)}  icon={AlertTriangle} color="#06b6d4" />
+              <KpiCard title="Tipos Registrados"   value={fmtN(tiposActivosCount)}  icon={AlertTriangle} color="#06b6d4" />
             </div>
 
             {/* Tendencia — ancho completo */}
@@ -381,18 +461,72 @@ const DashboardSerenos = () => {
                 </ResponsiveContainer>
               </SectionCard>
 
-              <SectionCard title="Incidencias por Tipo de Delito">
-                <ResponsiveContainer debounce={50} width="100%" height={280}>
-                  <BarChart data={byTypeForBar} layout="vertical" margin={{ top: 0, right: 28, bottom: 0, left: 4 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 10, fill: TEXT_LIGHT }} allowDecimals={false} axisLine={false} tickLine={false} />
-                    <YAxis type="category" dataKey="name" width={82} tick={{ fontSize: 11, fill: TEXT_MID }} axisLine={false} tickLine={false} />
-                    <Tooltip content={<ChartTip />} />
-                    <Bar dataKey="count" name="Casos" radius={[0, 5, 5, 0]}>
-                      {byTypeForBar.map((e, i) => <Cell key={i} fill={e.fill} />)}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+              <SectionCard
+                title={
+                  showRoboDetail ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button
+                        onClick={() => setShowRoboDetail(false)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 4,
+                          background: `${PRIMARY}12`, border: 'none', borderRadius: 6,
+                          cursor: 'pointer', padding: '3px 8px', color: PRIMARY,
+                          fontSize: 11, fontWeight: 700,
+                        }}
+                      >
+                        ← Volver
+                      </button>
+                      <span>Desglose — Robos / Hurtos / Daños</span>
+                    </div>
+                  ) : 'Incidencias por Tipo de Delito'
+                }
+              >
+                {!showRoboDetail ? (
+                  <ResponsiveContainer debounce={50} width="100%" height={280}>
+                    <BarChart data={mainChartData} layout="vertical" margin={{ top: 0, right: 28, bottom: 0, left: 4 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                      <XAxis type="number" tick={{ fontSize: 10, fill: TEXT_LIGHT }} allowDecimals={false} axisLine={false} tickLine={false} />
+                      <YAxis type="category" dataKey="name" width={82} tick={{ fontSize: 11, fill: TEXT_MID }} axisLine={false} tickLine={false} />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload?.length) return null;
+                          return (
+                            <div style={{ background: CARD, border: BORDER, borderRadius: 10, padding: '9px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.10)' }}>
+                              <p style={{ margin: 0, fontWeight: 700, color: TEXT_DARK, fontSize: 12 }}>{label}</p>
+                              <p style={{ margin: '3px 0 0', color: payload[0].fill || PRIMARY, fontSize: 12 }}>
+                                Casos: <strong>{payload[0].value}</strong>
+                              </p>
+                              {payload[0]?.payload?.isRobo && (
+                                <p style={{ margin: '5px 0 0', color: TEXT_LIGHT, fontSize: 10 }}>Clic para ver desglose</p>
+                              )}
+                            </div>
+                          );
+                        }}
+                      />
+                      <Bar dataKey="count" name="Casos" radius={[0, 5, 5, 0]} cursor="pointer"
+                        onClick={data => { if (data?.isRobo) setShowRoboDetail(true); }}>
+                        {mainChartData.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <ResponsiveContainer debounce={50} width="100%" height={280}>
+                    <BarChart
+                      data={roboBreakdown}
+                      layout="vertical"
+                      margin={{ top: 2, right: 48, bottom: 2, left: 4 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                      <XAxis type="number" tick={{ fontSize: 10, fill: TEXT_LIGHT }} allowDecimals={false} axisLine={false} tickLine={false} />
+                      <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 11, fill: TEXT_MID }} axisLine={false} tickLine={false} />
+                      <Tooltip content={<ChartTip />} />
+                      <Bar dataKey="count" name="Casos" radius={[0, 5, 5, 0]}
+                        label={{ position: 'right', fontSize: 11, fontWeight: 700, fill: TEXT_MID }}>
+                        {roboBreakdown.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </SectionCard>
 
               <SectionCard title="Incidencias por Jurisdicción">

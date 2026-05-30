@@ -14,6 +14,7 @@ import GestionAuditoria    from './components/admin/GestionAuditoria';
 import GestionRoles       from './components/admin/GestionRoles';
 import DashboardPNP       from './components/admin/DashboardPNP';
 import DashboardSerenos   from './components/admin/DashboardSerenos';
+import ReporteIncidencias from './components/admin/ReporteIncidencias';
 import GestionComisarias            from './components/admin/GestionComisarias';
 import GestionTiposIncidencia       from './components/admin/GestionTiposIncidencia';
 import GestionSubtiposIncidencia    from './components/admin/GestionSubtiposIncidencia';
@@ -124,6 +125,11 @@ const AppLayout = ({ sidebarExpanded, onToggle, onClose, isMobile }) => {
           <Route path="/admin/modalidades-incidencia" element={
             <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR']} moduleKey="modalidades-incidencia">
               <GestionModalidadesIncidencia />
+            </ProtectedRoute>
+          } />
+          <Route path="/reportes/incidencias" element={
+            <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR', 'SUPERVISOR', 'CODISEC']} moduleKey="reportes-incidencias">
+              <ReporteIncidencias />
             </ProtectedRoute>
           } />
           <Route path="*" element={<Navigate to="/" replace />} />

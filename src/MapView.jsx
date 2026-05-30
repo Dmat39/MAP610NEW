@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, Pane } from 'react-leaflet';
 import { useState, useCallback, useMemo } from 'react';
 import { useAuth } from './context/AuthContext';
 import CapaJurisdiccion from './components/capas/Jurisdiccion/CapaJurisdiccion';
@@ -9,6 +9,17 @@ import CapaParaderosNoAutorizados from './components/capas/Paraderos/CapaParader
 import CapaDefensaCivil from './components/capas/DefensaCivil/CapaDefensaCivil';
 import CapaComisarias from './components/capas/Comisarias/CapaComisarias';
 import CapaRobos from './components/capas/Incidencias/CapaRobos';
+import {
+  CapaRoboPersonas, CapaRoboCasa, CapaRoboGanado, CapaRoboEmpresas,
+  CapaRoboVehiculos, CapaRoboAutopartes, CapaRoboPasajeros,
+  CapaHurtoPersonas, CapaHurtoCasa, CapaHurtoGanado, CapaHurtoEmpresas,
+  CapaHurtoVehiculos, CapaHurtoPasajeros, CapaDanos,
+} from './components/capas/Incidencias/CapasPatrimonio';
+
+const PATRIMONIO_SUBTIPO_KEYS = [
+  'roboPersonas','roboCasa','roboGanado','roboEmpresas','roboVehiculos','roboAutopartes','roboPasajeros',
+  'hurtoPersonas','hurtoCasa','hurtoGanado','hurtoEmpresas','hurtoVehiculos','hurtoPasajeros','danos',
+];
 import FiltroIncidentes from './components/filtros/FiltroIncidentes';
 import LayerTogglePanel from './components/Controles/LayerTogglePanel';
 import CapaExtorsion from './components/capas/Incidencias/CapaExtorsion';
@@ -89,6 +100,10 @@ const MapView = () => {
     paraderosAutorizados: false,
     paraderosNoAutorizados: false,
     robos: false,
+    roboPersonas: false, roboCasa: false, roboGanado: false, roboEmpresas: false,
+    roboVehiculos: false, roboAutopartes: false, roboPasajeros: false,
+    hurtoPersonas: false, hurtoCasa: false, hurtoGanado: false, hurtoEmpresas: false,
+    hurtoVehiculos: false, hurtoPasajeros: false, danos: false,
     extorsiones: false,
     homicidios: false,
     feminicidios: false,
@@ -165,7 +180,8 @@ const MapView = () => {
 
   const handleFiltrar = useCallback(payload => {
     setPayloadFiltros(payload);
-    if (capasVisibles.robos) setFiltrosRobos(payload);
+    const anyPatrimonio = capasVisibles.robos || PATRIMONIO_SUBTIPO_KEYS.some(k => capasVisibles[k]);
+    if (anyPatrimonio) setFiltrosRobos(payload);
     else setFiltrosRobos(payloadVacio);
 
     if (capasVisibles.extorsiones) setFiltrosExtorsion(payload);
@@ -272,6 +288,20 @@ const MapView = () => {
       visible: capasVisibles.camarasVecinales,
     },
     { name: 'robos', label: 'Robos', visible: capasVisibles.robos, restrictedForOperator: true },
+    { name: 'roboPersonas',   label: 'Robo a Personas',    visible: capasVisibles.roboPersonas,   restrictedForOperator: true },
+    { name: 'roboCasa',       label: 'Robo Casa Habitada', visible: capasVisibles.roboCasa,       restrictedForOperator: true },
+    { name: 'roboGanado',     label: 'Robo de Ganado',     visible: capasVisibles.roboGanado,     restrictedForOperator: true },
+    { name: 'roboEmpresas',   label: 'Robo a Empresas',    visible: capasVisibles.roboEmpresas,   restrictedForOperator: true },
+    { name: 'roboVehiculos',  label: 'Robo de Vehículos',  visible: capasVisibles.roboVehiculos,  restrictedForOperator: true },
+    { name: 'roboAutopartes', label: 'Robo de Autopartes', visible: capasVisibles.roboAutopartes, restrictedForOperator: true },
+    { name: 'roboPasajeros',  label: 'Robo a Pasajeros',   visible: capasVisibles.roboPasajeros,  restrictedForOperator: true },
+    { name: 'hurtoPersonas',  label: 'Hurto a Personas',   visible: capasVisibles.hurtoPersonas,  restrictedForOperator: true },
+    { name: 'hurtoCasa',      label: 'Hurto Casa Habitada',visible: capasVisibles.hurtoCasa,      restrictedForOperator: true },
+    { name: 'hurtoGanado',    label: 'Hurto de Ganado',    visible: capasVisibles.hurtoGanado,    restrictedForOperator: true },
+    { name: 'hurtoEmpresas',  label: 'Hurto a Empresas',   visible: capasVisibles.hurtoEmpresas,  restrictedForOperator: true },
+    { name: 'hurtoVehiculos', label: 'Hurto de Vehículos', visible: capasVisibles.hurtoVehiculos, restrictedForOperator: true },
+    { name: 'hurtoPasajeros', label: 'Hurto a Pasajeros',  visible: capasVisibles.hurtoPasajeros, restrictedForOperator: true },
+    { name: 'danos',          label: 'Daños',              visible: capasVisibles.danos,          restrictedForOperator: true },
     { name: 'extorsiones', label: 'Extorsiones', visible: capasVisibles.extorsiones, restrictedForOperator: true },
     { name: 'homicidios', label: 'Homicidios', visible: capasVisibles.homicidios, restrictedForOperator: true },
     { name: 'feminicidios', label: 'Feminicidios', visible: capasVisibles.feminicidios, restrictedForOperator: true },
@@ -328,7 +358,7 @@ const MapView = () => {
       if (!prev[nombre]) {
         // Usar payloadFiltros si existe, sino inicializar con objeto vacío para usar fechas por defecto
         const filtrosIniciales = payloadFiltros || {};
-        if (nombre === 'robos') setFiltrosRobos(filtrosIniciales);
+        if (nombre === 'robos' || PATRIMONIO_SUBTIPO_KEYS.includes(nombre)) setFiltrosRobos(filtrosIniciales);
         if (nombre === 'extorsiones') setFiltrosExtorsion(filtrosIniciales);
         if (nombre === 'homicidios') setFiltrosHomicidios(filtrosIniciales);
         if (nombre === 'feminicidios') setFiltrosFeminicidios(filtrosIniciales);
@@ -338,7 +368,11 @@ const MapView = () => {
         if (nombre === 'barras') setFiltrosBarras(filtrosIniciales);
       } else {
         // Si se desactiva, fuerza vaciado con payload con guiones
-        if (nombre === 'robos') setFiltrosRobos(payloadVacio);
+        if (nombre === 'robos' || PATRIMONIO_SUBTIPO_KEYS.includes(nombre)) {
+          const othersActive = (nombre !== 'robos' && updated.robos) ||
+            PATRIMONIO_SUBTIPO_KEYS.filter(k => k !== nombre).some(k => updated[k]);
+          if (!othersActive) setFiltrosRobos(payloadVacio);
+        }
         if (nombre === 'extorsiones') setFiltrosExtorsion(payloadVacio);
         if (nombre === 'homicidios') setFiltrosHomicidios(payloadVacio);
         if (nombre === 'feminicidios') setFiltrosFeminicidios(payloadVacio);
@@ -371,7 +405,8 @@ const MapView = () => {
         {/* Filtros bottom-left: apilan verticalmente cuando ambos están activos */}
         {((capasVisibles.robos || capasVisibles.extorsiones || capasVisibles.homicidios ||
           capasVisibles.feminicidios || capasVisibles.sicariatos || capasVisibles.secuestros ||
-          capasVisibles.drogas || capasVisibles.barras) || anyPnpVisible) ? (
+          capasVisibles.drogas || capasVisibles.barras ||
+          PATRIMONIO_SUBTIPO_KEYS.some(k => capasVisibles[k])) || anyPnpVisible) ? (
           <div style={{
             position: 'fixed',
             bottom: 10,
@@ -385,7 +420,8 @@ const MapView = () => {
           }}>
             {(capasVisibles.robos || capasVisibles.extorsiones || capasVisibles.homicidios ||
               capasVisibles.feminicidios || capasVisibles.sicariatos || capasVisibles.secuestros ||
-              capasVisibles.drogas || capasVisibles.barras) && (
+              capasVisibles.drogas || capasVisibles.barras ||
+              PATRIMONIO_SUBTIPO_KEYS.some(k => capasVisibles[k])) && (
               <div style={{ pointerEvents: 'auto' }}>
                 <FiltroIncidentes onFiltrar={handleFiltrar} onLimpiar={handleLimpiar} />
               </div>
@@ -473,6 +509,8 @@ const MapView = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             maxZoom={20}
           />
+          {/* Pane para incidencias: encima de polígonos (overlayPane=400) pero bajo marcadores (600) */}
+          <Pane name="incidenciasPane" style={{ zIndex: 420 }} />
           {capasVisibles.jurisdicciones && (
             <CapaJurisdiccion
               ubicadorActivo={
@@ -503,6 +541,20 @@ const MapView = () => {
           <CapaParaderosAutorizados visible={capasVisibles.paraderosAutorizados} />
           <CapaParaderosNoAutorizados visible={capasVisibles.paraderosNoAutorizados} />
           <CapaRobos visible={capasVisibles.robos} filtros={filtrosRobos} />
+          <CapaRoboPersonas   visible={capasVisibles.roboPersonas}   filtros={filtrosRobos} />
+          <CapaRoboCasa       visible={capasVisibles.roboCasa}       filtros={filtrosRobos} />
+          <CapaRoboGanado     visible={capasVisibles.roboGanado}     filtros={filtrosRobos} />
+          <CapaRoboEmpresas   visible={capasVisibles.roboEmpresas}   filtros={filtrosRobos} />
+          <CapaRoboVehiculos  visible={capasVisibles.roboVehiculos}  filtros={filtrosRobos} />
+          <CapaRoboAutopartes visible={capasVisibles.roboAutopartes} filtros={filtrosRobos} />
+          <CapaRoboPasajeros  visible={capasVisibles.roboPasajeros}  filtros={filtrosRobos} />
+          <CapaHurtoPersonas  visible={capasVisibles.hurtoPersonas}  filtros={filtrosRobos} />
+          <CapaHurtoCasa      visible={capasVisibles.hurtoCasa}      filtros={filtrosRobos} />
+          <CapaHurtoGanado    visible={capasVisibles.hurtoGanado}    filtros={filtrosRobos} />
+          <CapaHurtoEmpresas  visible={capasVisibles.hurtoEmpresas}  filtros={filtrosRobos} />
+          <CapaHurtoVehiculos visible={capasVisibles.hurtoVehiculos} filtros={filtrosRobos} />
+          <CapaHurtoPasajeros visible={capasVisibles.hurtoPasajeros} filtros={filtrosRobos} />
+          <CapaDanos          visible={capasVisibles.danos}          filtros={filtrosRobos} />
           <CapaExtorsion visible={capasVisibles.extorsiones} filtros={filtrosExtorsion} />
           <CapaHomicidios visible={capasVisibles.homicidios} filtros={filtrosHomicidios} />
           <CapaFeminicidios visible={capasVisibles.feminicidios} filtros={filtrosFeminicidios} />

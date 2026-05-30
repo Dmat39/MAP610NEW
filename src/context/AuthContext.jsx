@@ -141,7 +141,16 @@ export const AuthProvider = ({ children }) => {
   const hasLayerAccess = (layerKey) => {
     if (role === 'SUPERADMIN') return true;
     if (!customRolePerms) return true;
-    return customRolePerms.layer_permissions?.some(p => p.layer_key === layerKey) ?? false;
+    const perms = customRolePerms.layer_permissions ?? [];
+    // Acceso directo por key exacto
+    if (perms.some(p => p.layer_key === layerKey)) return true;
+    // Compat: si el rol tiene 'robos' (key legacy), concede acceso a todos los subtipos de robo
+    const ROBO_SUBTIPO_KEYS = ['roboPersonas','roboCasa','roboGanado','roboEmpresas','roboVehiculos','roboAutopartes','roboPasajeros'];
+    const HURTO_SUBTIPO_KEYS = ['hurtoPersonas','hurtoCasa','hurtoGanado','hurtoEmpresas','hurtoVehiculos','hurtoPasajeros'];
+    if (ROBO_SUBTIPO_KEYS.includes(layerKey) && perms.some(p => p.layer_key === 'robos')) return true;
+    if (HURTO_SUBTIPO_KEYS.includes(layerKey) && perms.some(p => p.layer_key === 'hurtos')) return true;
+    if (layerKey === 'danos' && perms.some(p => p.layer_key === 'danos')) return true;
+    return false;
   };
 
   // Devuelve el array de campos visibles para un módulo.

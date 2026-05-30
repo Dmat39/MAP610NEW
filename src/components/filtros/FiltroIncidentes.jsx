@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DateRange } from 'react-date-range';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
@@ -7,6 +7,8 @@ import { Filter, RotateCcw, BadgeCheck, ChevronUp, ChevronDown, Calendar } from 
 
 const TIPO_CONFIG = [
   { key: 'robos',       label: 'Robos',       color: '#e74c3c' },
+  { key: 'hurtos',      label: 'Hurtos',      color: '#7c3aed' },
+  { key: 'danos',       label: 'Daños',       color: '#f97316' },
   { key: 'extorsion',   label: 'Extorsión',   color: '#e67e22' },
   { key: 'homicidios',  label: 'Homicidios',  color: '#2d3436' },
   { key: 'feminicidios',label: 'Feminicidios',color: '#d63031' },
@@ -48,9 +50,13 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
   });
 
   const [contadores, setContadores] = useState({
-    robos: 0, extorsion: 0, homicidios: 0, feminicidios: 0,
-    sicariatos: 0, secuestros: 0, drogas: 0, barras: 0, total: 0,
+    robos: 0, hurtos: 0, danos: 0, extorsion: 0, homicidios: 0,
+    feminicidios: 0, sicariatos: 0, secuestros: 0, drogas: 0, barras: 0, total: 0,
   });
+  // Refs para agregar subtotales (múltiples eventos → un contador)
+  const roboTotals  = React.useRef({});
+  const hurtoTotals = React.useRef({});
+  const danosTotals = React.useRef({});
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
@@ -64,18 +70,40 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
   };
 
   useEffect(() => {
-    const calcularTotal = c => {
-      const robosUnicos = Math.max(0, c.robos - c.extorsion);
-      return robosUnicos + c.extorsion + c.homicidios + c.feminicidios + c.sicariatos + c.secuestros + c.drogas + c.barras;
-    };
+    const calcularTotal = c =>
+      Math.max(0, c.robos - c.extorsion) + c.hurtos + c.danos +
+      c.extorsion + c.homicidios + c.feminicidios + c.sicariatos +
+      c.secuestros + c.drogas + c.barras;
 
-    const mk = (field) => e => {
+    const mk = field => e => {
       logger.log(`Recibido ${field}:`, e.detail);
       setContadores(prev => { const n = { ...prev, [field]: e.detail }; return { ...n, total: calcularTotal(n) }; });
     };
 
+    // Robos: agrega 7 subtypes + capa combinada legacy
+    const ROBO_EVS = ['robosTotal','roboPersonasTotal','roboCasaTotal','roboGanadoTotal','roboEmpresasTotal','roboVehiculosTotal','roboAutopartesTotal','roboPasajerosTotal'];
+    const mkRobo = ev => e => {
+      roboTotals.current[ev] = e.detail;
+      const total = Object.values(roboTotals.current).reduce((a,b) => a+b, 0);
+      setContadores(prev => { const n = { ...prev, robos: total }; return { ...n, total: calcularTotal(n) }; });
+    };
+
+    // Hurtos: agrega 6 subtypes en un solo contador
+    const HURTO_EVS = ['hurtoPersonasTotal','hurtoCasaTotal','hurtoGanadoTotal','hurtoEmpresasTotal','hurtoVehiculosTotal','hurtoPasajerosTotal'];
+    const mkHurto = ev => e => {
+      hurtoTotals.current[ev] = e.detail;
+      const total = Object.values(hurtoTotals.current).reduce((a,b) => a+b, 0);
+      setContadores(prev => { const n = { ...prev, hurtos: total }; return { ...n, total: calcularTotal(n) }; });
+    };
+
+    // Daños: 1 evento
+    const mkDanos = e => {
+      danosTotals.current.danosTotal = e.detail;
+      setContadores(prev => { const n = { ...prev, danos: e.detail }; return { ...n, total: calcularTotal(n) }; });
+    };
+
     const handlers = [
-      ['robosTotal',       mk('robos')],
+      ...ROBO_EVS.map(ev => [ev, mkRobo(ev)]),
       ['extorsionTotal',   mk('extorsion')],
       ['homicidiosTotal',  mk('homicidios')],
       ['feminicidiosTotal',mk('feminicidios')],
@@ -83,6 +111,8 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
       ['secuestrosTotal',  mk('secuestros')],
       ['drogasTotal',      mk('drogas')],
       ['barrasTotal',      mk('barras')],
+      ...HURTO_EVS.map(ev => [ev, mkHurto(ev)]),
+      ['danosTotal', mkDanos],
     ];
 
     handlers.forEach(([ev, h]) => window.addEventListener(ev, h));
@@ -170,7 +200,7 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
 
           {/* Contadores */}
           <div style={{ background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', padding: 12 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6, marginBottom: 10 }}>
               {TIPO_CONFIG.map(t => (
                 <div key={t.key} style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',

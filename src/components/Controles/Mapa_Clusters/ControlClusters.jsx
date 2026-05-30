@@ -1,5 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, ScatterChart, CalendarDays, RotateCcw, SlidersHorizontal, ListFilter, BarChart3 } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronRight, ScatterChart, CalendarDays, RotateCcw, SlidersHorizontal, ListFilter, BarChart3 } from 'lucide-react';
+
+const ROBO_SUBTYPES = [
+  { key: 'roboPersonas',   label: 'A Personas'  },
+  { key: 'roboCasa',       label: 'Casa Habitada'},
+  { key: 'roboGanado',     label: 'De Ganado'   },
+  { key: 'roboEmpresas',   label: 'A Empresas'  },
+  { key: 'roboVehiculos',  label: 'De Vehículos'},
+  { key: 'roboAutopartes', label: 'Autopartes'  },
+  { key: 'roboPasajeros',  label: 'A Pasajeros' },
+];
+const HURTO_SUBTYPES = [
+  { key: 'hurtoPersonas',  label: 'A Personas'  },
+  { key: 'hurtoCasa',      label: 'Casa Habitada'},
+  { key: 'hurtoGanado',    label: 'De Ganado'   },
+  { key: 'hurtoEmpresas',  label: 'A Empresas'  },
+  { key: 'hurtoVehiculos', label: 'De Vehículos'},
+  { key: 'hurtoPasajeros', label: 'A Pasajeros' },
+];
 import { useMapContext } from '../../../context/MapContext';
 import { useMapLayout } from '../../../context/MapLayoutContext';
 import './ControlClusters.css';
@@ -27,6 +45,16 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
   }, [visible, registerPanel, unregisterPanel]);
 
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [robosExpanded, setRobosExpanded] = useState(false);
+  const [hurtosExpanded, setHurtosExpanded] = useState(false);
+
+  const toggleGrupo = (keys) => {
+    const allActive = keys.every(k => tiposIncidenciasCluster[k]);
+    keys.forEach(k => {
+      if (allActive ? tiposIncidenciasCluster[k] : !tiposIncidenciasCluster[k])
+        handleToggleTipoIncidenciaCluster(k);
+    });
+  };
   const [estadisticas, setEstadisticas] = useState({
     totalClusters: 0,
     totalPuntos: 0,
@@ -165,13 +193,65 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
         <div className="filtros-incidencias">
           <h4 style={{ display: 'flex', alignItems: 'center', gap: 6 }}><ListFilter size={13} color="#16a34a" /> Tipos de Incidencias</h4>
           <div className="filtros-grid">
-            <label className="filtro-checkbox">
+
+            {/* ── Grupo Robos ── */}
+            <div
+              className={`filtro-grupo-header${ROBO_SUBTYPES.some(s => tiposIncidenciasCluster[s.key]) ? ' activo' : ''}`}
+              onClick={() => setRobosExpanded(v => !v)}
+            >
               <input
                 type="checkbox"
-                checked={tiposIncidenciasCluster.robos}
-                onChange={() => handleToggleTipoIncidenciaCluster('robos')}
+                checked={ROBO_SUBTYPES.every(s => tiposIncidenciasCluster[s.key])}
+                ref={el => { if (el) el.indeterminate = ROBO_SUBTYPES.some(s => tiposIncidenciasCluster[s.key]) && !ROBO_SUBTYPES.every(s => tiposIncidenciasCluster[s.key]); }}
+                onChange={e => { e.stopPropagation(); toggleGrupo(ROBO_SUBTYPES.map(s => s.key)); }}
+                onClick={e => e.stopPropagation()}
+                style={{ width: 15, height: 15, cursor: 'pointer', accentColor: '#16a34a', flexShrink: 0 }}
               />
-              <span>Robos</span>
+              <span style={{ flex: 1 }}>Robos ({ROBO_SUBTYPES.filter(s => tiposIncidenciasCluster[s.key]).length}/{ROBO_SUBTYPES.length})</span>
+              <ChevronRight size={13} className={`filtro-grupo-chevron${robosExpanded ? ' expanded' : ''}`} />
+            </div>
+            {robosExpanded && (
+              <div className="filtro-subgrid">
+                {ROBO_SUBTYPES.map(s => (
+                  <label key={s.key} className="filtro-checkbox sub">
+                    <input type="checkbox" checked={tiposIncidenciasCluster[s.key]} onChange={() => handleToggleTipoIncidenciaCluster(s.key)} />
+                    <span>{s.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {/* ── Grupo Hurtos ── */}
+            <div
+              className={`filtro-grupo-header${HURTO_SUBTYPES.some(s => tiposIncidenciasCluster[s.key]) ? ' activo' : ''}`}
+              onClick={() => setHurtosExpanded(v => !v)}
+            >
+              <input
+                type="checkbox"
+                checked={HURTO_SUBTYPES.every(s => tiposIncidenciasCluster[s.key])}
+                ref={el => { if (el) el.indeterminate = HURTO_SUBTYPES.some(s => tiposIncidenciasCluster[s.key]) && !HURTO_SUBTYPES.every(s => tiposIncidenciasCluster[s.key]); }}
+                onChange={e => { e.stopPropagation(); toggleGrupo(HURTO_SUBTYPES.map(s => s.key)); }}
+                onClick={e => e.stopPropagation()}
+                style={{ width: 15, height: 15, cursor: 'pointer', accentColor: '#16a34a', flexShrink: 0 }}
+              />
+              <span style={{ flex: 1 }}>Hurtos ({HURTO_SUBTYPES.filter(s => tiposIncidenciasCluster[s.key]).length}/{HURTO_SUBTYPES.length})</span>
+              <ChevronRight size={13} className={`filtro-grupo-chevron${hurtosExpanded ? ' expanded' : ''}`} />
+            </div>
+            {hurtosExpanded && (
+              <div className="filtro-subgrid">
+                {HURTO_SUBTYPES.map(s => (
+                  <label key={s.key} className="filtro-checkbox sub">
+                    <input type="checkbox" checked={tiposIncidenciasCluster[s.key]} onChange={() => handleToggleTipoIncidenciaCluster(s.key)} />
+                    <span>{s.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {/* ── Items simples ── */}
+            <label className="filtro-checkbox">
+              <input type="checkbox" checked={tiposIncidenciasCluster.danos} onChange={() => handleToggleTipoIncidenciaCluster('danos')} />
+              <span>Daños</span>
             </label>
             <label className="filtro-checkbox">
               <input

@@ -4,6 +4,10 @@ import { logger } from '../../../utils/logger.js';
 
 const GEO_URL = '/data/sectores-pvl.geojson';
 
+// Comunas usa overlayPane estándar (400).
+// Las incidencias van en 'incidenciasPane' (420) creado en MapView → siempre encima.
+const PANE_NAME = 'overlayPane';
+
 const CapaJurisdiccionCodisec = ({
   visible = false,
   ubicadorActivo = false,
@@ -16,6 +20,7 @@ const CapaJurisdiccionCodisec = ({
   const geoJsonRef = useRef(null);
 
   const esInactivo = camaraConVision !== null || camaraSeleccionada !== null;
+
 
   useEffect(() => {
     if (!visible) return;
@@ -73,7 +78,7 @@ const CapaJurisdiccionCodisec = ({
       onEachFeature={popupFeature}
       interactive={!esInactivo}
       bubblingMouseEvents={!esInactivo}
-      pane={esInactivo ? 'shadowPane' : 'overlayPane'}
+      pane={esInactivo ? 'shadowPane' : PANE_NAME}
     />
   ) : null;
 };

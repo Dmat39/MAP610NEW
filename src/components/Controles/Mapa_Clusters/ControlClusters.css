@@ -298,6 +298,53 @@
   user-select: none;
 }
 
+/* Grupo expandible dentro del filtro */
+.filtro-grupo-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.filtro-grupo-header:hover {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0369a1;
+}
+.filtro-grupo-header.activo {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
+}
+.filtro-grupo-chevron {
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.filtro-grupo-chevron.expanded {
+  transform: rotate(90deg);
+}
+.filtro-subgrid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  padding-left: 14px;
+}
+.filtro-checkbox.sub {
+  font-size: 11px;
+  padding: 4px 7px;
+  background: #f8fafc;
+}
+
 /* Estadísticas */
 .estadisticas {
   display: flex;

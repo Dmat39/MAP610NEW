@@ -61,14 +61,13 @@ export const MapProvider = ({ children }) => {
 
   // Filtros para tipos de incidencias en clusters - todos activos por defecto
   const [tiposIncidenciasCluster, setTiposIncidenciasCluster] = useState({
-    robos: true,
-    extorsiones: true,
-    homicidios: true,
-    feminicidios: true,
-    sicariatos: true,
-    secuestros: true,
-    drogas: true,
-    barras: true
+    roboPersonas: true, roboCasa: true, roboGanado: true, roboEmpresas: true,
+    roboVehiculos: true, roboAutopartes: true, roboPasajeros: true,
+    hurtoPersonas: true, hurtoCasa: true, hurtoGanado: true, hurtoEmpresas: true,
+    hurtoVehiculos: true, hurtoPasajeros: true,
+    danos: true,
+    extorsiones: true, homicidios: true, feminicidios: true, sicariatos: true,
+    secuestros: true, drogas: true, barras: true,
   });
 
   // Fechas para clusters - últimos 30 días por defecto

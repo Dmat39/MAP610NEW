@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   LogOut, MapPin, Camera, Map, Video, Users,
   Calendar, ChevronRight, ChevronLeft, Shield, ClipboardList,
-  LayoutDashboard, ShieldCheck, KeyRound, Building2, Tag, Layers, GitBranch,
+  LayoutDashboard, ShieldCheck, KeyRound, Building2, Tag, Layers, GitBranch, FileBarChart,
 } from 'lucide-react';
 import ConfirmModal from '../Modal/ConfirmModal';
 import './Sidebar.css';
@@ -95,6 +95,7 @@ const Sidebar = ({ isExpanded, onToggle, isMobile, onClose }) => {
     { path: '/',                          icon: Map,            label: 'Mapa',                show: true },
     { path: '/dashboard/serenos',         icon: LayoutDashboard,label: 'Dashboard Serenos',   show: canSeeModule('dashboard-serenos',  isAdmin || isCodisec) },
     { path: '/dashboard/pnp',             icon: ShieldCheck,    label: 'Dashboard PNP',       show: canSeeModule('dashboard-pnp',      isAdmin || isPnp) },
+    { path: '/reportes/incidencias',      icon: FileBarChart,   label: 'Reportes',             show: canSeeModule('reportes-incidencias', isAdmin || isCodisec) },
     { path: '/admin/actividades',         icon: Calendar,       label: 'Actividades',          show: canSeeModule('actividades',        isAdmin || isCodisec) },
     { path: '/admin/incidencias-pnp',         icon: Shield,      label: 'Incidencias PNP',     show: canSeeModule('incidencias-pnp',         isAdmin || isPnp) },
     { path: '/admin/tipos-incidencia',        icon: Tag,         label: 'Tipos Incidencia',    show: canSeeModule('tipos-incidencia',        isAdmin) },

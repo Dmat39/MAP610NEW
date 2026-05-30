@@ -319,6 +319,24 @@ export const useBarrasQuery = (filtros, enabled = true) => {
   return useTypologyQuery(7, 31, 'barrasTotal', filtros, enabled);
 };
 
+// ── Subtipos de Robo (tipo 3) ─────────────────────────────────────────────────
+export const useRoboPersonasQuery   = (f, e=true) => useTypologyQuery(3, 10, 'roboPersonasTotal',   f, e);
+export const useRoboCasaQuery       = (f, e=true) => useTypologyQuery(3, 11, 'roboCasaTotal',       f, e);
+export const useRoboGanadoQuery     = (f, e=true) => useTypologyQuery(3, 12, 'roboGanadoTotal',     f, e);
+export const useRoboEmpresasQuery   = (f, e=true) => useTypologyQuery(3, 13, 'roboEmpresasTotal',   f, e);
+export const useRoboVehiculosQuery  = (f, e=true) => useTypologyQuery(3, 14, 'roboVehiculosTotal',  f, e);
+export const useRoboAutopartesQuery = (f, e=true) => useTypologyQuery(3, 15, 'roboAutopartesTotal', f, e);
+export const useRoboPasajerosQuery  = (f, e=true) => useTypologyQuery(3, 16, 'roboPasajerosTotal',  f, e);
+// ── Subtipos de Hurto (tipo 3) ────────────────────────────────────────────────
+export const useHurtoPersonasQuery  = (f, e=true) => useTypologyQuery(3, 18, 'hurtoPersonasTotal',  f, e);
+export const useHurtoCasaQuery      = (f, e=true) => useTypologyQuery(3, 19, 'hurtoCasaTotal',      f, e);
+export const useHurtoGanadoQuery    = (f, e=true) => useTypologyQuery(3, 20, 'hurtoGanadoTotal',    f, e);
+export const useHurtoEmpresasQuery  = (f, e=true) => useTypologyQuery(3, 21, 'hurtoEmpresasTotal',  f, e);
+export const useHurtoVehiculosQuery = (f, e=true) => useTypologyQuery(3, 22, 'hurtoVehiculosTotal', f, e);
+export const useHurtoPasajerosQuery = (f, e=true) => useTypologyQuery(3, 23, 'hurtoPasajerosTotal', f, e);
+// ── Daños (tipo 3) ────────────────────────────────────────────────────────────
+export const useDanosQuery          = (f, e=true) => useTypologyQuery(3, 17, 'danosTotal',          f, e);
+
 // Hook personalizado para invalidar caché manualmente si es necesario
 export const useInvalidateIncidencias = () => {
   const queryClient = useQueryClient();
