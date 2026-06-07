@@ -379,6 +379,50 @@ export const createSostenimientoIcon = (size = 36) => {
   });
 };
 
+/**
+ * Ícono circular para Puntos de Campaña — sin triángulo base.
+ * Acepta un color hex para diferenciar categorías.
+ */
+const _campaignIconCache = new Map();
+export const createCampaignPointIcon = (color = '#E53935', size = 36) => {
+  const key = `${color}-${size}`;
+  if (_campaignIconCache.has(key)) return _campaignIconCache.get(key);
+
+  const svgSize = Math.round(size * 0.55);
+  const html = `
+    <div style="
+      width:${size}px;
+      height:${size}px;
+      background:#ffffff;
+      border:3px solid ${color};
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 2px 6px rgba(0,0,0,0.15);
+      cursor:pointer;
+      overflow:hidden;
+    ">
+      <svg width="${svgSize}" height="${svgSize}" viewBox="0 0 24 24" fill="none"
+           stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="5" y1="2" x2="5" y2="22"/>
+        <path d="M5 3 L19 9 L5 15 Z" fill="${color}" stroke="none"/>
+      </svg>
+    </div>
+  `;
+
+  const icon = L.divIcon({
+    html,
+    className: 'custom-adaptive-marker leaflet-marker-icon',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -(size / 2 + 4)],
+  });
+
+  _campaignIconCache.set(key, icon);
+  return icon;
+};
+
 // CSS para estilos (debe ser agregado globalmente)
 export const ADAPTIVE_ICON_STYLES = `
   .custom-adaptive-marker {
