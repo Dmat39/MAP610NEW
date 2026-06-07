@@ -7,6 +7,7 @@ import CapaCamarasVecinales from './components/capas/CamarasVecinales/CapaCamara
 import CapaParaderosAutorizados from './components/capas/Paraderos/CapaParaderosAutorizados';
 import CapaParaderosNoAutorizados from './components/capas/Paraderos/CapaParaderosNoAutorizados';
 import CapaDefensaCivil from './components/capas/DefensaCivil/CapaDefensaCivil';
+import CapaPuntosCampana from './components/capas/PuntosCampana/CapaPuntosCampana';
 import CapaComisarias from './components/capas/Comisarias/CapaComisarias';
 import CapaRobos from './components/capas/Incidencias/CapaRobos';
 import {
@@ -86,7 +87,7 @@ const PNP_TIPOS = [
 ];
 
 const MapView = () => {
-  const { user, hasLayerAccess } = useAuth();
+  const { user, hasLayerAccess, isAdmin } = useAuth();
   const userRole = user?.role;
   const isViewer = userRole === 'VIEWER';
 
@@ -134,6 +135,7 @@ const MapView = () => {
     pnpMenorInfractor: false,
     pnpFePublica: false,
     pnpTranquilidad: false,
+    puntoscampana: false,
   });
 
   const [payloadFiltros, setPayloadFiltros] = useState(null);
@@ -334,13 +336,17 @@ const MapView = () => {
     { name: 'residuos', label: 'Puntos Residuos Sólidos', visible: capasVisibles.residuos },
     { name: 'sostenimiento', label: 'Sostenimiento', visible: capasVisibles.sostenimiento },
     { name: 'actividades', label: 'Actividades', visible: capasVisibles.actividades },
+    ...(isAdmin ? [{ name: 'puntoscampana', label: 'Puntos de Campaña', visible: capasVisibles.puntoscampana }] : []),
     { name: 'zonasCodisec',   label: 'Comunas',         visible: capasVisibles.zonasCodisec,   codisecOnly: true },
     { name: 'jurisdicciones', label: 'Jurisdicciones',  visible: capasVisibles.jurisdicciones },
     ...PNP_TIPOS.map(t => ({ name: t.key, label: t.label, visible: capasVisibles[t.key] })),
   ];
 
   // Las capas visibles en el panel se filtran por los permisos de capa del rol actual
-  const capas = todasLasCapas.filter(capa => hasLayerAccess(capa.name));
+  // puntoscampana usa isAdmin directamente (no está en RoleLayerPermission)
+  const capas = todasLasCapas.filter(capa =>
+    capa.name === 'puntoscampana' ? isAdmin : hasLayerAccess(capa.name)
+  );
 
   const handleToggle = useCallback(nombre => {
     setCapasVisibles(prev => {
@@ -575,6 +581,7 @@ const MapView = () => {
           ))}
           <CapaResiduos visible={capasVisibles.residuos} />
           <CapaDefensaCivil visible={capasVisibles.defensaCivil} />
+          <CapaPuntosCampana visible={capasVisibles.puntoscampana} />
           <CapaComisarias visible={capasVisibles.comisarias} />
           <CapaSostenimiento visible={capasVisibles.sostenimiento} />
           <CapaActividades visible={capasVisibles.actividades} />
