@@ -138,7 +138,7 @@ const CapaPuntosCampana = ({ visible }) => {
                   gap: 6,
                 }}>
                   <span style={{ fontSize: 15 }}>🚩</span>
-                  <span style={{ fontWeight: 700, color, fontSize: 13 }}>Punto de Campaña</span>
+                  <span style={{ fontWeight: 700, color, fontSize: 13 }}>Punto de Obra</span>
                 </div>
 
                 {/* Nombre */}

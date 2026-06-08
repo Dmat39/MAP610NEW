@@ -28,7 +28,7 @@ const AVAILABLE_MODULES = [
   { key: 'usuarios',             label: 'Usuarios' },
   { key: 'roles',                label: 'Roles' },
   { key: 'comisarias',           label: 'Comisarías' },
-  { key: 'puntos-campana',       label: 'Puntos de Campaña' },
+  { key: 'puntos-campana',       label: 'Puntos de Obra' },
 ];
 
 const AVAILABLE_LAYERS = [
@@ -43,7 +43,7 @@ const AVAILABLE_LAYERS = [
   { key: 'sostenimiento',            label: 'Sostenimiento',              group: 'Infraestructura' },
   { key: 'actividades',              label: 'Actividades',                group: 'Infraestructura' },
   { key: 'comisarias',               label: 'Comisarías',                 group: 'Infraestructura' },
-  { key: 'puntosCampana',            label: 'Puntos de Campaña',          group: 'Infraestructura' },
+  { key: 'puntosCampana',            label: 'Puntos de Obra',             group: 'Infraestructura' },
   // ── Robos (subtipos individuales) ──────────────────────────────────────────
   { key: 'roboPersonas',   label: 'Robo a Personas',    group: 'Robos Serenos' },
   { key: 'roboCasa',       label: 'Robo Casa Habitada', group: 'Robos Serenos' },

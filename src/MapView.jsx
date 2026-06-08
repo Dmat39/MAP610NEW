@@ -336,7 +336,7 @@ const MapView = () => {
     { name: 'residuos', label: 'Puntos Residuos Sólidos', visible: capasVisibles.residuos },
     { name: 'sostenimiento', label: 'Sostenimiento', visible: capasVisibles.sostenimiento },
     { name: 'actividades', label: 'Actividades', visible: capasVisibles.actividades },
-    { name: 'puntosCampana', label: 'Puntos de Campaña', visible: capasVisibles.puntosCampana },
+    { name: 'puntosCampana', label: 'Puntos de Obra', visible: capasVisibles.puntosCampana },
     { name: 'zonasCodisec',   label: 'Comunas',         visible: capasVisibles.zonasCodisec,   codisecOnly: true },
     { name: 'jurisdicciones', label: 'Jurisdicciones',  visible: capasVisibles.jurisdicciones },
     ...PNP_TIPOS.map(t => ({ name: t.key, label: t.label, visible: capasVisibles[t.key] })),

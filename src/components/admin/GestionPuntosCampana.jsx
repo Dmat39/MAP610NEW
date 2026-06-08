@@ -292,8 +292,8 @@ const GestionPuntosCampana = () => {
         <div className="campana-header-content">
           <div className="campana-header-icon"><Flag size={22} /></div>
           <div className="campana-header-text">
-            <h1>Puntos de Campaña</h1>
-            <p>Administra los puntos geográficos de campaña municipal</p>
+            <h1>Puntos de Obra</h1>
+            <p>Administra los puntos geográficos de obra municipal</p>
           </div>
         </div>
         <div className="campana-header-actions">
@@ -410,7 +410,7 @@ const GestionPuntosCampana = () => {
           <div className="campana-modal" onClick={e => e.stopPropagation()}>
 
             <div className="modal-header">
-              <h2>{modalMode === 'create' ? 'Nuevo Punto de Campaña' : 'Editar Punto de Campaña'}</h2>
+              <h2>{modalMode === 'create' ? 'Nuevo Punto de Obra' : 'Editar Punto de Obra'}</h2>
               <button className="modal-close" onClick={closeModal}><X size={18} /></button>
             </div>
 
