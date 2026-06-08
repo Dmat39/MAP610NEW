@@ -16,6 +16,7 @@ import DashboardPNP       from './components/admin/DashboardPNP';
 import DashboardSerenos   from './components/admin/DashboardSerenos';
 import ReporteIncidencias from './components/admin/ReporteIncidencias';
 import GestionComisarias            from './components/admin/GestionComisarias';
+import GestionPuntosCampana         from './components/admin/GestionPuntosCampana';
 import GestionTiposIncidencia       from './components/admin/GestionTiposIncidencia';
 import GestionSubtiposIncidencia    from './components/admin/GestionSubtiposIncidencia';
 import GestionModalidadesIncidencia from './components/admin/GestionModalidadesIncidencia';
@@ -110,6 +111,11 @@ const AppLayout = ({ sidebarExpanded, onToggle, onClose, isMobile }) => {
           <Route path="/admin/comisarias" element={
             <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR']} moduleKey="comisarias">
               <GestionComisarias />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/puntos-campana" element={
+            <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR']} moduleKey="puntos-campana">
+              <GestionPuntosCampana />
             </ProtectedRoute>
           } />
           <Route path="/admin/tipos-incidencia" element={

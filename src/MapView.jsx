@@ -135,7 +135,7 @@ const MapView = () => {
     pnpMenorInfractor: false,
     pnpFePublica: false,
     pnpTranquilidad: false,
-    puntoscampana: false,
+    puntosCampana: false,
   });
 
   const [payloadFiltros, setPayloadFiltros] = useState(null);
@@ -336,17 +336,13 @@ const MapView = () => {
     { name: 'residuos', label: 'Puntos Residuos Sólidos', visible: capasVisibles.residuos },
     { name: 'sostenimiento', label: 'Sostenimiento', visible: capasVisibles.sostenimiento },
     { name: 'actividades', label: 'Actividades', visible: capasVisibles.actividades },
-    ...(isAdmin ? [{ name: 'puntoscampana', label: 'Puntos de Campaña', visible: capasVisibles.puntoscampana }] : []),
+    { name: 'puntosCampana', label: 'Puntos de Campaña', visible: capasVisibles.puntosCampana },
     { name: 'zonasCodisec',   label: 'Comunas',         visible: capasVisibles.zonasCodisec,   codisecOnly: true },
     { name: 'jurisdicciones', label: 'Jurisdicciones',  visible: capasVisibles.jurisdicciones },
     ...PNP_TIPOS.map(t => ({ name: t.key, label: t.label, visible: capasVisibles[t.key] })),
   ];
 
-  // Las capas visibles en el panel se filtran por los permisos de capa del rol actual
-  // puntoscampana usa isAdmin directamente (no está en RoleLayerPermission)
-  const capas = todasLasCapas.filter(capa =>
-    capa.name === 'puntoscampana' ? isAdmin : hasLayerAccess(capa.name)
-  );
+  const capas = todasLasCapas.filter(capa => hasLayerAccess(capa.name));
 
   const handleToggle = useCallback(nombre => {
     setCapasVisibles(prev => {
@@ -581,7 +577,7 @@ const MapView = () => {
           ))}
           <CapaResiduos visible={capasVisibles.residuos} />
           <CapaDefensaCivil visible={capasVisibles.defensaCivil} />
-          <CapaPuntosCampana visible={capasVisibles.puntoscampana} />
+          <CapaPuntosCampana visible={capasVisibles.puntosCampana} />
           <CapaComisarias visible={capasVisibles.comisarias} />
           <CapaSostenimiento visible={capasVisibles.sostenimiento} />
           <CapaActividades visible={capasVisibles.actividades} />

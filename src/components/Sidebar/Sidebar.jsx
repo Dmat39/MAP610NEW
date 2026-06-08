@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   LogOut, MapPin, Camera, Map, Video, Users,
   Calendar, ChevronRight, ChevronLeft, Shield, ClipboardList,
-  LayoutDashboard, ShieldCheck, KeyRound, Building2, Tag, Layers, GitBranch, FileBarChart,
+  LayoutDashboard, ShieldCheck, KeyRound, Building2, Tag, Layers, GitBranch, FileBarChart, Flag,
 } from 'lucide-react';
 import ConfirmModal from '../Modal/ConfirmModal';
 import './Sidebar.css';
@@ -104,6 +104,7 @@ const Sidebar = ({ isExpanded, onToggle, isMobile, onClose }) => {
     { path: '/admin/camaras-vecinales',   icon: Camera,         label: 'Cám. Vecinales',      show: canSeeModule('camaras-vecinales',  isAdmin) },
     { path: '/admin/camaras-municipales', icon: Video,          label: 'Cám. Municipales',    show: canSeeModule('camaras-municipales',isAdmin) },
     { path: '/admin/comisarias',          icon: Building2,      label: 'Comisarías',           show: canSeeModule('comisarias',          isAdmin) },
+    { path: '/admin/puntos-campana',      icon: Flag,           label: 'Puntos Campaña',       show: canSeeModule('puntos-campana', isAdmin) },
     { path: '/admin/usuarios',            icon: Users,          label: 'Usuarios',             show: canSeeModule('usuarios',           isSuperAdmin) },
     { path: '/admin/roles',               icon: KeyRound,       label: 'Roles',                show: canSeeModule('roles',              isSuperAdmin) },
     { path: '/admin/auditoria',           icon: ClipboardList,  label: 'Auditoría',            show: canSeeModule('auditoria',          isSuperAdmin) },
