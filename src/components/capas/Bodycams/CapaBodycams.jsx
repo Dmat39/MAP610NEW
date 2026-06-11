@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Marker, Popup, LayerGroup } from 'react-leaflet';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { obtenerBodycams } from '../../../../services/bodycamService';
+import { obtenerBodycams } from '../../../services/bodycamService';
 
 // SVG Icono Bodycam (Naranja)
 const svgBodycam = `
