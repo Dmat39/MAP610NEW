@@ -31,7 +31,7 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
     
     cameras: {
       title: 'Cámaras de Seguridad',
-      layers: ['camaras', 'camarasVecinales'],
+      layers: ['camaras', 'camarasVecinales', 'bodycams'],
     },
     zonas: {
       title: 'Zonas Geográficas',
