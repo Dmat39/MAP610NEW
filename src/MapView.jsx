@@ -42,6 +42,9 @@ import ControlMarcadorCamaras from './components/Controles/Marcador_Camaras/Cont
 import ControlCamaras from './components/Controles/Busqueda_Camaras/ControlCamaras';
 import CapaRutas from './components/capas/RutasVehiculo/CapaRutas';
 import ControlRutas from './components/Controles/Rutas_Moviles/ControlRutas';
+import CapaBodycams from './components/capas/Bodycams/CapaBodycams';
+import GoogleCapaBodycams from './components/googlemaps/GoogleCapaBodycams';
+import ControlBodycams from './components/Controles/Busqueda_Bodycams/ControlBodycams';
 import GoogleMapWrapper from './components/googlemaps/GoogleMapContainer';
 import GoogleRoutesCalculator from './components/googlemaps/GoogleRoutesCalculator';
 import GoogleCapaJurisdiccion from './components/googlemaps/GoogleCapaJurisdiccion';
@@ -98,6 +101,7 @@ const MapView = () => {
   const [capasVisibles, setCapasVisibles] = useState({
     camaras: canSeeCamaras, // Solo visible si tiene permiso de capa
     camarasVecinales: false,
+    bodycams: false,
     paraderosAutorizados: false,
     paraderosNoAutorizados: false,
     robos: false,
@@ -154,6 +158,7 @@ const MapView = () => {
   const [marcadorActivo, setMarcadorActivo] = useState(false);
   const [rutaInfo, setRutaInfo] = useState(null);
   const [camaraSeleccionada, setCamaraSeleccionada] = useState(null);
+  const [bodycamSeleccionada, setBodycamSeleccionada] = useState(null);
   const [camarasFiltradas, setCamarasFiltradas] = useState([]);
   const [filtrosCamaras, setFiltrosCamaras] = useState(null);
   const [seguimientoCamara, setSeguimientoCamara] = useState(null);
@@ -289,6 +294,7 @@ const MapView = () => {
       label: 'Cámaras Vecinales',
       visible: capasVisibles.camarasVecinales,
     },
+    { name: 'bodycams', label: 'Bodycams / Patrullaje', visible: capasVisibles.bodycams },
     { name: 'robos', label: 'Robos', visible: capasVisibles.robos, restrictedForOperator: true },
     { name: 'roboPersonas',   label: 'Robo a Personas',    visible: capasVisibles.roboPersonas,   restrictedForOperator: true },
     { name: 'roboCasa',       label: 'Robo Casa Habitada', visible: capasVisibles.roboCasa,       restrictedForOperator: true },
@@ -470,6 +476,18 @@ const MapView = () => {
           }
         />
       )}
+      <ControlBodycams
+        visible={capasVisibles.bodycams}
+        onBodycamSeleccionada={setBodycamSeleccionada}
+        onLimpiarSeleccion={() => setBodycamSeleccionada(null)}
+        mapType={mapType}
+        topPosition={
+          (capasVisibles.busquedaDirecciones ? 450 : 0) +
+          (capasVisibles.rutas ? 280 : 0) +
+          (capasVisibles.camaras ? 100 : 0) +
+          10
+        }
+      />
       <ControlClusters
         visible={capasVisibles.clusters}
         mapType={mapType}
@@ -477,6 +495,7 @@ const MapView = () => {
           (capasVisibles.busquedaDirecciones ? 450 : 0) +
           (capasVisibles.rutas ? 280 : 0) +
           (capasVisibles.camaras ? 100 : 0) +
+          (capasVisibles.bodycams ? 100 : 0) +
           10
         }
       />
@@ -540,6 +559,7 @@ const MapView = () => {
           {canSeeCamarasVecinales && (
             <CapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
           )}
+          <CapaBodycams visible={capasVisibles.bodycams} bodycamSeleccionada={bodycamSeleccionada} />
           <CapaParaderosAutorizados visible={capasVisibles.paraderosAutorizados} />
           <CapaParaderosNoAutorizados visible={capasVisibles.paraderosNoAutorizados} />
           <CapaRobos visible={capasVisibles.robos} filtros={filtrosRobos} />
@@ -628,6 +648,7 @@ const MapView = () => {
           {canSeeCamarasVecinales && (
             <GoogleCapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
           )}
+          <GoogleCapaBodycams visible={capasVisibles.bodycams} bodycamSeleccionada={bodycamSeleccionada} />
           <GoogleCapaRobos visible={capasVisibles.robos} filtros={filtrosRobos} />
           <GoogleCapaExtorsion visible={capasVisibles.extorsiones} filtros={filtrosExtorsion} />
           <GoogleCapaHomicidios visible={capasVisibles.homicidios} filtros={filtrosHomicidios} />
