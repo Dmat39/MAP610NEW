@@ -12,7 +12,7 @@ const GoogleCapaBodycams = ({ visible, bodycamSeleccionada }) => {
     const fetchBodycams = async () => {
       try {
         const data = await obtenerBodycams();
-        const activas = data.filter(bc => bc.activa && bc.last_lat && bc.last_lng);
+        const activas = data.filter(bc => bc.activa && bc.latitud && bc.longitud);
         setBodycams(activas);
       } catch (error) {
         console.error("Error fetching bodycams (Google):", error);
@@ -48,7 +48,7 @@ const GoogleCapaBodycams = ({ visible, bodycamSeleccionada }) => {
       {bodycams.map((bc) => (
         <Marker
           key={`g-bodycam-${bc.nombre}`}
-          position={{ lat: parseFloat(bc.last_lat), lng: parseFloat(bc.last_lng) }}
+          position={{ lat: parseFloat(bc.latitud), lng: parseFloat(bc.longitud) }}
           icon={svgIcon}
           onClick={() => setActiveMarker(bc.nombre)}
           zIndex={1500}
@@ -58,7 +58,7 @@ const GoogleCapaBodycams = ({ visible, bodycamSeleccionada }) => {
               <div style={{ fontSize: '13px', color: '#333' }}>
                 <strong style={{ color: '#f97316' }}>📹 Bodycam: {bc.nombre}</strong><br />
                 <strong>Código:</strong> {bc.codigo}<br />
-                <strong>Última act.:</strong> {new Date(bc.actualizado_en).toLocaleString()}<br />
+                <strong>Última act.:</strong> {new Date(bc.ultima_ubicacion).toLocaleString()}<br />
               </div>
             </InfoWindow>
           )}

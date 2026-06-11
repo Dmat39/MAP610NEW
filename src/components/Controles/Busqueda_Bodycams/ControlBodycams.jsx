@@ -28,7 +28,7 @@ const ControlBodycams = ({
     setError(null);
     try {
       const data = await obtenerBodycams();
-      setBodycams(data.filter(bc => bc.activa && bc.last_lat && bc.last_lng));
+      setBodycams(data.filter(bc => bc.activa && bc.latitud && bc.longitud));
     } catch (err) {
       setError('Error al cargar las bodycams.');
       console.error(err);

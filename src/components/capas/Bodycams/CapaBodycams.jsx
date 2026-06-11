@@ -34,7 +34,7 @@ const CapaBodycams = ({ visible, bodycamSeleccionada }) => {
       try {
         const data = await obtenerBodycams();
         // Filtramos para asegurar que tengan lat y lng válidos
-        const activas = data.filter(bc => bc.activa && bc.last_lat && bc.last_lng);
+        const activas = data.filter(bc => bc.activa && bc.latitud && bc.longitud);
         setBodycams(activas);
       } catch (error) {
         console.error("Error fetching bodycams:", error);
@@ -50,9 +50,9 @@ const CapaBodycams = ({ visible, bodycamSeleccionada }) => {
   // Center on selected bodycam
   useEffect(() => {
     if (bodycamSeleccionada && map) {
-      const { last_lat, last_lng, nombre } = bodycamSeleccionada;
-      if (last_lat && last_lng) {
-        map.flyTo([last_lat, last_lng], 18, { animate: true, duration: 1.5 });
+      const { latitud, longitud, nombre } = bodycamSeleccionada;
+      if (latitud && longitud) {
+        map.flyTo([latitud, longitud], 18, { animate: true, duration: 1.5 });
         setTimeout(() => {
           const marker = markersRef.current[`bodycam-${nombre}`];
           if (marker) marker.openPopup();
@@ -70,7 +70,7 @@ const CapaBodycams = ({ visible, bodycamSeleccionada }) => {
         return (
           <Marker
             key={markerId}
-            position={[bc.last_lat, bc.last_lng]}
+            position={[bc.latitud, bc.longitud]}
             icon={iconoBodycam}
             zIndexOffset={1500}
             ref={ref => {
@@ -81,9 +81,9 @@ const CapaBodycams = ({ visible, bodycamSeleccionada }) => {
               <div style={{ fontSize: '13px', minWidth: '150px' }}>
                 <strong style={{ color: '#f97316' }}>📹 Bodycam: {bc.nombre}</strong><br />
                 <strong>Código:</strong> {bc.codigo}<br />
-                <strong>Última act.:</strong> {new Date(bc.actualizado_en).toLocaleString()}<br />
-                <strong>Lat:</strong> {bc.last_lat}<br />
-                <strong>Lng:</strong> {bc.last_lng}
+                <strong>Última act.:</strong> {new Date(bc.ultima_ubicacion).toLocaleString()}<br />
+                <strong>Lat:</strong> {bc.latitud}<br />
+                <strong>Lng:</strong> {bc.longitud}
               </div>
             </Popup>
           </Marker>
