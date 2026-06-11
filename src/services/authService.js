@@ -25,8 +25,10 @@ const authService = {
 
       // Crear objeto de usuario con el formato correcto
       const user = {
-        username: apiData.user,
-        role: apiData.rol || apiData.role,
+        username:         apiData.user,
+        role:             apiData.rol || apiData.role,
+        custom_role_id:   apiData.custom_role_id || null,
+        custom_role_name: apiData.custom_role_name || null,
       };
 
       // Guardar token
@@ -101,8 +103,12 @@ const authService = {
     return user?.role || null;
   },
 
+  isSuperAdmin() {
+    return this.getUserRole() === 'SUPERADMIN';
+  },
+
   isAdmin() {
-    return this.getUserRole() === 'ADMINISTRATOR';
+    return this.getUserRole() === 'ADMINISTRATOR' || this.isSuperAdmin();
   },
 
   isSupervisor() {
@@ -111,6 +117,10 @@ const authService = {
 
   isOperator() {
     return this.getUserRole() === 'OPERATOR';
+  },
+
+  isPnp() {
+    return this.getUserRole() === 'PNP';
   },
 
   // Verificar si el usuario tiene al menos un rol específico

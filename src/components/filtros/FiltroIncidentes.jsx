@@ -1,789 +1,341 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DateRange } from 'react-date-range';
-import 'react-date-range/dist/styles.css'; // main style file
-import 'react-date-range/dist/theme/default.css'; // theme css file
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
 import { logger } from '../../utils/logger.js';
-import {
-  Filter,
-  RotateCcw,
-  ShieldCheck,
-  AlarmClock,
-  BadgeCheck,
-  ChevronUp,
-  ChevronDown,
-  Calendar,
-} from 'lucide-react';
+import { Filter, RotateCcw, BadgeCheck, ChevronUp, ChevronDown, Calendar } from 'lucide-react';
+
+const TIPO_CONFIG = [
+  { key: 'robos',       label: 'Robos',       color: '#e74c3c' },
+  { key: 'hurtos',      label: 'Hurtos',      color: '#7c3aed' },
+  { key: 'danos',       label: 'Daños',       color: '#f97316' },
+  { key: 'extorsion',   label: 'Extorsión',   color: '#e67e22' },
+  { key: 'homicidios',  label: 'Homicidios',  color: '#2d3436' },
+  { key: 'feminicidios',label: 'Feminicidios',color: '#d63031' },
+  { key: 'sicariatos',  label: 'Sicariatos',  color: '#8e44ad' },
+  { key: 'secuestros',  label: 'Secuestros',  color: '#1a5276' },
+  { key: 'drogas',      label: 'Drogas',      color: '#117a65' },
+  { key: 'barras',      label: 'Barras',      color: '#b8860b' },
+];
+
+const getDefaultRange = () => {
+  const today = new Date();
+  const hace30 = new Date();
+  hace30.setDate(today.getDate() - 30);
+  return { startDate: hace30, endDate: today };
+};
+
+const fmtDate = d => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const QUICK_OPTIONS = [
+  { label: 'Hoy',          getRange: () => { const t = new Date(); return { startDate: t, endDate: t }; } },
+  { label: 'Últ. 7 días',  getRange: () => { const e = new Date(); const s = new Date(); s.setDate(s.getDate()-6);  return { startDate: s, endDate: e }; } },
+  { label: 'Últ. 30 días', getRange: () => { const e = new Date(); const s = new Date(); s.setDate(s.getDate()-29); return { startDate: s, endDate: e }; } },
+  { label: 'Este mes',     getRange: () => { const n = new Date(); return { startDate: new Date(n.getFullYear(),n.getMonth(),1), endDate: new Date(n.getFullYear(),n.getMonth()+1,0) }; } },
+  { label: 'Mes anterior', getRange: () => { const n = new Date(); return { startDate: new Date(n.getFullYear(),n.getMonth()-1,1), endDate: new Date(n.getFullYear(),n.getMonth(),0) }; } },
+];
 
 const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
+  const defaultRange = getDefaultRange();
+
   const [filtros, setFiltros] = useState({
-    fechaInicio: '',
-    fechaFin: '',
-    Turno: '',
-    Horario: '',
-    Jurisdiccion: '',
+    fechaInicio: fmtDate(defaultRange.startDate),
+    fechaFin:    fmtDate(defaultRange.endDate),
+    Turno: '', Horario: '', Jurisdiccion: '',
   });
 
   const [contadores, setContadores] = useState({
-    robos: 0,
-    extorsion: 0,
-    homicidios: 0,
-    feminicidios: 0,
-    sicariatos: 0,
-    secuestros: 0,
-    drogas: 0,
-    barras: 0,
-    total: 0,
+    robos: 0, hurtos: 0, danos: 0, extorsion: 0, homicidios: 0,
+    feminicidios: 0, sicariatos: 0, secuestros: 0, drogas: 0, barras: 0, total: 0,
   });
+  // Refs para agregar subtotales (múltiples eventos → un contador)
+  const roboTotals  = React.useRef({});
+  const hurtoTotals = React.useRef({});
+  const danosTotals = React.useRef({});
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
-
-  // Estado para el date range
-  const [dateRange, setDateRange] = useState([
-    {
-      startDate: null,
-      endDate: null,
-      key: 'selection',
-    },
-  ]);
-
-  const [tempDateRange, setTempDateRange] = useState([
-    {
-      startDate: null,
-      endDate: null,
-      key: 'selection',
-    },
-  ]);
+  const [dateRange, setDateRange] = useState([{ ...defaultRange, key: 'selection' }]);
+  const [tempDateRange, setTempDateRange] = useState([{ ...defaultRange, key: 'selection' }]);
 
   const opciones = {
     Turno: ['Turno Mañana', 'Turno Tarde', 'Turno Noche'],
-    Horario: [
-      '00:00 - 01:59',
-      '02:00 - 03:59',
-      '04:00 - 05:59',
-      '06:00 - 07:59',
-      '08:00 - 09:59',
-      '10:00 - 11:59',
-      '12:00 - 13:59',
-      '14:00 - 15:59',
-      '16:00 - 17:59',
-      '18:00 - 19:59',
-      '20:00 - 21:59',
-      '22:00 - 23:59',
-    ],
-    Jurisdiccion: [
-      '10 de Octubre',
-      'Bayovar',
-      'Caja de Agua',
-      'Canto Rey',
-      'Huayrona',
-      'Mariscal Caceres',
-      'Santa Elizabeth',
-      'Zarate',
-    ],
+    Horario: ['00:00 - 01:59','02:00 - 03:59','04:00 - 05:59','06:00 - 07:59','08:00 - 09:59','10:00 - 11:59','12:00 - 13:59','14:00 - 15:59','16:00 - 17:59','18:00 - 19:59','20:00 - 21:59','22:00 - 23:59'],
+    Jurisdiccion: ['10 de Octubre','Bayovar','Caja de Agua','Canto Rey','Huayrona','Mariscal Caceres','Santa Elizabeth','Zarate'],
   };
 
-  // Opciones de selección rápida para fechas
-  const quickSelectOptions = [
-    {
-      label: 'Hoy',
-      getRange: () => {
-        const today = new Date();
-        return { startDate: today, endDate: today };
-      },
-    },
-    {
-      label: 'Últimos 7 días',
-      getRange: () => {
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 6);
-        return { startDate, endDate };
-      },
-    },
-    {
-      label: 'Últimos 30 días',
-      getRange: () => {
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 29);
-        return { startDate, endDate };
-      },
-    },
-    {
-      label: 'Este mes',
-      getRange: () => {
-        const now = new Date();
-        const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        return { startDate, endDate };
-      },
-    },
-    {
-      label: 'Mes anterior',
-      getRange: () => {
-        const now = new Date();
-        const startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const endDate = new Date(now.getFullYear(), now.getMonth(), 0);
-        return { startDate, endDate };
-      },
-    },
-  ];
-
   useEffect(() => {
-    const calcularTotal = (nuevosContadores) => {
-      return nuevosContadores.robos +
-             nuevosContadores.extorsion +
-             nuevosContadores.homicidios +
-             nuevosContadores.feminicidios +
-             nuevosContadores.sicariatos +
-             nuevosContadores.secuestros +
-             nuevosContadores.drogas +
-             nuevosContadores.barras;
+    const calcularTotal = c =>
+      Math.max(0, c.robos - c.extorsion) + c.hurtos + c.danos +
+      c.extorsion + c.homicidios + c.feminicidios + c.sicariatos +
+      c.secuestros + c.drogas + c.barras;
+
+    const mk = field => e => {
+      logger.log(`Recibido ${field}:`, e.detail);
+      setContadores(prev => { const n = { ...prev, [field]: e.detail }; return { ...n, total: calcularTotal(n) }; });
     };
 
-    const handleRobos = e => {
-      logger.log('🔷 Recibido robosTotal:', e.detail);
-      setContadores(prev => {
-        const nuevos = { ...prev, robos: e.detail };
-        return { ...nuevos, total: calcularTotal(nuevos) };
-      });
+    // Robos: agrega 7 subtypes + capa combinada legacy
+    const ROBO_EVS = ['robosTotal','roboPersonasTotal','roboCasaTotal','roboGanadoTotal','roboEmpresasTotal','roboVehiculosTotal','roboAutopartesTotal','roboPasajerosTotal'];
+    const mkRobo = ev => e => {
+      roboTotals.current[ev] = e.detail;
+      const total = Object.values(roboTotals.current).reduce((a,b) => a+b, 0);
+      setContadores(prev => { const n = { ...prev, robos: total }; return { ...n, total: calcularTotal(n) }; });
     };
 
-    const handleExtorsion = e => {
-      logger.log('🟠 Recibido extorsionTotal:', e.detail);
-      setContadores(prev => {
-        const nuevos = { ...prev, extorsion: e.detail };
-        return { ...nuevos, total: calcularTotal(nuevos) };
-      });
+    // Hurtos: agrega 6 subtypes en un solo contador
+    const HURTO_EVS = ['hurtoPersonasTotal','hurtoCasaTotal','hurtoGanadoTotal','hurtoEmpresasTotal','hurtoVehiculosTotal','hurtoPasajerosTotal'];
+    const mkHurto = ev => e => {
+      hurtoTotals.current[ev] = e.detail;
+      const total = Object.values(hurtoTotals.current).reduce((a,b) => a+b, 0);
+      setContadores(prev => { const n = { ...prev, hurtos: total }; return { ...n, total: calcularTotal(n) }; });
     };
 
-    const handleHomicidios = e => {
-      logger.log('🔴 Recibido homicidiosTotal:', e.detail);
-      setContadores(prev => {
-        const nuevos = { ...prev, homicidios: e.detail };
-        return { ...nuevos, total: calcularTotal(nuevos) };
-      });
+    // Daños: 1 evento
+    const mkDanos = e => {
+      danosTotals.current.danosTotal = e.detail;
+      setContadores(prev => { const n = { ...prev, danos: e.detail }; return { ...n, total: calcularTotal(n) }; });
     };
 
-    const handleFeminicidios = e => {
-      logger.log('💜 Recibido feminicidiosTotal:', e.detail);
-      setContadores(prev => {
-        const nuevos = { ...prev, feminicidios: e.detail };
-        return { ...nuevos, total: calcularTotal(nuevos) };
-      });
-    };
+    const handlers = [
+      ...ROBO_EVS.map(ev => [ev, mkRobo(ev)]),
+      ['extorsionTotal',   mk('extorsion')],
+      ['homicidiosTotal',  mk('homicidios')],
+      ['feminicidiosTotal',mk('feminicidios')],
+      ['sicariatosTotal',  mk('sicariatos')],
+      ['secuestrosTotal',  mk('secuestros')],
+      ['drogasTotal',      mk('drogas')],
+      ['barrasTotal',      mk('barras')],
+      ...HURTO_EVS.map(ev => [ev, mkHurto(ev)]),
+      ['danosTotal', mkDanos],
+    ];
 
-    const handleSicariatos = e => {
-      logger.log('🔫 Recibido sicariatosTotal:', e.detail);
-      setContadores(prev => {
-        const nuevos = { ...prev, sicariatos: e.detail };
-        return { ...nuevos, total: calcularTotal(nuevos) };
-      });
-    };
-
-    const handleSecuestros = e => {
-      logger.log('👤 Recibido secuestrosTotal:', e.detail);
-      setContadores(prev => {
-        const nuevos = { ...prev, secuestros: e.detail };
-        return { ...nuevos, total: calcularTotal(nuevos) };
-      });
-    };
-
-    const handleDrogas = e => {
-      logger.log('💊 Recibido drogasTotal:', e.detail);
-      setContadores(prev => {
-        const nuevos = { ...prev, drogas: e.detail };
-        return { ...nuevos, total: calcularTotal(nuevos) };
-      });
-    };
-
-    const handleBarras = e => {
-      logger.log('⚽ Recibido barrasTotal:', e.detail);
-      setContadores(prev => {
-        const nuevos = { ...prev, barras: e.detail };
-        return { ...nuevos, total: calcularTotal(nuevos) };
-      });
-    };
-
-    window.addEventListener('robosTotal', handleRobos);
-    window.addEventListener('extorsionTotal', handleExtorsion);
-    window.addEventListener('homicidiosTotal', handleHomicidios);
-    window.addEventListener('feminicidiosTotal', handleFeminicidios);
-    window.addEventListener('sicariatosTotal', handleSicariatos);
-    window.addEventListener('secuestrosTotal', handleSecuestros);
-    window.addEventListener('drogasTotal', handleDrogas);
-    window.addEventListener('barrasTotal', handleBarras);
-
-    return () => {
-      window.removeEventListener('robosTotal', handleRobos);
-      window.removeEventListener('extorsionTotal', handleExtorsion);
-      window.removeEventListener('homicidiosTotal', handleHomicidios);
-      window.removeEventListener('feminicidiosTotal', handleFeminicidios);
-      window.removeEventListener('sicariatosTotal', handleSicariatos);
-      window.removeEventListener('secuestrosTotal', handleSecuestros);
-      window.removeEventListener('drogasTotal', handleDrogas);
-      window.removeEventListener('barrasTotal', handleBarras);
-    };
+    handlers.forEach(([ev, h]) => window.addEventListener(ev, h));
+    return () => handlers.forEach(([ev, h]) => window.removeEventListener(ev, h));
   }, []);
 
-  useEffect(() => {
-    onFiltrar(filtros);
-  }, [filtros]);
+  useEffect(() => { onFiltrar(filtros); }, [filtros]);
 
-  // Cerrar date range cuando se hace click fuera
   useEffect(() => {
-    const handleClickOutside = event => {
-      if (dateRangeOpen && !event.target.closest('.date-range-container')) {
-        setDateRangeOpen(false);
-      }
+    const handleClickOutside = e => {
+      if (dateRangeOpen && !e.target.closest('.date-range-container')) setDateRangeOpen(false);
     };
-
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [dateRangeOpen]);
-
-  // Funciones para formatear fechas
-  const formatDateToString = date => {
-    if (!date) return '';
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
 
   const handleChange = e => {
     const { name, value } = e.target;
     setFiltros(prev => ({ ...prev, [name]: value }));
   };
 
-  // Manejar cambios en el date range temporal
-  const handleRangeChange = ranges => {
-    setTempDateRange([ranges.selection]);
-  };
-
-  // Aplicar filtro de fecha
   const applyDateFilter = () => {
     const range = tempDateRange[0];
-    const newFiltros = {
-      ...filtros,
-      fechaInicio: formatDateToString(range.startDate),
-      fechaFin: formatDateToString(range.endDate),
-    };
-
-    setFiltros(newFiltros);
+    setFiltros(prev => ({ ...prev, fechaInicio: fmtDate(range.startDate), fechaFin: fmtDate(range.endDate) }));
     setDateRange([...tempDateRange]);
     setDateRangeOpen(false);
   };
 
-  // Selección rápida de fechas
-  const handleQuickSelect = option => {
-    const range = option.getRange();
-    const newRange = [
-      {
-        startDate: range.startDate,
-        endDate: range.endDate,
-        key: 'selection',
-      },
-    ];
-    setTempDateRange(newRange);
-  };
-
   const limpiar = () => {
-    const filtrosVacios = {
-      fechaInicio: '',
-      fechaFin: '',
-      Turno: '',
-      Horario: '',
-      Jurisdiccion: '',
-    };
-    setFiltros(filtrosVacios);
-    setDateRange([
-      {
-        startDate: null,
-        endDate: null,
-        key: 'selection',
-      },
-    ]);
-    setTempDateRange([
-      {
-        startDate: null,
-        endDate: null,
-        key: 'selection',
-      },
-    ]);
+    const def = getDefaultRange();
+    setFiltros({ fechaInicio: fmtDate(def.startDate), fechaFin: fmtDate(def.endDate), Turno: '', Horario: '', Jurisdiccion: '' });
+    setDateRange([{ ...def, key: 'selection' }]);
+    setTempDateRange([{ ...def, key: 'selection' }]);
     onLimpiar();
   };
 
-  // Función para mostrar texto del rango de fechas seleccionado
   const getDateRangeText = () => {
-    const range = dateRange[0];
-    if (!range.startDate || !range.endDate) {
-      return 'Seleccionar fechas';
-    }
-
-    const start = range.startDate.toLocaleDateString('es-ES');
-    const end = range.endDate.toLocaleDateString('es-ES');
-
-    if (start === end) {
-      return start;
-    }
-
-    return `${start} - ${end}`;
+    const r = dateRange[0];
+    if (!r.startDate || !r.endDate) return 'Seleccionar fechas';
+    const s = r.startDate.toLocaleDateString('es-ES');
+    const e = r.endDate.toLocaleDateString('es-ES');
+    return s === e ? s : `${s} — ${e}`;
   };
 
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
-  };
-
-  const styles = {
-    filtroPanel: {
-      position: 'fixed',
-      bottom: '10px',
-      left: 'calc(70px + 15px)',
-      width: '33%',
-      maxWidth: '420px',
-      zIndex: 100,
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      padding: '14px 16px',
-      borderRadius: '12px',
-      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-      display: 'flex',
-      flexDirection: 'column',
-      gap: isCollapsed ? '0' : '14px',
-      backdropFilter: 'blur(6px)',
-      transition: 'all 0.3s ease',
-      overflow: 'visible',
-    },
-
-    filtrosHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      cursor: 'pointer',
-      userSelect: 'none',
-      marginBottom: isCollapsed ? '0' : '10px',
-    },
-
-    filtrosTitulo: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px',
-      fontWeight: 'bold',
-      fontSize: '15px',
-      color: '#333',
-    },
-
-    collapseBtn: {
-      background: 'none',
-      border: 'none',
-      cursor: 'pointer',
-      padding: '4px',
-      borderRadius: '4px',
-      color: '#666',
-      transition: 'color 0.2s ease',
-      display: 'flex',
-      alignItems: 'center',
-    },
-
-    resetBtn: {
-      background: '#ff4757',
-      color: 'white',
-      border: 'none',
-      padding: '6px 12px',
-      borderRadius: '6px',
-      fontSize: '12px',
-      cursor: 'pointer',
-      transition: 'background-color 0.2s ease',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '4px',
-    },
-
-    contadoresPanel: {
-      display: 'flex',
-      flexDirection: 'column',
-      background: 'linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%)',
-      padding: '12px',
-      borderRadius: '12px',
-      color: 'white',
-      gap: '10px',
-      opacity: isCollapsed ? 0 : 1,
-      height: isCollapsed ? '0' : 'auto',
-      transform: isCollapsed ? 'scaleY(0)' : 'scaleY(1)',
-      transition: 'all 0.3s ease',
-      transformOrigin: 'top',
-      boxShadow: '0 4px 12px rgba(78, 142, 162, 0.35)',
-    },
-
-    contadoresGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(4, 1fr)',
-      gap: '8px',
-      marginBottom: '8px',
-    },
-
-    contadorItem: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      textAlign: 'center',
-      padding: '6px 4px',
-      background: 'rgba(255, 255, 255, 0.1)',
-      borderRadius: '6px',
-      minHeight: '50px',
-      justifyContent: 'center',
-    },
-
-    contadorNumero: {
-      fontSize: '18px',
-      fontWeight: 'bold',
-      lineHeight: 1,
-    },
-
-    contadorLabel: {
-      fontSize: '9px',
-      textTransform: 'uppercase',
-      marginTop: '3px',
-      opacity: 0.9,
-      lineHeight: 1.2,
-    },
-
-    contadorTotal: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'rgba(255, 255, 255, 0.2)',
-      padding: '8px',
-      borderRadius: '8px',
-      gap: '8px',
-    },
-
-    contadorNumeroTotal: {
-      fontSize: '24px',
-      fontWeight: 'bold',
-      lineHeight: 1,
-    },
-
-    contadorLabelTotal: {
-      fontSize: '11px',
-      textTransform: 'uppercase',
-      opacity: 0.95,
-    },
-
-    filtrosContent: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px',
-      opacity: isCollapsed ? 0 : 1,
-      height: isCollapsed ? '0' : 'auto',
-      transform: isCollapsed ? 'scaleY(0)' : 'scaleY(1)',
-      transition: 'all 0.3s ease',
-      transformOrigin: 'top',
-    },
-
-    filtrosRow: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: '12px',
-    },
-
-    filtroLabel: {
-      display: 'flex',
-      flexDirection: 'column',
-      fontSize: '13px',
-      color: '#333',
-      minWidth: '100px',
-      flex: 1,
-    },
-
-    filtroSelect: {
-      padding: '5px 8px',
-      borderRadius: '6px',
-      border: '1px solid #ccc',
-      background: 'white',
-      fontSize: '13px',
-    },
-
-    // Estilos responsive
-    '@media (max-width: 768px)': {
-      filtroPanel: {
-        width: 'calc(100% - 20px)',
-        left: '50%',
-        transform: 'translateX(-50%)',
-      },
-    },
-  };
-
-  // Aplicar estilos responsive manualmente
-  const isMobile = window.innerWidth <= 768;
-  const responsiveStyles = {
-    ...styles.filtroPanel,
-    ...(isMobile && {
-      width: 'calc(100% - 20px)',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      maxWidth: '100%',
-      minHeight: dateRangeOpen ? '450px' : 'auto',
-    }),
+  const selectStyle = {
+    padding: '7px 10px', borderRadius: 8,
+    border: '1.5px solid #e2e8f0', background: 'white',
+    fontSize: 13, color: '#1f2937', outline: 'none',
+    width: '100%', boxSizing: 'border-box', fontFamily: 'inherit',
   };
 
   return (
-    <div style={responsiveStyles}>
-      <div style={styles.filtrosHeader} onClick={toggleCollapse}>
-        <span style={styles.filtrosTitulo}>
-          <Filter size={16} /> Filtros de Incidentes
+    <div style={{
+      width: '33vw', maxWidth: '420px', minWidth: '280px',
+      backgroundColor: '#ffffff',
+      borderRadius: 14,
+      border: '1.5px solid #e2e8f0',
+      borderTop: '4px solid #16a34a',
+      boxShadow: '0 6px 24px rgba(0,0,0,0.10)',
+      fontFamily: "'Inter','Segoe UI',system-ui,sans-serif",
+      overflow: 'visible',
+    }}>
+
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          cursor: 'pointer', userSelect: 'none',
+          padding: '14px 18px',
+          borderBottom: isCollapsed ? 'none' : '1px solid #e2e8f0',
+        }}
+        onClick={() => setIsCollapsed(p => !p)}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15, color: '#1f2937' }}>
+          <Filter size={17} color="#16a34a" />
+          Filtros de Incidentes
         </span>
-        <button style={styles.collapseBtn}>
-          {isCollapsed ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        <button style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 7, cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#64748b', padding: 6 }}>
+          {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
         </button>
       </div>
 
-      <div style={styles.contadoresPanel}>
-        <div style={styles.contadoresGrid}>
-          <div style={styles.contadorItem}>
-            <div style={styles.contadorNumero}>{contadores.robos}</div>
-            <div style={styles.contadorLabel}>Robos</div>
-          </div>
-          <div style={styles.contadorItem}>
-            <div style={styles.contadorNumero}>{contadores.extorsion}</div>
-            <div style={styles.contadorLabel}>Extorsión</div>
-          </div>
-          <div style={styles.contadorItem}>
-            <div style={styles.contadorNumero}>{contadores.homicidios}</div>
-            <div style={styles.contadorLabel}>Homicidios</div>
-          </div>
-          <div style={styles.contadorItem}>
-            <div style={styles.contadorNumero}>{contadores.feminicidios}</div>
-            <div style={styles.contadorLabel}>Feminicidios</div>
-          </div>
-          <div style={styles.contadorItem}>
-            <div style={styles.contadorNumero}>{contadores.sicariatos}</div>
-            <div style={styles.contadorLabel}>Sicariatos</div>
-          </div>
-          <div style={styles.contadorItem}>
-            <div style={styles.contadorNumero}>{contadores.secuestros}</div>
-            <div style={styles.contadorLabel}>Secuestros</div>
-          </div>
-          <div style={styles.contadorItem}>
-            <div style={styles.contadorNumero}>{contadores.drogas}</div>
-            <div style={styles.contadorLabel}>Drogas</div>
-          </div>
-          <div style={styles.contadorItem}>
-            <div style={styles.contadorNumero}>{contadores.barras}</div>
-            <div style={styles.contadorLabel}>Barras</div>
-          </div>
-        </div>
-        <div style={styles.contadorTotal}>
-          <BadgeCheck size={18} style={{ marginRight: '6px' }} />
-          <div style={styles.contadorNumeroTotal}>{contadores.total}</div>
-          <div style={styles.contadorLabelTotal}>Total Incidencias</div>
-        </div>
-      </div>
+      {!isCollapsed && (
+        <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-      <div style={styles.filtrosContent}>
-        {/* Selector de rango de fechas */}
-        <div style={styles.filtrosRow}>
-          <div
-            style={{ ...styles.filtroLabel, position: 'relative' }}
-            className="date-range-container"
-          >
-            <span>Rango de fechas:</span>
+          {/* Contadores */}
+          <div style={{ background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', padding: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6, marginBottom: 10 }}>
+              {TIPO_CONFIG.map(t => (
+                <div key={t.key} style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  background: '#ffffff', border: `1.5px solid ${t.color}44`,
+                  borderTop: `3px solid ${t.color}`,
+                  borderRadius: 8, padding: '7px 4px', minHeight: 52, justifyContent: 'center',
+                }}>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: '#1f2937', lineHeight: 1 }}>
+                    {t.key === 'robos' ? Math.max(0, contadores.robos - contadores.extorsion) : contadores[t.key]}
+                  </div>
+                  <div style={{ fontSize: '8px', textTransform: 'uppercase', marginTop: 3, color: '#6b7280', lineHeight: 1.2, textAlign: 'center' }}>
+                    {t.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Total */}
+            <div style={{
+              background: '#16a34a', borderRadius: 8, padding: '10px 14px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            }}>
+              <BadgeCheck size={18} color="white" />
+              <span style={{ fontSize: 26, fontWeight: 700, color: 'white', lineHeight: 1 }}>{contadores.total}</span>
+              <span style={{ fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>Total Incidencias</span>
+            </div>
+          </div>
+
+          {/* Rango de fechas */}
+          <div style={{ position: 'relative' }} className="date-range-container">
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
+              Rango de fechas
+            </div>
             <button
-              onClick={() => {
-                if (!dateRangeOpen) {
-                  // Sincronizar el date range temporal con el actual al abrir
-                  setTempDateRange([...dateRange]);
-                }
-                setDateRangeOpen(!dateRangeOpen);
-              }}
+              onClick={() => { if (!dateRangeOpen) setTempDateRange([...dateRange]); setDateRangeOpen(p => !p); }}
               style={{
-                ...styles.filtroSelect,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-                background: 'white',
-                border: '1px solid #ccc',
-                textAlign: 'left',
+                ...selectStyle,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                cursor: 'pointer', padding: '9px 12px',
+                border: dateRangeOpen ? '1.5px solid #16a34a' : '1.5px solid #e2e8f0',
+                boxShadow: dateRangeOpen ? '0 0 0 3px rgba(22,163,74,0.12)' : 'none',
               }}
             >
-              <span>{getDateRangeText()}</span>
-              <Calendar size={16} />
+              <span style={{ fontSize: 13, color: '#1f2937' }}>{getDateRangeText()}</span>
+              <Calendar size={15} color="#6b7280" />
             </button>
 
             {dateRangeOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '100%',
-                  left: 0,
-                  marginBottom: '8px',
-                  zIndex: 1500,
-                  backgroundColor: 'white',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '10px',
-                  boxShadow:
-                    '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                  width: '350px',
-                  maxHeight: '450px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <div
-                  style={{
-                    padding: '8px 12px 5px 12px',
-                    borderBottom: '1px solid #e5e7eb',
-                    flexShrink: 0,
-                    backgroundColor: 'white',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: '11px',
-                      color: '#6b7280',
-                      marginBottom: '8px',
-                      fontWeight: '600',
-                    }}
-                  >
-                    Selección rápida:
+              <div style={{
+                position: 'absolute', bottom: '100%', left: 0, marginBottom: 8,
+                zIndex: 1500, backgroundColor: 'white',
+                border: '1.5px solid #e2e8f0', borderRadius: 12,
+                boxShadow: '0 12px 28px rgba(0,0,0,0.13)',
+                width: 340, display: 'flex', flexDirection: 'column',
+              }}>
+                <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid #f1f5f9' }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 7, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Selección rápida
                   </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: '1px',
-                    }}
-                  >
-                    {quickSelectOptions.map((option, index) => (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                    {QUICK_OPTIONS.map((opt, i) => (
                       <button
-                        key={index}
-                        onClick={() => handleQuickSelect(option)}
+                        key={i}
+                        onClick={() => setTempDateRange([{ ...opt.getRange(), key: 'selection' }])}
                         style={{
-                          fontSize: '10px',
-                          padding: '4px 8px',
-                          border: '1px solid rgba(110, 162, 179, 0.3)',
-                          borderRadius: '6px',
-                          background: 'rgba(110, 162, 179, 0.15)',
-                          cursor: 'pointer',
-                          color: '#0A4174',
-                          transition: 'all 0.2s ease',
-                        }}
-                        onMouseEnter={e => {
-                          e.target.style.borderColor = '#6EA2B3';
-                          e.target.style.backgroundColor = 'rgba(110, 162, 179, 0.25)';
-                        }}
-                        onMouseLeave={e => {
-                          e.target.style.borderColor = 'rgba(110, 162, 179, 0.3)';
-                          e.target.style.backgroundColor = 'rgba(110, 162, 179, 0.15)';
+                          fontSize: 11, padding: '5px 10px',
+                          border: '1.5px solid #86efac', borderRadius: 6,
+                          background: '#f0fdf4', cursor: 'pointer', color: '#15803d', fontWeight: 500,
                         }}
                       >
-                        {option.label}
+                        {opt.label}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    maxHeight: '380px',
-                    overflowY: 'auto',
-                    overflowX: 'hidden',
-                  }}
-                >
+                <div style={{ maxHeight: 360, overflowY: 'auto', overflowX: 'hidden' }}>
                   <DateRange
-                    editableDateInputs={true}
-                    onChange={handleRangeChange}
+                    editableDateInputs
+                    onChange={r => setTempDateRange([r.selection])}
                     moveRangeOnFirstSelection={false}
                     ranges={tempDateRange}
                     maxDate={new Date()}
-                    rangeColors={['#4E8EA2']}
+                    rangeColors={['#16a34a']}
                     months={1}
                     direction="horizontal"
                     showDateDisplay={false}
                   />
                 </div>
 
-                <div
-                  style={{
-                    padding: '8px 12px',
-                    borderTop: '1px solid #e5e7eb',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: '8px',
-                    flexShrink: 0,
-                    backgroundColor: 'white',
-                  }}
-                >
+                <div style={{ padding: '10px 14px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                   <button
                     onClick={() => setDateRangeOpen(false)}
-                    style={{
-                      fontSize: '12px',
-                      padding: '8px 16px',
-                      border: '1px solid rgba(110, 162, 179, 0.3)',
-                      borderRadius: '8px',
-                      background: 'rgba(110, 162, 179, 0.15)',
-                      cursor: 'pointer',
-                      color: '#0A4174',
-                      fontWeight: '500',
-                    }}
+                    style={{ fontSize: 12, padding: '8px 16px', border: '1.5px solid #e2e8f0', borderRadius: 8, background: 'white', cursor: 'pointer', color: '#374151', fontWeight: 500 }}
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={applyDateFilter}
-                    style={{
-                      fontSize: '12px',
-                      padding: '8px 16px',
-                      border: 'none',
-                      borderRadius: '8px',
-                      background: 'linear-gradient(135deg, #4E8EA2 0%, #0A4174 100%)',
-                      color: 'white',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      boxShadow: '0 4px 12px rgba(78, 142, 162, 0.35)',
-                    }}
+                    style={{ fontSize: 12, padding: '8px 18px', border: 'none', borderRadius: 8, background: '#16a34a', color: 'white', cursor: 'pointer', fontWeight: 600, boxShadow: '0 2px 8px rgba(22,163,74,0.25)' }}
                   >
-                    Aplicar Filtro
+                    Aplicar
                   </button>
                 </div>
               </div>
             )}
           </div>
-        </div>
 
-        <div style={styles.filtrosRow}>
-          {['Turno', 'Horario', 'Jurisdiccion'].map(campo => (
-            <label key={campo} style={styles.filtroLabel}>
-              <span>{campo === 'Jurisdiccion' ? 'Jurisdicción' : campo}:</span>
-              <select
-                name={campo}
-                value={filtros[campo]}
-                onChange={handleChange}
-                style={styles.filtroSelect}
-              >
-                <option value="">Todos</option>
-                {opciones[campo].map(op => (
-                  <option key={op} value={op}>
-                    {op}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ))}
-        </div>
+          {/* Selectores */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            {['Turno', 'Horario', 'Jurisdiccion'].map(campo => (
+              <label key={campo} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 600, color: '#374151', minWidth: 90, flex: 1, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {campo === 'Jurisdiccion' ? 'Jurisdicción' : campo}
+                <select name={campo} value={filtros[campo]} onChange={handleChange} style={selectStyle}>
+                  <option value="">Todos</option>
+                  {opciones[campo].map(op => <option key={op} value={op}>{op}</option>)}
+                </select>
+              </label>
+            ))}
+          </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button style={styles.resetBtn} onClick={limpiar}>
-            <RotateCcw size={14} />
-            Limpiar
-          </button>
+          {/* Acciones */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={limpiar}
+              style={{
+                background: 'white', color: '#dc2626', border: '1.5px solid #fecaca',
+                padding: '7px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600,
+              }}
+            >
+              <RotateCcw size={14} /> Limpiar
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Download, Calendar, User, FileText, Tag } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import actividadesAdminService from '../../services/actividadesAdminService';
-import authService from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 import UseUrlParamsManager from '../../hooks/UseUrlParamsManager';
 import SearchInput from '../Table/SearchInput';
 import TablePagination from '../Table/TablePagination';
@@ -45,9 +45,9 @@ const GestionActividades = () => {
   const leafletMapRef = useRef(null);
   const markerRef = useRef(null);
 
-  // Verificar si es administrador o codisec
-  const userRole = authService.getUserRole();
-  const hasAccess = authService.isAdmin() || userRole === 'CODISEC';
+  const { hasModuleAccess, hasModuleOp } = useAuth();
+  const hasAccess = hasModuleAccess('actividades');
+  const canWrite  = hasModuleOp('actividades', 'create');
 
   // Cargar actividades cuando cambian los parámetros de URL
   useEffect(() => {
@@ -403,24 +403,26 @@ const GestionActividades = () => {
     <div className="gestion-actividades-container">
       <div className="actividades-header">
         <div className="actividades-header-content">
-          <Calendar size={28} />
+          <div className="actividades-header-icon"><Calendar size={24} /></div>
           <div className="actividades-header-text">
             <h1>Gestión de Actividades</h1>
             <p>Administra las actividades en puntos estratégicos</p>
           </div>
         </div>
         <div className="actividades-header-actions">
-          <button onClick={refreshData} className="btn-actividades-refresh" title="Actualizar">
-            <RefreshCw size={18} className={loading ? 'spinning' : ''} />
+          <button onClick={refreshData} className="btn-actividades-refresh">
+            <RefreshCw size={15} className={loading ? 'spinning' : ''} /> Actualizar
           </button>
           <button onClick={exportarExcel} className="btn-actividades-excel" disabled={loading} title="Descargar Excel">
             <Download size={18} />
             <span>Descargar Excel</span>
           </button>
-          <button onClick={openCreateModal} className="btn-actividades-primary">
-            <Plus size={18} />
-            <span>Nueva Actividad</span>
-          </button>
+          {canWrite && (
+            <button onClick={openCreateModal} className="btn-actividades-primary">
+              <Plus size={18} />
+              <span>Nueva Actividad</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -481,10 +483,12 @@ const GestionActividades = () => {
             <Calendar size={48} />
             <h3>No hay actividades registradas</h3>
             <p>Comienza creando una nueva actividad</p>
-            <button onClick={openCreateModal} className="btn-actividades-primary">
-              <Plus size={18} />
-              <span>Crear Actividad</span>
-            </button>
+            {canWrite && (
+              <button onClick={openCreateModal} className="btn-actividades-primary">
+                <Plus size={18} />
+                <span>Crear Actividad</span>
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -536,20 +540,24 @@ const GestionActividades = () => {
                         </td>
                         <td>
                           <div className="actividades-action-buttons">
-                            <button
-                              className="btn-icon-actividades btn-edit"
-                              onClick={() => openEditModal(actividad)}
-                              title="Editar"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button
-                              className="btn-icon-actividades btn-delete"
-                              onClick={() => handleDelete(actividad.id)}
-                              title="Eliminar"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            {canWrite && (
+                              <>
+                                <button
+                                  className="btn-icon-actividades btn-edit"
+                                  onClick={() => openEditModal(actividad)}
+                                  title="Editar"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                                <button
+                                  className="btn-icon-actividades btn-delete"
+                                  onClick={() => handleDelete(actividad.id)}
+                                  title="Eliminar"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>

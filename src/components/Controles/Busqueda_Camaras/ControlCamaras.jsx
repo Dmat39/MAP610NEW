@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Search, Filter, MapPin, Zap, AlertTriangle, Camera } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronUp, ChevronDown, Search, Filter, MapPin, Zap, AlertTriangle, Camera, X, Target } from 'lucide-react';
 import './ControlCamaras.css';
 import { logger } from '../../../utils/logger.js';
 import camarasService from '../../../services/camarasService';
@@ -17,6 +17,7 @@ const ControlCamaras = ({
   topPosition = 10,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const panelRef = useRef(null);
   const [busqueda, setBusqueda] = useState('');
   const [camaras, setCamaras] = useState([]);
   const [filtros, setFiltros] = useState({
@@ -220,25 +221,22 @@ const ControlCamaras = ({
   const aplicarFiltros = () => {
     let resultado = [...camaras];
 
-    // Filtros por características
-    if (filtros.megafono) {
-      resultado = resultado.filter(camara => camara.megafono);
+    // Filtros de características: lógica OR (muestra si cumple CUALQUIERA de los activos)
+    const hayFiltroCaracteristica = filtros.megafono || filtros.boton || filtros.lpr;
+    if (hayFiltroCaracteristica) {
+      resultado = resultado.filter(camara => {
+        if (filtros.megafono && camara.megafono) return true;
+        if (filtros.boton && camara.boton) return true;
+        if (filtros.lpr && camara.tipo === 'TIPO III') return true;
+        return false;
+      });
     }
 
-    if (filtros.boton) {
-      resultado = resultado.filter(camara => camara.boton);
-    }
-
-    if (filtros.lpr) {
-      resultado = resultado.filter(camara => camara.tipo === 'TIPO III');
-    }
-
-    // Filtro por jurisdicciones
+    // Filtro por jurisdicciones: AND con características (acota por zona)
     if (filtros.jurisdicciones.length > 0) {
       resultado = resultado.filter(camara => filtros.jurisdicciones.includes(camara.jurisdiccion));
     }
 
-    // Notificar al componente padre sobre el filtro aplicado
     if (onFiltroAplicado) {
       onFiltroAplicado(resultado, filtros);
     }
@@ -322,26 +320,50 @@ const ControlCamaras = ({
     }));
   };
 
+  // Limpia toda la búsqueda, filtros y selección del mapa
+  const limpiarTodo = () => {
+    setBusqueda('');
+    setUltimaBusqueda('');
+    setError(null);
+    setFiltros({ megafono: false, boton: false, lpr: false, jurisdicciones: [] });
+    if (onLimpiarSeleccion) onLimpiarSeleccion();
+    if (onLimpiarSeguimiento) onLimpiarSeguimiento();
+  };
+
   const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
+    if (!isCollapsed) limpiarTodo(); // al colapsar, limpiar todo
+    setIsCollapsed(prev => !prev);
   };
 
   const toggleJurisdiccionesCollapse = () => {
     setJurisdiccionesCollapsed(!jurisdiccionesCollapsed);
   };
 
+  // Click fuera del panel: solo colapsar, sin limpiar filtros (el usuario puede tener cámaras filtradas y hacer clic en el mapa)
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (panelRef.current && !panelRef.current.contains(e.target) && !isCollapsed) {
+        setIsCollapsed(true);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isCollapsed, onLimpiarSeleccion, onLimpiarSeguimiento]);
+
   if (!visible) return null;
 
   return (
     <div
+      ref={panelRef}
       className={`control-camaras ${mapType}-mode ${isCollapsed ? 'collapsed' : ''}`}
-      style={{ top: `${topPosition}px` }}
+      style={{ '--cc-top': `${topPosition}px` }}
     >
       <div className="control-camaras-header" onClick={toggleCollapse}>
         <div className="header-content">
-          <h3>📷 Búsqueda de Cámaras</h3>
+          <Camera size={20} style={{ color: '#16a34a', flexShrink: 0 }} />
+          <h3>Búsqueda de Cámaras</h3>
           <button className="collapse-btn">
-            {isCollapsed ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            {isCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
           </button>
         </div>
       </div>
@@ -351,15 +373,21 @@ const ControlCamaras = ({
         <div className="busqueda-principal">
           <div className="input-group">
             <div className="input-container">
-              <Search size={18} className="search-icon" />
+              <Search size={20} className="search-icon" />
               <input
                 type="text"
                 value={busqueda}
                 onChange={e => setBusqueda(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ingresa el nombre o número de cámara..."
+                placeholder="Ingresa nombre o número de cámara..."
                 className="busqueda-input"
                 disabled={cargando}
+                style={{
+                  color: '#1f2937',
+                  WebkitTextFillColor: '#1f2937',
+                  background: '#ffffff',
+                  caretColor: '#16a34a',
+                }}
               />
             </div>
             <button
@@ -492,19 +520,19 @@ const ControlCamaras = ({
             {filtros.megafono && (
               <div className="stat-item activo">
                 <span className="stat-numero">{camaras.filter(c => c.megafono).length}</span>
-                <span className="stat-label">📢 Megáfono</span>
+                <span className="stat-label">Megáfono</span>
               </div>
             )}
             {filtros.boton && (
               <div className="stat-item activo">
                 <span className="stat-numero">{camaras.filter(c => c.boton).length}</span>
-                <span className="stat-label">🚨 Botón</span>
+                <span className="stat-label">Botón</span>
               </div>
             )}
             {filtros.lpr && (
               <div className="stat-item activo">
                 <span className="stat-numero">{camaras.filter(c => c.tipo === 'TIPO III').length}</span>
-                <span className="stat-label">📹 LPR</span>
+                <span className="stat-label">LPR</span>
               </div>
             )}
           </div>
@@ -518,12 +546,12 @@ const ControlCamaras = ({
           filtros.lpr ||
           filtros.jurisdicciones.length > 0) && (
           <div className="acciones-container">
-            <button onClick={limpiarBusqueda} className="btn-limpiar-todo">
-              🧹 Limpiar Todo
+            <button onClick={limpiarTodo} className="btn-limpiar-todo">
+              <X size={14} /> Limpiar
             </button>
             {ultimaBusqueda && (
               <button onClick={iniciarSeguimiento} className="btn-seguimiento">
-                🎯 Seguimiento
+                <Target size={14} /> Seguimiento
               </button>
             )}
           </div>

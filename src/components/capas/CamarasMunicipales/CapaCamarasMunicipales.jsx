@@ -8,31 +8,90 @@ import { getAngleFromCoords, isValidReferencia, parseReferencia, generateVisionF
 import { logger } from '../../../utils/logger.js';
 import camarasService from '../../../services/camarasService';
 import { cargarJurisdicciones, obtenerJurisdiccion } from '../../../utils/jurisdiccionUtils';
+import { normalizarNombreJurisdiccion } from '../../../utils/geoUtils';
+import { useAuth } from '../../../context/AuthContext';
 
 import L from 'leaflet';
 
-// Función para crear iconos según el tipo de cámara
-const crearIconoCamara = tipo => {
-  let iconUrl;
-  switch (tipo) {
-    case 'TIPO I':
-      iconUrl = '/icon/camera.png';
-      break;
-    case 'TIPO II':
-      iconUrl = '/icon/camera2.png';
-      break;
-    case 'TIPO III':
-      iconUrl = '/icon/camera3.png';
-      break;
-    default:
-      iconUrl = '/icon/camera.png'; // Fallback por defecto
+// Colores por tipo de cámara
+const COLORES_TIPO = {
+  'TIPO I': '#3B82F6',
+  'TIPO II': '#22C55E',
+  'TIPO III': '#8B5CF6',
+};
+const COLOR_DEFAULT = '#3B82F6';
+
+// Nivel de zoom: 1=lejano, 2=medio, 3=cercano
+const getZoomNivel = zoom => {
+  if (zoom <= 12) return 1;
+  if (zoom <= 15) return 2;
+  return 3;
+};
+
+// Crea el pin SVG completo (nivel 3) o con indicador de seguimiento
+const _svgPin = (color, esSeleccionada, enSeguimiento) => {
+  const w = esSeleccionada ? 34 : 28;
+  const h = esSeleccionada ? 44 : 36;
+  const indicador = esSeleccionada
+    ? `<circle cx="22" cy="5" r="4.5" fill="${color}" stroke="white" stroke-width="1.5"/>`
+    : enSeguimiento
+      ? `<circle cx="22" cy="5" r="4.5" fill="#10b981" stroke="white" stroke-width="1.5"/>`
+      : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 28 36" style="display:block">
+    <path d="M14 0C6.27 0 0 6.27 0 14c0 9.75 14 22 14 22S28 23.75 28 14C28 6.27 21.73 0 14 0z" fill="${color}"/>
+    <circle cx="14" cy="13" r="9" fill="white" opacity="0.93"/>
+    <rect x="7" y="10" width="14" height="9" rx="1.5" fill="${color}"/>
+    <circle cx="14" cy="14.5" r="3.5" fill="white"/>
+    <circle cx="14" cy="14.5" r="1.8" fill="${color}"/>
+    <path d="M11.5 10 L12.5 8.2 L15.5 8.2 L16.5 10 Z" fill="${color}"/>
+    ${indicador}
+  </svg>`;
+};
+
+// Función principal: crea el DivIcon según tipo, nivel de zoom y estado
+const crearIconoCamaraModerno = (tipo, nivelZoom, esSeleccionada = false, enSeguimiento = false) => {
+  const color = COLORES_TIPO[tipo] || COLOR_DEFAULT;
+
+  // Siempre pin completo si está seleccionada
+  if (esSeleccionada) {
+    return new L.DivIcon({
+      html: `<div class="cam-pin-wrap cam-pin-selected">${_svgPin(color, true, false)}</div>`,
+      iconSize: [34, 44],
+      iconAnchor: [17, 44],
+      popupAnchor: [0, -44],
+      className: '',
+    });
   }
 
-  return new L.Icon({
-    iconUrl: iconUrl,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14], // Centrado: la mitad del ancho y alto
-    popupAnchor: [0, -14], // Popup aparece arriba del centro del icono
+  if (nivelZoom >= 3) {
+    const glowStyle = enSeguimiento ? 'filter:drop-shadow(0 0 5px #10b98170);' : '';
+    return new L.DivIcon({
+      html: `<div class="cam-pin-wrap" style="${glowStyle}">${_svgPin(color, false, enSeguimiento)}</div>`,
+      iconSize: [28, 36],
+      iconAnchor: [14, 36],
+      popupAnchor: [0, -36],
+      className: '',
+    });
+  }
+
+  if (nivelZoom === 2) {
+    const seguimientoStyle = enSeguimiento ? 'box-shadow:0 0 0 3px #10b98150;' : '';
+    return new L.DivIcon({
+      html: `<div class="cam-pin-mid" style="--pin-color:${color};${seguimientoStyle}"></div>`,
+      iconSize: [18, 22],
+      iconAnchor: [9, 22],
+      popupAnchor: [0, -22],
+      className: '',
+    });
+  }
+
+  // Nivel 1: punto simple
+  return new L.DivIcon({
+    html: `<div class="cam-pin-dot" style="background:${color};"></div>`,
+    iconSize: [10, 10],
+    iconAnchor: [5, 5],
+    popupAnchor: [0, -10],
+    className: '',
   });
 };
 
@@ -97,11 +156,11 @@ const CapaCamarasMunicipales = ({
   visible,
   camaraSeleccionada,
   camarasFiltradas,
+  filtrosCamaras,
   seguimientoCamara,
   limpiarSeguimiento,
   camaraConVision,
   setCamaraConVision,
-  isViewer = false,
 }) => {
   const [camaras, setCamaras] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -111,11 +170,30 @@ const CapaCamarasMunicipales = ({
   const [circulosAnteriores, setCirculosAnteriores] = useState([]);
   const [camarasCercanas, setCamarasCercanas] = useState([]);
   const [, setHistorialSeguimiento] = useState([]);
+  const [zoomNivel, setZoomNivel] = useState(1);
   const map = useMap();
   const markersRef = useRef({});
 
+  const { getVisibleFields } = useAuth();
+  const visibleFields = getVisibleFields('camaras-municipales');
+  const canSee = (field) => !visibleFields || visibleFields.length === 0 || visibleFields.includes(field);
+
   // Usar el hook para habilitar la copia de ubicaciones
   useMapLocationCopy();
+
+  // Sincronizar nivel de zoom (1=lejano, 2=medio, 3=cercano)
+  useEffect(() => {
+    if (!map) return;
+    const actualizar = () => {
+      setZoomNivel(prev => {
+        const nuevo = getZoomNivel(map.getZoom());
+        return prev !== nuevo ? nuevo : prev;
+      });
+    };
+    actualizar();
+    map.on('zoomend', actualizar);
+    return () => map.off('zoomend', actualizar);
+  }, [map]);
 
   // Agregar listener para obtener coordenadas con Ctrl+Click (herramienta de ayuda)
   useEffect(() => {
@@ -180,8 +258,10 @@ const CapaCamarasMunicipales = ({
               anguloVision = '180';
           }
 
-          // Determinar la jurisdicción basándose en las coordenadas
-          const jurisdiccion = obtenerJurisdiccion(camara.latitude, camara.longitude, jurisdicciones);
+          // Determinar la jurisdicción basándose en las coordenadas (normalizada igual que ControlCamaras)
+          const jurisdiccion = normalizarNombreJurisdiccion(
+            obtenerJurisdiccion(camara.latitude, camara.longitude, jurisdicciones)
+          );
 
           return {
             geometry: {
@@ -215,6 +295,11 @@ const CapaCamarasMunicipales = ({
         logger.log('📍 Total de cámaras a mostrar:', camarasTransformadas.length);
 
         setCamaras(camarasTransformadas);
+        logger.log('🔘 Cámaras con botón de pánico:', camarasTransformadas.filter(f => f.properties.boton).length);
+        logger.log('📷 Cámaras LPR (TIPO III):', camarasTransformadas.filter(f => f.properties.tipo === 'TIPO III').length);
+        logger.log('📢 Cámaras con megáfono:', camarasTransformadas.filter(f => f.properties.megafono).length);
+        const jurisdicciones10 = camarasTransformadas.filter(f => f.properties.jurisdiccion === '10 de Octubre').length;
+        logger.log('🗺️ Cámaras en "10 de Octubre":', jurisdicciones10);
         setCargando(false);
       } catch (err) {
         logger.error('Error cargando cámaras municipales:', err);
@@ -250,7 +335,7 @@ const CapaCamarasMunicipales = ({
 
         // Abrir popup después de la navegación
         setTimeout(() => {
-          const markerId = `marker-${camaraSeleccionada.id}`;
+          const markerId = `marker-${camaraSeleccionada.name}`;
           const marker = markersRef.current[markerId];
           if (marker) {
             marker.openPopup();
@@ -404,13 +489,16 @@ const CapaCamarasMunicipales = ({
     logger.log('🧹 Seguimiento limpiado');
   };
 
-  // Efecto para limpiar seguimiento cuando se cambian los filtros
+  // Efecto para limpiar seguimiento cuando se activa un filtro
   useEffect(() => {
-    if (camarasFiltradas && camarasFiltradas.length > 0 && seguimientoActivo) {
-      // Si se aplican filtros mientras hay seguimiento activo, limpiar seguimiento
+    const isFilterActive = filtrosCamaras && (
+      filtrosCamaras.megafono || filtrosCamaras.boton || filtrosCamaras.lpr ||
+      (filtrosCamaras.jurisdicciones?.length > 0)
+    );
+    if (isFilterActive && seguimientoActivo) {
       limpiarTodoSeguimiento();
     }
-  }, [camarasFiltradas]);
+  }, [filtrosCamaras]);
 
 
   if (!visible) return null;
@@ -433,20 +521,37 @@ const CapaCamarasMunicipales = ({
   }
 
   // Determinar qué cámaras mostrar (seguimiento, filtradas o todas)
+  const hayFiltroActivo = filtrosCamaras && (
+    filtrosCamaras.megafono ||
+    filtrosCamaras.boton ||
+    filtrosCamaras.lpr ||
+    (filtrosCamaras.jurisdicciones?.length > 0)
+  );
+
   let camarasAMostrar;
 
   if (seguimientoActivo && camarasCercanas.length > 0) {
-    // Mostrar solo las cámaras del seguimiento
     camarasAMostrar = camarasCercanas.map(item => item.feature);
     logger.log('📍 Modo: Seguimiento -', camarasAMostrar.length, 'cámaras');
-  } else if (camarasFiltradas && camarasFiltradas.length > 0) {
-    // Mostrar cámaras filtradas (solo si hay filtros activos)
-    camarasAMostrar = camaras.filter(feature =>
-      camarasFiltradas.some(cf => cf.name === feature.properties?.name)
-    );
+  } else if (hayFiltroActivo) {
+    // Características: OR (muestra si cumple CUALQUIERA)
+    // Jurisdicción: AND (acota por zona)
+    camarasAMostrar = camaras.filter(feature => {
+      const props = feature.properties;
+      // Primero acotar por jurisdicción si está activa
+      if (filtrosCamaras.jurisdicciones?.length > 0 &&
+          !filtrosCamaras.jurisdicciones.includes(props.jurisdiccion)) return false;
+      // Luego OR entre características
+      const hayCaracteristica = filtrosCamaras.boton || filtrosCamaras.lpr || filtrosCamaras.megafono;
+      if (hayCaracteristica) {
+        return (filtrosCamaras.boton && !!props.boton) ||
+               (filtrosCamaras.lpr && props.tipo === 'TIPO III') ||
+               (filtrosCamaras.megafono && !!props.megafono);
+      }
+      return true;
+    });
     logger.log('🔍 Modo: Filtradas -', camarasAMostrar.length, 'cámaras');
   } else {
-    // Mostrar todas las cámaras
     camarasAMostrar = camaras;
     logger.log('📷 Modo: Todas -', camarasAMostrar.length, 'cámaras');
   }
@@ -460,12 +565,11 @@ const CapaCamarasMunicipales = ({
 
         // En GeoJSON, las coordenadas están como [lng, lat]
         const [lng, lat] = coords;
-        const markerId = `marker-${idx}`;
+        const markerId = `marker-${props.name}`;
 
         // Determinar si esta cámara está seleccionada (por prop o por click local)
         const esSeleccionada =
-          (camaraSeleccionada &&
-            (camaraSeleccionada.name === props.name || camaraSeleccionada.id === idx)) ||
+          (camaraSeleccionada && camaraSeleccionada.name === props.name) ||
           camaraConVision === props.name;
 
         // Determinar si esta cámara está en modo seguimiento
@@ -481,49 +585,11 @@ const CapaCamarasMunicipales = ({
           infoDistancia = ` (${distanciaKm}km)`;
         }
 
-        // Crear el icono según si está seleccionada o no
-        let iconUrl;
-        switch (props.tipo) {
-          case 'TIPO I':
-            iconUrl = '/icon/camera.png';
-            break;
-          case 'TIPO II':
-            iconUrl = '/icon/camera2.png';
-            break;
-          case 'TIPO III':
-            iconUrl = '/icon/camera3.png';
-            break;
-          default:
-            iconUrl = '/icon/camera.png';
-        }
-
-        let iconoMarcador;
-        if (esSeleccionada) {
-          // Icono con efecto de selección
-          iconoMarcador = new L.DivIcon({
-            html: `<div style="
-            width: 40px;
-            height: 40px;
-            background-image: url('${iconUrl}');
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.8));
-            animation: pulse-camara 2s infinite;
-          "></div>`,
-            iconSize: [40, 40],
-            iconAnchor: [20, 20],
-            popupAnchor: [0, -20],
-            className: 'camara-seleccionada-custom',
-          });
-        } else {
-          // Icono normal
-          iconoMarcador = crearIconoCamara(props.tipo);
-        }
+        const iconoMarcador = crearIconoCamaraModerno(props.tipo, zoomNivel, esSeleccionada, enSeguimiento);
 
         // Generar campo de visión si corresponde
         let visionPolygonElement = null;
-        if (esSeleccionada || enSeguimiento) {
+        if (canSee('vision') && (esSeleccionada || enSeguimiento)) {
           // PRIORIDAD 1: Si el backend envía geometryVision (polígono pre-calculado), usarlo
           if (props.geometryVision && props.geometryVision.coordinates) {
             const coordinates = props.geometryVision.coordinates[0];
@@ -596,8 +662,10 @@ const CapaCamarasMunicipales = ({
                   });
 
                   // Actualizar la cámara con campo de visión activo
-                  setCamaraConVision(props.name);
-                  logger.log('✅ camaraConVision actualizada a:', props.name);
+                  if (canSee('vision')) {
+                    setCamaraConVision(props.name);
+                    logger.log('✅ camaraConVision actualizada a:', props.name);
+                  }
 
                   if (enSeguimiento) {
                     // Si está en modo seguimiento, crear nuevo círculo centrado en esta cámara
@@ -631,20 +699,27 @@ const CapaCamarasMunicipales = ({
                     {infoDistancia}
                   </strong>
                   <br />
-                  Dirección: {props.direccion}
-                  <br />
+                  {canSee('address') && <>Dirección: {props.direccion}<br /></>}
                   Jurisdicción: {props.jurisdiccion}
-                  {!isViewer && (
+                  {(!visibleFields || visibleFields.length === 0) && (
                     <>
                       <br />
                       Tipo: {props.tipo}
+                    </>
+                  )}
+                  {canSee('megaphone') && (
+                    <>
                       <br />
                       Megáfono: {props.megafono ? '✅' : '❌'}
+                    </>
+                  )}
+                  {canSee('buttom') && (
+                    <>
                       <br />
                       Botón de pánico: {props.boton ? '✅' : '❌'}
                     </>
                   )}
-                  {!isViewer && enSeguimiento && (
+                  {canSee('vision') && enSeguimiento && (
                     <>
                       <br />
                       <br />
@@ -663,7 +738,7 @@ const CapaCamarasMunicipales = ({
                       </div>
                     </>
                   )}
-                  {!isViewer && esSeleccionada && !enSeguimiento && (
+                  {canSee('vision') && esSeleccionada && !enSeguimiento && (
                     <>
                       <br />
                       <br />

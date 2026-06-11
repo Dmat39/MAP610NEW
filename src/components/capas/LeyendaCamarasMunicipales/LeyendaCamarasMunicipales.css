@@ -1,40 +1,36 @@
 /* LeyendaCamarasMunicipales.css */
 .leyenda-camaras-municipales {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
   background: white;
+  border: 1px solid #e2e8f0;
+  border-top: 4px solid #16a34a;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  padding: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  padding: 14px;
   z-index: 1000;
   min-width: 220px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
   transition: right 0.3s ease, bottom 0.3s ease;
 }
 
-/* Cuando hay dos leyendas, la de municipales sube */
-.leyenda-camaras-municipales.stacked {
-  bottom: 180px;
-}
-
-.leyenda-camaras-municipales.panel-expanded {
-  right: 310px;
-}
-
 .leyenda-municipales-header {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   padding-bottom: 8px;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .leyenda-municipales-header h4 {
   margin: 0;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
-  color: #1f2937;
+  color: #0f172a;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
+}
+
+.leyenda-municipales-header h4 svg {
+  color: #16a34a;
 }
 
 .leyenda-municipales-content {
@@ -74,6 +70,11 @@
   height: 28px;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+.leyenda-municipales-pin {
+  flex-shrink: 0;
+  display: block;
 }
 
 .leyenda-municipales-info {

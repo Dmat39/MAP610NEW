@@ -1,42 +1,77 @@
 import './LayerTogglePanel.css';
 import { Layers, X, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
-import authService from '../../services/authService';
+import { useState, useEffect } from 'react';
+import { useMapLayout } from '../../context/MapLayoutContext';
 
 const LayerTogglePanel = ({ capas, onToggle }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [categoriesExpanded, setCategoriesExpanded] = useState({
     cameras: true,
     incidents: false,
+    incidentsPnp: false,
     infrastructure: false,
     tools: false,
     zonas: false,
   });
+  const [subgroupsExpanded, setSubgroupsExpanded] = useState({
+    robosSubgrupo: false,
+    hurtosSubgrupo: false,
+    danosSubgrupo: false,
+  });
+  const toggleSubgroup = key =>
+    setSubgroupsExpanded(prev => ({ ...prev, [key]: !prev[key] }));
 
-  const userRole = authService.getUserRole();
-  const isOperator = userRole === 'OPERATOR';
+  const { setDrawerOpen } = useMapLayout();
+
+  useEffect(() => {
+    setDrawerOpen(isOpen);
+  }, [isOpen, setDrawerOpen]);
 
   const categories = {
+    
     cameras: {
       title: 'Cámaras de Seguridad',
       layers: ['camaras', 'camarasVecinales'],
     },
+    zonas: {
+      title: 'Zonas Geográficas',
+      layers: ['zonasCodisec', 'jurisdicciones'],
+    },
     incidents: {
       title: 'Incidencias Delictivas',
-      layers: ['robos', 'extorsiones', 'homicidios', 'feminicidios', 'sicariatos', 'secuestros', 'drogas', 'barras'],
+      subgroups: [
+        {
+          key: 'robosSubgrupo', label: 'Robos', color: '#1d4ed8',
+          layers: ['roboPersonas','roboCasa','roboGanado','roboEmpresas','roboVehiculos','roboAutopartes','roboPasajeros'],
+        },
+        {
+          key: 'hurtosSubgrupo', label: 'Hurtos', color: '#7c3aed',
+          layers: ['hurtoPersonas','hurtoCasa','hurtoGanado','hurtoEmpresas','hurtoVehiculos','hurtoPasajeros'],
+        },
+        {
+          key: 'danosSubgrupo', label: 'Daños', color: '#f97316',
+          layers: ['danos'],
+        },
+      ],
+      layers: ['extorsiones', 'homicidios', 'feminicidios', 'sicariatos', 'secuestros', 'drogas', 'barras'],
+    },
+    incidentsPnp: {
+      title: 'Incidencias PNP',
+      layers: [
+        'pnpPatrimonio', 'pnpSeguridadPublica', 'pnpVidaSalud', 'pnpLibertad',
+        'pnpAdminPublica', 'pnpTrafico', 'pnpFamilia', 'pnpMenorInfractor',
+        'pnpFePublica', 'pnpTranquilidad',
+      ],
     },
     infrastructure: {
       title: 'Puntos Estratégicos',
-      layers: ['paraderosAutorizados', 'defensaCivil', 'paraderosNoAutorizados', 'residuos', 'sostenimiento', 'actividades'],
+      layers: ['paraderosAutorizados', 'defensaCivil', 'paraderosNoAutorizados', 'residuos', 'sostenimiento', 'actividades', 'comisarias', 'puntosCampana'],
     },
     tools: {
       title: 'Herramientas',
-      layers: ['clusters', 'busquedaDirecciones', 'ubicadorPunto', 'rutas'],
+      layers: ['clusters', 'clusterCombinado', 'clusterPNP', 'busquedaDirecciones', 'ubicadorPunto', 'rutas'],
     },
-    zonas: {
-      title: 'Zonas Geográficas',
-      layers: ['zonasCodisec'],
-    },
+    
   };
 
   const toggleCategory = key =>
@@ -54,10 +89,9 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
 
   const totalActive = capas.filter(c => c.visible).length;
 
-  const visibleCategories = Object.entries(categories).filter(([key, cat]) => {
-    if (key === 'incidents' && isOperator) return false;
-    return cat.layers.map(getCapaByName).filter(Boolean).length > 0;
-  });
+  const visibleCategories = Object.entries(categories).filter(([, cat]) =>
+    cat.layers.map(getCapaByName).filter(Boolean).length > 0
+  );
 
   return (
     <>
@@ -103,10 +137,12 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
         {/* Categories */}
         <div className="drawer-body">
           {visibleCategories.map(([key, category]) => {
-            const categoryLayers = category.layers.map(getCapaByName).filter(Boolean);
+            const subgroupLayers = (category.subgroups || []).flatMap(sg => sg.layers.map(getCapaByName).filter(Boolean));
+            const regularLayers  = category.layers.map(getCapaByName).filter(Boolean);
+            const categoryLayers = [...subgroupLayers, ...regularLayers];
             const isCatExpanded = categoriesExpanded[key];
             const activeCount = categoryLayers.filter(c => c.visible).length;
-            const allActive = activeCount === categoryLayers.length;
+            const allActive = categoryLayers.length > 0 && activeCount === categoryLayers.length;
             const hasActive = activeCount > 0;
 
             return (
@@ -138,7 +174,57 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
 
                 {isCatExpanded && (
                   <div className="cat-layers">
-                    {categoryLayers.map(capa => (
+                    {/* Subgrupos expandibles (ej: Robos, Hurtos, Daños) */}
+                    {(category.subgroups || []).map(sg => {
+                      const sgLayers = sg.layers.map(getCapaByName).filter(Boolean);
+                      const sgActive = sgLayers.filter(c => c.visible).length;
+                      const sgAll = sgActive === sgLayers.length && sgLayers.length > 0;
+                      const isExpanded = subgroupsExpanded[sg.key];
+                      return (
+                        <div key={sg.key} style={{ marginBottom: 2 }}>
+                          {/* Cabecera del subgrupo — mismo estilo que una capa normal */}
+                          <div className={`layer-row${sgActive > 0 ? ' has-active' : ''}`}
+                            style={{ cursor: 'pointer' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: 1 }}
+                              onClick={() => toggleSubgroup(sg.key)}>
+                              <ChevronDown size={11} style={{
+                                color: '#9ca3af', flexShrink: 0,
+                                transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+                                transition: 'transform 0.2s',
+                              }} />
+                              <span className="layer-name">{sg.label}</span>
+                              <span style={{ fontSize: 10, color: '#9ca3af' }}>({sgActive}/{sgLayers.length})</span>
+                            </div>
+                            <button
+                              className={`switch${sgAll ? ' on' : ''}`}
+                              onClick={e => { e.stopPropagation(); sgLayers.forEach(c => { if (sgAll ? c.visible : !c.visible) onToggle(c.name); }); }}
+                              role="switch" aria-checked={sgAll}
+                            >
+                              <span className="switch-thumb" />
+                            </button>
+                          </div>
+                          {/* Capas individuales del subgrupo */}
+                          {isExpanded && (
+                            <div style={{ paddingLeft: 16 }}>
+                              {sgLayers.map(capa => (
+                                <div key={capa.name} className="layer-row">
+                                  <span className="layer-name">{capa.label}</span>
+                                  <button
+                                    className={`switch${capa.visible ? ' on' : ''}`}
+                                    onClick={() => onToggle(capa.name)}
+                                    role="switch" aria-checked={capa.visible}
+                                  >
+                                    <span className="switch-thumb" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {/* Capas regulares (sin subgrupos) */}
+                    {regularLayers.map(capa => (
                       <div key={capa.name} className="layer-row">
                         <span className="layer-name">{capa.label}</span>
                         <button

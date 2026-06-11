@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Eye, Camera, Download, Lock, User, Hash } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import camarasVecinalesAdminService from '../../services/camarasVecinalesAdminService';
-import authService from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 import UseUrlParamsManager from '../../hooks/UseUrlParamsManager';
 import SearchInput from '../Table/SearchInput';
 import TablePagination from '../Table/TablePagination';
@@ -51,8 +51,9 @@ const GestionCamarasVecinales = () => {
   const leafletMapRef = useRef(null);
   const markerRef = useRef(null);
 
-  // Verificar si es administrador
-  const isAdmin = authService.isAdmin();
+  const { hasModuleAccess, hasModuleOp } = useAuth();
+  const isAdmin  = hasModuleAccess('camaras-vecinales');
+  const canWrite = hasModuleOp('camaras-vecinales', 'create');
 
   // Cargar cámaras cuando cambian los parámetros de URL
   useEffect(() => {
@@ -387,24 +388,26 @@ const GestionCamarasVecinales = () => {
     <div className="gestion-camaras-container">
       <div className="gestion-camaras-header">
         <div className="camaras-header-content">
-          <Camera size={28} />
+          <div className="camaras-header-icon"><Camera size={24} /></div>
           <div className="camaras-header-text">
             <h1>Gestión de Cámaras Vecinales</h1>
             <p>Administra las cámaras vecinales del sistema</p>
           </div>
         </div>
         <div className="camaras-header-actions">
-          <button onClick={refreshData} className="btn-camaras-refresh" title="Actualizar">
-            <RefreshCw size={18} className={loading ? 'spinning' : ''} />
+          <button onClick={refreshData} className="btn-camaras-secondary">
+            <RefreshCw size={15} className={loading ? 'spinning' : ''} /> Actualizar
           </button>
           <button onClick={exportarExcel} className="btn-camaras-excel" disabled={loading} title="Descargar Excel">
             <Download size={18} />
             <span>Descargar Excel</span>
           </button>
-          <button onClick={openCreateModal} className="btn-camaras-primary">
-            <Plus size={18} />
-            <span>Nueva Cámara</span>
-          </button>
+          {canWrite && (
+            <button onClick={openCreateModal} className="btn-camaras-primary">
+              <Plus size={18} />
+              <span>Nueva Cámara</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -485,10 +488,12 @@ const GestionCamarasVecinales = () => {
             <Camera size={48} />
             <h3>No hay cámaras vecinales registradas</h3>
             <p>Comienza creando una nueva cámara vecinal</p>
-            <button onClick={openCreateModal} className="btn-camaras-primary">
-              <Plus size={18} />
-              <span>Crear Cámara Vecinal</span>
-            </button>
+            {canWrite && (
+              <button onClick={openCreateModal} className="btn-camaras-primary">
+                <Plus size={18} />
+                <span>Crear Cámara Vecinal</span>
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -536,22 +541,24 @@ const GestionCamarasVecinales = () => {
                           </div>
                         </td>
                         <td>
-                          <div className="camaras-action-buttons">
-                            <button
-                              className="btn-icon-camaras btn-edit"
-                              onClick={() => openEditModal(camera)}
-                              title="Editar"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button
-                              className="btn-icon-camaras btn-delete"
-                              onClick={() => handleDelete(camera.id)}
-                              title="Eliminar"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
+                          {canWrite && (
+                            <div className="camaras-action-buttons">
+                              <button
+                                className="btn-icon-camaras btn-edit"
+                                onClick={() => openEditModal(camera)}
+                                title="Editar"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                className="btn-icon-camaras btn-delete"
+                                onClick={() => handleDelete(camera.id)}
+                                title="Eliminar"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     );

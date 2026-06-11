@@ -1,0 +1,627 @@
+/* Importa estilos base compartidos */
+@import './GestionUsuarios.css';
+
+/* ── Header personalizado (azul-violeta) ───────────────────────────────────── */
+.roles-header {
+  border-top-color: #16a34a !important;
+}
+
+.roles-icon {
+  background: #dcfce7 !important;
+  border-color: #86efac !important;
+  color: #16a34a !important;
+}
+
+.roles-btn-primary {
+  background: #16a34a !important;
+  box-shadow: 0 1px 4px rgba(22, 163, 74, 0.28) !important;
+}
+.roles-btn-primary:hover { background: #15803d !important; }
+
+/* ── Tabla de roles ────────────────────────────────────────────────────────── */
+.roles-table thead {
+  background: #16a34a !important;
+}
+
+.role-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.role-icon-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.role-description {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.modules-badge {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.layers-badge {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.users-badge {
+  background: #fafafa;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+/* ── Modal: layout flex para scroll correcto ───────────────────────────────── */
+.roles-modal-content {
+  max-width: 640px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  max-height: 82vh !important;
+}
+
+/* El header no scrollea */
+.roles-modal-content .modal-header {
+  flex-shrink: 0;
+  position: relative !important; /* sticky no hace falta con flex */
+}
+
+/* Form ocupa el espacio restante en columna */
+.roles-form-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;       /* necesario para que flex calcule overflow */
+  overflow: hidden;
+}
+
+/* El modal-body dentro del form es el área scrollable */
+.roles-form-wrapper .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  padding: 20px 22px;
+}
+
+/* Footer siempre visible en la parte baja */
+.roles-modal-footer {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Secciones del formulario ──────────────────────────────────────────────── */
+.roles-section {
+  margin-bottom: 24px;
+}
+
+.roles-section-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 14px;
+}
+
+.roles-section-count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: #16a34a;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  padding: 2px 8px;
+  border-radius: 20px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ── Tabla de módulos ──────────────────────────────────────────────────────── */
+.modules-table {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.modules-table-header {
+  display: grid;
+  grid-template-columns: 1fr 60px 60px 60px 60px;
+  background: #f8fafc;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.modules-table-header span:first-child { text-align: left; }
+
+.modules-table-row-wrapper {
+  border-bottom: 1px solid #f1f5f9;
+}
+.modules-table-row-wrapper:last-child { border-bottom: none; }
+.modules-table-row-wrapper.enabled { background: #f0fdf4; }
+.modules-table-row-wrapper.enabled:hover { background: #dcfce7; }
+
+.modules-table-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 60px 60px 60px;
+  padding: 9px 12px;
+  align-items: center;
+  transition: background 0.12s;
+  text-align: center;
+}
+
+.modules-table-row-wrapper:not(.enabled) .modules-table-row:hover { background: #fafafa; }
+
+/* ── Badge indicador de campos de cámara ───────────────────────────────────── */
+.camera-fields-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 7px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #86efac;
+  vertical-align: middle;
+  letter-spacing: 0.2px;
+}
+
+/* ── Panel de campos visibles ──────────────────────────────────────────────── */
+.module-visible-fields {
+  padding: 10px 14px 12px;
+  background: #f0fdf4;
+  border-top: 1px dashed #86efac;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: opacity 0.15s;
+}
+
+.module-visible-fields.disabled {
+  background: #fafafa;
+  border-top-color: #e5e7eb;
+  opacity: 0.65;
+}
+
+.module-fields-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #15803d;
+}
+
+.module-visible-fields.disabled .module-fields-header {
+  color: #9ca3af;
+}
+
+.module-fields-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  flex: 1;
+}
+
+.module-fields-count {
+  font-size: 11px;
+  font-weight: 600;
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #86efac;
+  padding: 1px 8px;
+  border-radius: 20px;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.module-fields-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.field-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12.5px;
+  color: #374151;
+  background: white;
+  border: 1px solid #e5e7eb;
+  transition: all 0.12s;
+  user-select: none;
+}
+
+.field-item:hover { border-color: #4ade80; background: #f0fdf4; color: #15803d; }
+.field-item.checked {
+  background: #dcfce7;
+  border-color: #4ade80;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.module-fields-hint {
+  font-size: 11px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.module-label {
+  font-size: 13.5px;
+  color: #1e293b;
+  text-align: left;
+}
+
+.perm-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  min-height: 36px;
+}
+
+.perm-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #16a34a;
+}
+
+.perm-checkbox:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Panel de datos de cámara en capas ─────────────────────────────────────── */
+.layer-camera-fields-panel {
+  padding: 12px 14px 14px;
+  background: #f0fdf4;
+  border-top: 1px dashed #86efac;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.layer-camera-fields-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.layer-camera-fields-title span:nth-child(2) { flex: 1; }
+
+.layer-item.camera-layer { border-left: 3px solid #86efac; padding-left: 8px; }
+.layer-item.camera-layer .layer-camera-icon { color: #4ade80; margin-left: auto; flex-shrink: 0; }
+
+/* ── Grupos de capas ───────────────────────────────────────────────────────── */
+.layer-group {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.layer-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  background: #f8fafc;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s;
+}
+
+.layer-group-header:hover { background: #f1f5f9; }
+
+.layer-group-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #374151;
+}
+
+.layer-group-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.layer-group-count {
+  font-size: 11px;
+  color: #6b7280;
+  background: #e2e8f0;
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.layer-group-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.layer-select-btn {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.12s;
+}
+
+.layer-select-btn:hover {
+  background: #16a34a;
+  color: white;
+  border-color: #16a34a;
+}
+
+.layer-group-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 2px;
+  padding: 8px;
+  background: white;
+}
+
+.layer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+  transition: background 0.1s;
+  user-select: none;
+}
+
+.layer-item:hover { background: #f1f5f9; }
+.layer-item.checked {
+  background: #f0fdf4;
+  color: #15803d;
+  font-weight: 500;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .roles-modal-content {
+    max-width: 100% !important;
+    max-height: 100vh !important;
+    border-radius: 14px 14px 0 0 !important;
+  }
+
+  .roles-form-wrapper .modal-body {
+    padding: 16px;
+  }
+
+  .roles-modal-footer {
+    padding: 12px 16px;
+  }
+
+  .modules-table-header,
+  .modules-table-row {
+    grid-template-columns: 1fr 50px 50px 50px 50px;
+    font-size: 11px;
+  }
+
+  .layer-group-items {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .modules-table-header,
+  .modules-table-row {
+    grid-template-columns: 1fr 44px 44px 44px 44px;
+    padding: 7px 8px;
+  }
+
+  .roles-modal-footer {
+    flex-direction: column;
+  }
+
+  .roles-modal-footer .btn-secondary,
+  .roles-modal-footer .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .layer-group-items {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Sección jurisdicciones ────────────────────────────────────────────────── */
+.jurisdiction-section {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.jurisdiction-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.jurisdiction-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.jurisdiction-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.jurisdiction-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  border-radius: 20px;
+  padding: 2px 9px;
+}
+
+.jurisdiction-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.jur-action-btn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.jur-action-all {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+.jur-action-all:hover { background: #dbeafe; }
+
+.jur-action-none {
+  background: #f3f4f6;
+  color: #6b7280;
+  border-color: #e5e7eb;
+}
+.jur-action-none:hover { background: #e5e7eb; }
+
+.jurisdiction-body {
+  padding: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.jurisdiction-loading,
+.jurisdiction-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 6px;
+  font-size: 13px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.jurisdiction-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 6px;
+}
+
+.jurisdiction-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #fafafa;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.jurisdiction-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.jurisdiction-item.checked {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.jurisdiction-item-label {
+  font-size: 13px;
+  color: #374151;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.jurisdiction-item.checked .jurisdiction-item-label {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .jurisdiction-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

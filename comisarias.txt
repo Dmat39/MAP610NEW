@@ -1,0 +1,15 @@
+Comisaria Zarate	            -12.027029 ,	-77.001339
+
+Comisaria Caja de Agua	        -12.02723284,	-77.01513948
+
+Comisaria Huayrona	            -11.99408543,	-77.00690468
+
+Comisaria Santa Elizabeth	    -11.98386753,	-77.01489598
+
+Comisaria Canto Rey	            -11.97515137,	-76.99574772
+
+Comisaria Bayovar	            -11.95218954,	-76.99164215
+
+Comisaria Mariscal Caceceres	-11.94912257,	-76.98062287
+
+Comisaria 10 de octubre	        -11.94460628,	-76.9882119

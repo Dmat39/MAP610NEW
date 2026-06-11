@@ -1,5 +1,5 @@
-/* import "./ControlStyles.css"; */
 import "./ControlRutas.css";
+import { Route, BarChart3, Trash2, MapPin, Clock, Navigation, CheckCircle, Lightbulb } from 'lucide-react';
 
 const ControlRutas = ({ visible, rutaInfo, onLimpiarRuta, mapType, topPosition = 10 }) => {
     if (!visible) return null;
@@ -11,54 +11,59 @@ const ControlRutas = ({ visible, rutaInfo, onLimpiarRuta, mapType, topPosition =
         >
             <div className="control-rutas-header">
                 <div className="header-content">
-                    <div>
-                        <h3 style={{color: 'white'}}>🛣️ Calculador de Rutas</h3>
-                        {/* <small>{mapType === 'google' ? 'Google Directions API' : 'OpenStreetMap OSRM'}</small> */}
-                    </div>
+                    <Route size={16} color="#16a34a" style={{ flexShrink: 0 }} />
+                    <h3>Calculador de Rutas</h3>
                 </div>
             </div>
+
             <div className="control-rutas-content">
                 {mapType === 'google' ? (
-                    <p style={{fontSize: '0.9em', margin: '10px 0px 10px 0px'}}>Utiliza la API de Directions de Google Maps para calcular rutas óptimas con información de tráfico en tiempo real.</p>
+                    <p>Utiliza la API de Directions de Google Maps para calcular rutas óptimas con información de tráfico en tiempo real.</p>
                 ) : (
-                    <p style={{fontSize: '0.9em', margin: '10px 0px'}}>Haga clic en dos puntos del mapa para calcular la ruta óptima entre ellos.</p>
+                    <p>Haga clic en dos puntos del mapa para calcular la ruta óptima entre ellos.</p>
                 )}
 
                 {rutaInfo && (
                     <div className="ruta-info">
-                        <h4>📊 Información de la Ruta</h4>
+                        <h4><BarChart3 size={12} color="#16a34a" /> Información de la Ruta</h4>
                         <div className="info-grid">
-                            <p style={{ margin: 0 }}><strong>📏 Distancia:</strong> {rutaInfo.distance?.text || `${rutaInfo.distance} km`}</p>
-                            {/* <p style={{ margin: 0 }}><strong>⏱️ Tiempo estimado:</strong> {rutaInfo.duration?.text || `${rutaInfo.duration} min`}</p> */}
+                            <div className="info-row">
+                                <span className="info-label"><MapPin size={13} color="#16a34a" /> Distancia</span>
+                                <span className="info-value">{rutaInfo.distance?.text || `${rutaInfo.distance} km`}</span>
+                            </div>
 
                             {rutaInfo.durationInTraffic && (
-                                <p style={{ color: '#ff9800', margin: 0 }}>
-                                    <strong>🚦 Con tráfico:</strong> {rutaInfo.durationInTraffic.text}
-                                </p>
+                                <div className="info-row">
+                                    <span className="info-label"><Clock size={13} color="#f59e0b" /> Con tráfico</span>
+                                    <span className="info-value trafico">{rutaInfo.durationInTraffic.text}</span>
+                                </div>
                             )}
 
                             {rutaInfo.waypointsCount > 0 && (
-                                <p style={{ margin: 0 }}><strong>📍 Paradas intermedias:</strong> {rutaInfo.waypointsCount}</p>
+                                <div className="info-row">
+                                    <span className="info-label"><Navigation size={13} color="#6b7280" /> Paradas intermedias</span>
+                                    <span className="info-value">{rutaInfo.waypointsCount}</span>
+                                </div>
                             )}
 
                             {rutaInfo.totalStops && (
-                                <p style={{ margin: 0 }}><strong>🎯 Total de puntos:</strong> {rutaInfo.totalStops}</p>
+                                <div className="info-row">
+                                    <span className="info-label"><MapPin size={13} color="#6b7280" /> Total de puntos</span>
+                                    <span className="info-value">{rutaInfo.totalStops}</span>
+                                </div>
                             )}
 
                             {rutaInfo.optimizedOrder && (
-                                <p style={{ color: '#4caf50', fontSize: '0.9em' }}>
-                                    ✓ Ruta optimizada automáticamente
-                                </p>
+                                <div className="info-row">
+                                    <span className="info-label"><CheckCircle size={13} color="#16a34a" /> Estado</span>
+                                    <span className="info-value optimizado">Ruta optimizada</span>
+                                </div>
                             )}
                         </div>
 
-                        <div className="botones-container">
-                            <button
-                                className="btn-limpiar-ruta"
-                                onClick={onLimpiarRuta}
-                                style={{ fontSize: '0.9em', marginTop: '10px' }}
-                            >
-                                🗑️ Limpiar Ruta
+                        <div className="botones-container" style={{ marginTop: 10 }}>
+                            <button className="btn-limpiar-ruta" onClick={onLimpiarRuta}>
+                                <Trash2 size={14} /> Limpiar Ruta
                             </button>
                         </div>
                     </div>
@@ -80,11 +85,11 @@ const ControlRutas = ({ visible, rutaInfo, onLimpiarRuta, mapType, topPosition =
                                 <li>La ruta se calculará automáticamente</li>
                             </ol>
                         )}
-                        
+
                         {mapType === 'google' && (
-                            <div style={{ marginTop: '10px', padding: '8px', backgroundColor: '#e3f2fd', borderRadius: '4px', fontSize: '0.9em' }}>
-                                <strong>💡 Características:</strong>
-                                <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+                            <div className="caracteristicas-box">
+                                <strong><Lightbulb size={13} /> Características</strong>
+                                <ul>
                                     <li>Información de tráfico en tiempo real</li>
                                     <li>Optimización automática de waypoints</li>
                                     <li>Rutas editables arrastrando</li>

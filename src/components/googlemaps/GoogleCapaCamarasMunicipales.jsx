@@ -122,6 +122,7 @@ const GoogleCapaCamarasMunicipales = ({
   google,
   camaraSeleccionada,
   camarasFiltradas,
+  filtrosCamaras,
   seguimientoCamara,
   limpiarSeguimiento,
   camaraConVision,
@@ -534,12 +535,16 @@ const GoogleCapaCamarasMunicipales = ({
     console.log('🧹 Seguimiento limpiado');
   };
 
-  // Efecto para limpiar seguimiento cuando se cambian los filtros
+  // Efecto para limpiar seguimiento cuando se activa un filtro
   useEffect(() => {
-    if (camarasFiltradas && camarasFiltradas.length > 0 && seguimientoActivo) {
+    const isFilterActive = filtrosCamaras && (
+      filtrosCamaras.megafono || filtrosCamaras.boton || filtrosCamaras.lpr ||
+      (filtrosCamaras.jurisdicciones?.length > 0)
+    );
+    if (isFilterActive && seguimientoActivo) {
       limpiarTodoSeguimiento();
     }
-  }, [camarasFiltradas]);
+  }, [filtrosCamaras]);
 
   useEffect(() => {
     if (!map || !google || !visible) {
@@ -578,18 +583,33 @@ const GoogleCapaCamarasMunicipales = ({
       totalCamaras: camaras.length
     });
 
+    const hayFiltroActivo = filtrosCamaras && (
+      filtrosCamaras.megafono ||
+      filtrosCamaras.boton ||
+      filtrosCamaras.lpr ||
+      (filtrosCamaras.jurisdicciones?.length > 0)
+    );
+
     if (seguimientoActivo && camarasCercanas.length > 0) {
-      // Mostrar solo las cámaras del seguimiento
       camarasAMostrar = camarasCercanas.map(item => item.feature);
       console.log('📍 Mostrando cámaras de seguimiento:', camarasAMostrar.length);
-    } else if (camarasFiltradas && camarasFiltradas.length > 0) {
-      // Mostrar cámaras filtradas (solo si hay filtros activos)
-      camarasAMostrar = camaras.filter((feature, idx) =>
-        camarasFiltradas.some(cf => cf.name === feature.properties?.name)
-      );
+    } else if (hayFiltroActivo) {
+      // Características: OR (muestra si cumple CUALQUIERA)
+      // Jurisdicción: AND (acota por zona)
+      camarasAMostrar = camaras.filter(feature => {
+        const props = feature.properties;
+        if (filtrosCamaras.jurisdicciones?.length > 0 &&
+            !filtrosCamaras.jurisdicciones.includes(props.jurisdiccion)) return false;
+        const hayCaracteristica = filtrosCamaras.boton || filtrosCamaras.lpr || filtrosCamaras.megafono;
+        if (hayCaracteristica) {
+          return (filtrosCamaras.boton && !!props.boton) ||
+                 (filtrosCamaras.lpr && props.tipo === 'TIPO III') ||
+                 (filtrosCamaras.megafono && !!props.megafono);
+        }
+        return true;
+      });
       console.log('🔍 Mostrando cámaras filtradas:', camarasAMostrar.length);
     } else {
-      // Mostrar todas las cámaras
       camarasAMostrar = camaras;
       console.log('📷 Mostrando todas las cámaras:', camarasAMostrar.length);
     }
@@ -993,7 +1013,7 @@ const GoogleCapaCamarasMunicipales = ({
         if (circle) circle.setMap(null);
       });
     };
-  }, [map, google, visible, camaras, camaraSeleccionada, camarasFiltradas, seguimientoActivo, camarasCercanas, circuloSeguimiento, camaraConVision]);
+  }, [map, google, visible, camaras, camaraSeleccionada, camarasFiltradas, filtrosCamaras, seguimientoActivo, camarasCercanas, circuloSeguimiento, camaraConVision]);
 
   return null; // Este componente no renderiza JSX
 };

@@ -1,8 +1,9 @@
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Login from '../pages/Login';
 
-const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-  const { user, isAuthenticated, loading } = useAuth();
+const ProtectedRoute = ({ children, allowedRoles = [], moduleKey = null }) => {
+  const { user, isAuthenticated, loading, hasModuleAccess, customRolePerms } = useAuth();
 
   if (loading) {
     return (
@@ -25,29 +26,25 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     return <Login />;
   }
 
-  // Si se especifican roles permitidos, verificar que el usuario tenga uno de ellos
-  if (allowedRoles.length > 0 && user?.role) {
-    const userRole = user.role.toLowerCase();
-    const hasPermission = allowedRoles.some(role => role.toLowerCase() === userRole);
+  const isSuperAdmin = user?.role?.toUpperCase() === 'SUPERADMIN';
 
+  // SUPERADMIN tiene acceso total sin restricciones
+  if (isSuperAdmin) return children;
+
+  // Usuario con rol personalizado: sus permisos mandan completamente
+  if (customRolePerms) {
+    if (moduleKey && !hasModuleAccess(moduleKey)) {
+      return <Navigate to="/" replace />;
+    }
+    return children;
+  }
+
+  // Usuario sin rol personalizado: usa el enum rol como antes
+  if (allowedRoles.length > 0) {
+    const userRole = user?.role;
+    const hasPermission = userRole && allowedRoles.some(r => r.toUpperCase() === userRole.toUpperCase());
     if (!hasPermission) {
-      return (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-            gap: '16px',
-          }}
-        >
-          <h2 style={{ color: '#c33', margin: 0 }}>Acceso Denegado</h2>
-          <p style={{ color: '#666', margin: 0 }}>
-            No tienes permisos para acceder a esta sección
-          </p>
-        </div>
-      );
+      return <Navigate to="/" replace />;
     }
   }
 

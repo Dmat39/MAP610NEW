@@ -1,9 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronRight, ScatterChart, CalendarDays, RotateCcw, SlidersHorizontal, ListFilter, BarChart3 } from 'lucide-react';
+
+const ROBO_SUBTYPES = [
+  { key: 'roboPersonas',   label: 'A Personas'  },
+  { key: 'roboCasa',       label: 'Casa Habitada'},
+  { key: 'roboGanado',     label: 'De Ganado'   },
+  { key: 'roboEmpresas',   label: 'A Empresas'  },
+  { key: 'roboVehiculos',  label: 'De Vehículos'},
+  { key: 'roboAutopartes', label: 'Autopartes'  },
+  { key: 'roboPasajeros',  label: 'A Pasajeros' },
+];
+const HURTO_SUBTYPES = [
+  { key: 'hurtoPersonas',  label: 'A Personas'  },
+  { key: 'hurtoCasa',      label: 'Casa Habitada'},
+  { key: 'hurtoGanado',    label: 'De Ganado'   },
+  { key: 'hurtoEmpresas',  label: 'A Empresas'  },
+  { key: 'hurtoVehiculos', label: 'De Vehículos'},
+  { key: 'hurtoPasajeros', label: 'A Pasajeros' },
+];
 import { useMapContext } from '../../../context/MapContext';
+import { useMapLayout } from '../../../context/MapLayoutContext';
 import './ControlClusters.css';
 
+const PANEL_ID = 'clusters';
+const PANEL_HEIGHT = 50;
+const PANEL_ORDER = 2;
+const BASE_RIGHT = 10;
+
 const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
+  const { registerPanel, unregisterPanel, getBottomOffset, rightOffset } = useMapLayout();
   const {
     radioCluster,
     setRadioCluster,
@@ -12,7 +37,24 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
     fechasClusters,
     handleFechasClustersChange
   } = useMapContext();
+  useEffect(() => {
+    if (visible) {
+      registerPanel(PANEL_ID, { order: PANEL_ORDER, height: PANEL_HEIGHT });
+      return () => unregisterPanel(PANEL_ID);
+    }
+  }, [visible, registerPanel, unregisterPanel]);
+
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [robosExpanded, setRobosExpanded] = useState(false);
+  const [hurtosExpanded, setHurtosExpanded] = useState(false);
+
+  const toggleGrupo = (keys) => {
+    const allActive = keys.every(k => tiposIncidenciasCluster[k]);
+    keys.forEach(k => {
+      if (allActive ? tiposIncidenciasCluster[k] : !tiposIncidenciasCluster[k])
+        handleToggleTipoIncidenciaCluster(k);
+    });
+  };
   const [estadisticas, setEstadisticas] = useState({
     totalClusters: 0,
     totalPuntos: 0,
@@ -67,12 +109,20 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
   };
 
   return (
-    <div className={`control-clusters ${mapType}-mode ${isCollapsed ? 'collapsed' : ''}`}>
+    <div
+      className={`control-clusters ${isCollapsed ? 'collapsed' : ''}`}
+      style={{
+        bottom: getBottomOffset(PANEL_ID),
+        right: BASE_RIGHT + rightOffset,
+        transition: 'bottom 0.3s ease, right 0.3s ease',
+      }}
+    >
       <div className="control-clusters-header" onClick={toggleCollapse}>
         <div className="header-content">
-          <h3>🎯 Control de Clusters</h3>
+          <ScatterChart size={17} color="#16a34a" style={{ flexShrink: 0 }} />
+          <h3>Control de Clusters</h3>
           <button className="collapse-btn">
-            {isCollapsed ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
           </button>
         </div>
       </div>
@@ -80,7 +130,7 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
       <div className={`control-clusters-content ${isCollapsed ? 'hidden' : ''}`}>
         <div className="periodo-info">
           <div className="periodo-header">
-            <span className="periodo-icon">📅</span>
+            <CalendarDays size={14} color="#16a34a" />
             <span className="periodo-label">Período de datos</span>
           </div>
 
@@ -118,20 +168,20 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
           </div>
 
           <button className="btn-resetear-fechas" onClick={resetearFechas}>
-            🔄 Últimos 30 días
+            <RotateCcw size={13} /> Últimos 30 días
           </button>
         </div>
 
         <div className="radio-control">
-          <label htmlFor="radio-slider">
-            <strong>Radio de Clustering:</strong>
+          <label htmlFor="radio-slider" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <SlidersHorizontal size={13} color="#16a34a" /> Radio de Clustering
           </label>
           <div className="slider-container">
             <input
               id="radio-slider"
               type="range"
-              min="10"
-              max="100"
+              min="0"
+              max="300"
               value={radioCluster}
               onChange={(e) => setRadioCluster(Number(e.target.value))}
               className="radio-slider"
@@ -141,15 +191,67 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
         </div>
 
         <div className="filtros-incidencias">
-          <h4>🔍 Tipos de Incidencias</h4>
+          <h4 style={{ display: 'flex', alignItems: 'center', gap: 6 }}><ListFilter size={13} color="#16a34a" /> Tipos de Incidencias</h4>
           <div className="filtros-grid">
-            <label className="filtro-checkbox">
+
+            {/* ── Grupo Robos ── */}
+            <div
+              className={`filtro-grupo-header${ROBO_SUBTYPES.some(s => tiposIncidenciasCluster[s.key]) ? ' activo' : ''}`}
+              onClick={() => setRobosExpanded(v => !v)}
+            >
               <input
                 type="checkbox"
-                checked={tiposIncidenciasCluster.robos}
-                onChange={() => handleToggleTipoIncidenciaCluster('robos')}
+                checked={ROBO_SUBTYPES.every(s => tiposIncidenciasCluster[s.key])}
+                ref={el => { if (el) el.indeterminate = ROBO_SUBTYPES.some(s => tiposIncidenciasCluster[s.key]) && !ROBO_SUBTYPES.every(s => tiposIncidenciasCluster[s.key]); }}
+                onChange={e => { e.stopPropagation(); toggleGrupo(ROBO_SUBTYPES.map(s => s.key)); }}
+                onClick={e => e.stopPropagation()}
+                style={{ width: 15, height: 15, cursor: 'pointer', accentColor: '#16a34a', flexShrink: 0 }}
               />
-              <span>Robos</span>
+              <span style={{ flex: 1 }}>Robos ({ROBO_SUBTYPES.filter(s => tiposIncidenciasCluster[s.key]).length}/{ROBO_SUBTYPES.length})</span>
+              <ChevronRight size={13} className={`filtro-grupo-chevron${robosExpanded ? ' expanded' : ''}`} />
+            </div>
+            {robosExpanded && (
+              <div className="filtro-subgrid">
+                {ROBO_SUBTYPES.map(s => (
+                  <label key={s.key} className="filtro-checkbox sub">
+                    <input type="checkbox" checked={tiposIncidenciasCluster[s.key]} onChange={() => handleToggleTipoIncidenciaCluster(s.key)} />
+                    <span>{s.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {/* ── Grupo Hurtos ── */}
+            <div
+              className={`filtro-grupo-header${HURTO_SUBTYPES.some(s => tiposIncidenciasCluster[s.key]) ? ' activo' : ''}`}
+              onClick={() => setHurtosExpanded(v => !v)}
+            >
+              <input
+                type="checkbox"
+                checked={HURTO_SUBTYPES.every(s => tiposIncidenciasCluster[s.key])}
+                ref={el => { if (el) el.indeterminate = HURTO_SUBTYPES.some(s => tiposIncidenciasCluster[s.key]) && !HURTO_SUBTYPES.every(s => tiposIncidenciasCluster[s.key]); }}
+                onChange={e => { e.stopPropagation(); toggleGrupo(HURTO_SUBTYPES.map(s => s.key)); }}
+                onClick={e => e.stopPropagation()}
+                style={{ width: 15, height: 15, cursor: 'pointer', accentColor: '#16a34a', flexShrink: 0 }}
+              />
+              <span style={{ flex: 1 }}>Hurtos ({HURTO_SUBTYPES.filter(s => tiposIncidenciasCluster[s.key]).length}/{HURTO_SUBTYPES.length})</span>
+              <ChevronRight size={13} className={`filtro-grupo-chevron${hurtosExpanded ? ' expanded' : ''}`} />
+            </div>
+            {hurtosExpanded && (
+              <div className="filtro-subgrid">
+                {HURTO_SUBTYPES.map(s => (
+                  <label key={s.key} className="filtro-checkbox sub">
+                    <input type="checkbox" checked={tiposIncidenciasCluster[s.key]} onChange={() => handleToggleTipoIncidenciaCluster(s.key)} />
+                    <span>{s.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {/* ── Items simples ── */}
+            <label className="filtro-checkbox">
+              <input type="checkbox" checked={tiposIncidenciasCluster.danos} onChange={() => handleToggleTipoIncidenciaCluster('danos')} />
+              <span>Daños</span>
             </label>
             <label className="filtro-checkbox">
               <input
@@ -211,7 +313,7 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
         </div>
 
         <div className="estadisticas">
-          <h4>📊 Estadísticas</h4>
+          <h4 style={{ display: 'flex', alignItems: 'center', gap: 6 }}><BarChart3 size={13} color="#16a34a" /> Estadísticas</h4>
           <div className="stat-item">
             <span className="stat-label">Total de puntos:</span>
             <span className="stat-value">{estadisticas.totalPuntos.toLocaleString()}</span>
@@ -231,7 +333,7 @@ const ControlClusters = ({ visible, mapType = 'leaflet' }) => {
         </div>
 
         <div className="leyenda">
-          <h4>🎨 Leyenda</h4>
+          <h4 style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '0 0 8px 0', fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Leyenda de colores</h4>
           <div className="leyenda-item">
             <div className="color-box amarillo"></div>
             <span>2-3 incidencias</span>

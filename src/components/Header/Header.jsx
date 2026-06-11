@@ -54,7 +54,7 @@ const Header = () => {
             <div className="brand-logo">
               <MapPin size={18} strokeWidth={2.5} />
             </div>
-            <h1 className="brand-name">Mapa de Incidencias</h1>
+            <h1 className="brand-name">Mapa de Inteligencia Territorial SJL</h1>
           </div>
 
           <div className="user-section">

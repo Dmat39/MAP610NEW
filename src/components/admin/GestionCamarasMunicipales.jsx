@@ -3,11 +3,12 @@ import { useLocation } from 'react-router-dom';
 import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Eye, Target, Video, Download } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import camarasMunicipalesAdminService from '../../services/camarasMunicipalesAdminService';
-import authService from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 import UseUrlParamsManager from '../../hooks/UseUrlParamsManager';
 import SearchInput from '../Table/SearchInput';
 import TablePagination from '../Table/TablePagination';
 import { generateVisionField, createSectorPolygon } from '../../utils/cameraUtils';
+import { asignarJurisdiccionACamaras } from '../../utils/jurisdiccionUtils';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './GestionCamarasMunicipales.css';
@@ -58,8 +59,9 @@ const GestionCamarasMunicipales = () => {
   const visionPolygonRef = useRef(null);
   const visionMarkerRef = useRef(null);
 
-  // Verificar si es administrador
-  const isAdmin = authService.isAdmin();
+  const { hasModuleAccess, hasModuleOp } = useAuth();
+  const isAdmin  = hasModuleAccess('camaras-municipales');
+  const canWrite = hasModuleOp('camaras-municipales', 'create');
 
   // Cargar cámaras cuando cambian los parámetros de URL
   useEffect(() => {
@@ -592,6 +594,8 @@ const GestionCamarasMunicipales = () => {
         return;
       }
 
+      const camarasConJurisdiccion = await asignarJurisdiccionACamaras(todasLasCamaras);
+
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Cámaras Municipales');
 
@@ -599,6 +603,7 @@ const GestionCamarasMunicipales = () => {
         { header: '#', key: 'index', width: 6 },
         { header: 'Nombre', key: 'name', width: 15 },
         { header: 'Dirección', key: 'address', width: 40 },
+        { header: 'Jurisdicción', key: 'jurisdiccion', width: 20 },
         { header: 'Tipo', key: 'camera', width: 12 },
         { header: 'Latitud', key: 'latitude', width: 15 },
         { header: 'Longitud', key: 'longitude', width: 15 },
@@ -619,11 +624,12 @@ const GestionCamarasMunicipales = () => {
       worksheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
 
       // Agregar datos
-      todasLasCamaras.forEach((camara, idx) => {
+      camarasConJurisdiccion.forEach((camara, idx) => {
         worksheet.addRow({
           index: idx + 1,
           name: camara.name || '',
           address: camara.address || '',
+          jurisdiccion: camara.jurisdiccion || 'Sin jurisdicción',
           camera: camara.camera || '',
           latitude: camara.latitude || '',
           longitude: camara.longitude || '',
@@ -671,24 +677,26 @@ const GestionCamarasMunicipales = () => {
     <div className="gestion-municipales-container">
       <div className="municipales-header">
         <div className="municipales-header-content">
-          <Video size={28} />
+          <div className="municipales-header-icon"><Video size={24} /></div>
           <div className="municipales-header-text">
             <h1>Gestión de Cámaras Municipales</h1>
             <p>Administra las cámaras municipales del sistema</p>
           </div>
         </div>
         <div className="municipales-header-actions">
-          <button onClick={refreshData} className="btn-municipales-refresh" title="Actualizar">
-            <RefreshCw size={18} className={loading ? 'spinning' : ''} />
+          <button onClick={refreshData} className="btn-municipales-refresh">
+            <RefreshCw size={15} className={loading ? 'spinning' : ''} /> Actualizar
           </button>
           <button onClick={exportarExcel} className="btn-municipales-excel" disabled={loading} title="Descargar Excel">
             <Download size={18} />
             <span>Descargar Excel</span>
           </button>
-          <button onClick={openCreateModal} className="btn-municipales-primary">
-            <Plus size={18} />
-            <span>Nueva Cámara</span>
-          </button>
+          {canWrite && (
+            <button onClick={openCreateModal} className="btn-municipales-primary">
+              <Plus size={18} />
+              <span>Nueva Cámara</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -760,10 +768,12 @@ const GestionCamarasMunicipales = () => {
             <Video size={48} />
             <h3>No hay cámaras municipales registradas</h3>
             <p>Comienza creando una nueva cámara municipal</p>
-            <button onClick={openCreateModal} className="btn-municipales-primary">
-              <Plus size={18} />
-              <span>Crear Cámara Municipal</span>
-            </button>
+            {canWrite && (
+              <button onClick={openCreateModal} className="btn-municipales-primary">
+                <Plus size={18} />
+                <span>Crear Cámara Municipal</span>
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -817,22 +827,24 @@ const GestionCamarasMunicipales = () => {
                           </span>
                         </td>
                         <td>
-                          <div className="municipales-action-buttons">
-                            <button
-                              className="btn-icon-municipales btn-edit"
-                              onClick={() => openEditModal(camera)}
-                              title="Editar"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button
-                              className="btn-icon-municipales btn-delete"
-                              onClick={() => handleDelete(camera.id)}
-                              title="Eliminar"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
+                          {canWrite && (
+                            <div className="municipales-action-buttons">
+                              <button
+                                className="btn-icon-municipales btn-edit"
+                                onClick={() => openEditModal(camera)}
+                                title="Editar"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                className="btn-icon-municipales btn-delete"
+                                onClick={() => handleDelete(camera.id)}
+                                title="Eliminar"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     );

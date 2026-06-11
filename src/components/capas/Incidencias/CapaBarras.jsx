@@ -108,6 +108,7 @@ const CapaBarras = ({ visible, filtros = null }) => {
               fillColor={color}
               fillOpacity={0.3}
               weight={2}
+              pane="incidenciasPane"
             >
               <Popup>
                 <div style={{ fontSize: '13px', maxWidth: '260px' }}>

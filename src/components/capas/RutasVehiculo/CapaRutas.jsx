@@ -23,7 +23,7 @@ const CapaRutas = ({ visible, onRutaCalculada }) => {
     });
 
   const startIcon = createCustomIcon('green');
-  const intermediateIcon = createCustomIcon('blue');
+  const intermediateIcon = createCustomIcon('green');
   const endIcon = createCustomIcon('red');
 
   useEffect(() => {
@@ -149,7 +149,7 @@ const CapaRutas = ({ visible, onRutaCalculada }) => {
 
       {route && (
         <>
-          <Polyline positions={route.geometry} color="#3388ff" weight={6} opacity={0.7} />
+          <Polyline positions={route.geometry} color="#16a34a" weight={6} opacity={0.8} />
           <Popup position={route.geometry[Math.floor(route.geometry.length / 2)]}>
             <div>
               <strong>Distancia:</strong> {route.distance} km
