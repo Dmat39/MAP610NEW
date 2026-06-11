@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Marker, InfoWindow } from '@react-google-maps/api';
-import { obtenerBodycams } from '../../../services/bodycamService';
+import { obtenerBodycams } from '../../services/bodycamService';
 
 const GoogleCapaBodycams = ({ visible, bodycamSeleccionada }) => {
   const [bodycams, setBodycams] = useState([]);
