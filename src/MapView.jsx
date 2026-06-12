@@ -61,6 +61,8 @@ import CapaCercosGPS from './components/capas/CercosGPS/CapaCercosGPS';
 import CapaRecorridoRadio from './components/capas/RecorridoRadio/CapaRecorridoRadio';
 import GoogleCapaBodycams from './components/googlemaps/GoogleCapaBodycams';
 import ControlBodycams from './components/Controles/Busqueda_Bodycams/ControlBodycams';
+import ControlRutasBodycams from './components/Controles/Rutas_Bodycams/ControlRutasBodycams';
+import CapaHistorialBodycams from './components/capas/Bodycams/CapaHistorialBodycams';
 import GoogleMapWrapper from './components/googlemaps/GoogleMapContainer';
 import GoogleRoutesCalculator from './components/googlemaps/GoogleRoutesCalculator';
 import GoogleCapaJurisdiccion from './components/googlemaps/GoogleCapaJurisdiccion';
@@ -140,6 +142,7 @@ const MapView = () => {
     busquedaDirecciones: false,
     ubicadorPunto: false,
     rutas: false,
+    rutasBodycams: false,
     clusters: false,
     clusterCombinado: false,
     clusterPNP: false,
@@ -192,6 +195,7 @@ const MapView = () => {
   const [seguimientoCamara, setSeguimientoCamara] = useState(null);
   const [limpiarSeguimiento, setLimpiarSeguimiento] = useState(null);
   const [camaraConVision, setCamaraConVision] = useState(null); // Track camera with vision field active
+  const [recorridoBodycam, setRecorridoBodycam] = useState(null);
 
   const getDefaultFechasCombinado = () => {
     const today = new Date();
@@ -356,6 +360,7 @@ const MapView = () => {
     },
     { name: 'ubicadorPunto', label: 'Ubicador de Puntos', visible: capasVisibles.ubicadorPunto },
     { name: 'rutas', label: 'Calculador de Rutas', visible: capasVisibles.rutas },
+    { name: 'rutasBodycams', label: 'Rutas Bodycams', visible: capasVisibles.rutasBodycams },
     {
       name: 'paraderosAutorizados',
       label: 'Paraderos Autorizados',
@@ -517,6 +522,11 @@ const MapView = () => {
           10
         }
       />
+      <ControlRutasBodycams
+        visible={capasVisibles.rutasBodycams}
+        setVisible={(v) => setCapasVisibles(prev => ({ ...prev, rutasBodycams: v }))}
+        onRutaEncontrada={setRecorridoBodycam}
+      />
       <ControlRadios
         visible={capasVisibles.radios}
         onRadioSeleccionado={setRadioSeleccionado}
@@ -616,6 +626,7 @@ const MapView = () => {
             <CapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
           )}
           <CapaBodycams visible={capasVisibles.bodycams} bodycamSeleccionada={bodycamSeleccionada} />
+          {capasVisibles.rutasBodycams && <CapaHistorialBodycams dataRecorrido={recorridoBodycam} />}
           <CapaRadios visible={capasVisibles.radios} radioSeleccionado={radioSeleccionado} />
           <GpsMapEvents
             seleccionandoPunto={seleccionandoPunto}
