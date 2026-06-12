@@ -1,0 +1,326 @@
+/* ── Radios GPS — overrides sobre GestionCamarasMunicipales.css ─────────── */
+
+/* Header: acento índigo en vez de verde */
+.rgps-header { border-top-color: #6366f1 !important; }
+.rgps-header-icon {
+  background: #eef2ff !important;
+  border-color: #c7d2fe !important;
+  color: #6366f1 !important;
+}
+
+/* ── Tabs bar ──────────────────────────────────────────────────────────────── */
+.rgps-tabs-bar {
+  display: flex;
+  gap: 2px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  padding: 5px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.rgps-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.rgps-tab:hover  { color: #6366f1; background: #f1f5f9; }
+.rgps-tab.activo { background: #eef2ff; color: #6366f1; font-weight: 600; box-shadow: 0 1px 3px rgba(99,102,241,0.15); }
+
+/* ── Content: flex col, tabla crece y scrollea adentro ─────────────────────── */
+.rgps-content {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+}
+
+/* ── Form bar (historial / km) dentro del toolbar externo ───────────────────── */
+
+/* La tabla scrollea: flex:1 + overflow-y auto */
+.rgps-table-scroll {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: auto;
+  border-radius: 0 !important;
+  border: none !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+/* ── Toolbar externo (fuera del card de tabla) ──────────────────────────────── */
+.rgps-toolbar-outer {
+  flex-shrink: 0;
+  margin-bottom: 0 !important;
+  border-radius: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+/* ── Stats inline ───────────────────────────────────────────────────────────── */
+.rgps-stats-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rgps-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1.5px solid transparent;
+  cursor: default;
+  white-space: nowrap;
+}
+
+/* stat como botón */
+button.rgps-stat-chip {
+  cursor: pointer;
+  transition: all 0.15s;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #374151;
+}
+button.rgps-stat-chip:hover { border-color: #94a3b8; background: #f1f5f9; }
+
+.rgps-stat-chip.total { background: #f1f5f9; border-color: #e2e8f0; color: #374151; font-weight: 600; }
+.rgps-stat-chip.ok.activo    { background: #dcfce7; border-color: #86efac; color: #15803d; }
+.rgps-stat-chip.singps.activo { background: #fef9c3; border-color: #fde047; color: #854d0e; }
+.rgps-stat-chip.apagado.activo { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
+
+.rgps-stat-chip-num {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.rgps-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rgps-chip-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  font-size: 11px;
+  color: #6b7280;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.rgps-chip-clear:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+
+/* ── Actions row ───────────────────────────────────────────────────────────── */
+.rgps-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.rgps-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.rgps-filter-item label {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.rgps-filter-select {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+}
+.rgps-filter-select:focus { outline: none; border-color: #6366f1; }
+
+/* ── Form bar (historial / km) ─────────────────────────────────────────────── */
+.rgps-form-bar {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.rgps-form-fields {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rgps-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.rgps-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.rgps-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────────── */
+.btn-rgps-primary {
+  display: flex; align-items: center; gap: 5px;
+  background: #6366f1; color: white;
+  border: none; border-radius: 8px;
+  padding: 7px 14px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background 0.15s; white-space: nowrap;
+}
+.btn-rgps-primary:hover:not(:disabled) { background: #4f46e5; }
+.btn-rgps-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-rgps-refresh {
+  display: flex; align-items: center; gap: 5px;
+  background: white; color: #374151;
+  border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: 7px 12px; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: background 0.15s; white-space: nowrap;
+}
+.btn-rgps-refresh:hover { background: #f1f5f9; }
+
+.btn-rgps-excel {
+  display: flex; align-items: center; gap: 5px;
+  background: #16a34a; color: white;
+  border: none; border-radius: 8px;
+  padding: 7px 12px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background 0.15s; white-space: nowrap;
+}
+.btn-rgps-excel:hover:not(:disabled) { background: #15803d; }
+.btn-rgps-excel:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── KM chips ──────────────────────────────────────────────────────────────── */
+.rgps-km-chips {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.rgps-km-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 20px;
+}
+.rgps-km-chip.accent { background: #eff6ff; border-color: #bfdbfe; }
+.rgps-km-chip span { font-size: 18px; font-weight: 700; color: #0891b2; }
+.rgps-km-chip small { font-size: 11px; color: #64748b; }
+
+/* ── Table overrides ───────────────────────────────────────────────────────── */
+.gestion-municipales-container .municipales-table thead { background: #6366f1; }
+.gestion-municipales-container .municipales-table tbody tr:hover { background-color: rgba(99,102,241,0.04); }
+.gestion-municipales-container .municipales-table th {
+  padding: 10px 14px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.gestion-municipales-container .municipales-table td {
+  padding: 0 14px;
+  text-align: center;
+  vertical-align: middle;
+  height: 44px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+/* Badge con ancho mínimo fijo — todos se ven al mismo nivel */
+.gestion-municipales-container .municipales-table td .municipales-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  min-width: 80px;
+}
+
+/* Columnas que van a la izquierda */
+.gestion-municipales-container .municipales-table th:first-child,
+.gestion-municipales-container .municipales-table td:first-child { text-align: right; }
+.gestion-municipales-container .municipales-table th:nth-child(2),
+.gestion-municipales-container .municipales-table td:nth-child(2),
+.gestion-municipales-container .municipales-table th:nth-child(3),
+.gestion-municipales-container .municipales-table td:nth-child(3) { text-align: left; }
+.gestion-municipales-container .municipales-table { min-width: 700px; }
+.gestion-municipales-container .municipales-table td .municipales-action-buttons { justify-content: center; }
+
+.rgps-td-truncate {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Modal zona GPS ────────────────────────────────────────────────────────── */
+.rgps-zona-modal-overlay {
+  align-items: flex-start !important;
+  padding-top: 80px !important;
+  overflow-y: auto !important;
+}
+.rgps-zona-modal-overlay .municipales-modal-content {
+  max-width: 620px !important;
+  max-height: calc(100vh - 110px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+.rgps-zona-modal-overlay .municipales-modal-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+}
+.rgps-zona-modal-overlay .municipales-modal-footer {
+  flex-shrink: 0 !important;
+  margin-top: 0 !important;
+  padding: 16px 24px !important;
+}
+
+/* ── Spinner ───────────────────────────────────────────────────────────────── */
+.spinning { animation: rgps-spin 0.75s linear infinite; }
+@keyframes rgps-spin { to { transform: rotate(360deg); } }

@@ -1,5 +1,16 @@
-import { MapContainer, TileLayer, Pane } from 'react-leaflet';
+import { MapContainer, TileLayer, Pane, useMapEvents } from 'react-leaflet';
 import { useState, useCallback, useMemo } from 'react';
+
+const GpsMapEvents = ({ seleccionandoPunto, onPuntoSeleccionado }) => {
+  useMapEvents({
+    click(e) {
+      if (seleccionandoPunto) {
+        onPuntoSeleccionado({ lat: e.latlng.lat, lng: e.latlng.lng });
+      }
+    },
+  });
+  return null;
+};
 import { useAuth } from './context/AuthContext';
 import CapaJurisdiccion from './components/capas/Jurisdiccion/CapaJurisdiccion';
 import CapaCamarasMunicipales from './components/capas/CamarasMunicipales/CapaCamarasMunicipales';
@@ -43,6 +54,11 @@ import ControlCamaras from './components/Controles/Busqueda_Camaras/ControlCamar
 import CapaRutas from './components/capas/RutasVehiculo/CapaRutas';
 import ControlRutas from './components/Controles/Rutas_Moviles/ControlRutas';
 import CapaBodycams from './components/capas/Bodycams/CapaBodycams';
+import CapaRadios from './components/capas/Radios/CapaRadios';
+import ControlRadios from './components/Controles/Busqueda_Radios/ControlRadios';
+import CapaPuntosCercanos from './components/capas/PuntosCercanos/CapaPuntosCercanos';
+import CapaCercosGPS from './components/capas/CercosGPS/CapaCercosGPS';
+import CapaRecorridoRadio from './components/capas/RecorridoRadio/CapaRecorridoRadio';
 import GoogleCapaBodycams from './components/googlemaps/GoogleCapaBodycams';
 import ControlBodycams from './components/Controles/Busqueda_Bodycams/ControlBodycams';
 import GoogleMapWrapper from './components/googlemaps/GoogleMapContainer';
@@ -140,6 +156,7 @@ const MapView = () => {
     pnpFePublica: false,
     pnpTranquilidad: false,
     puntosCampana: false,
+    radios: false,
   });
 
   const [payloadFiltros, setPayloadFiltros] = useState(null);
@@ -159,6 +176,17 @@ const MapView = () => {
   const [rutaInfo, setRutaInfo] = useState(null);
   const [camaraSeleccionada, setCamaraSeleccionada] = useState(null);
   const [bodycamSeleccionada, setBodycamSeleccionada] = useState(null);
+  const [radioSeleccionado, setRadioSeleccionado] = useState(null);
+  const [puntoSeleccionado, setPuntoSeleccionado] = useState(null);
+  const [radiosEncontrados, setRadiosEncontrados] = useState([]);
+  const [metrosBusqueda, setMetrosBusqueda] = useState(500);
+  const [seleccionandoPunto, setSeleccionandoPunto] = useState(false);
+  const [puntosDibujo, setPuntosDibujo] = useState([]);
+  const [dibujandoCerco, setDibujandoCerco] = useState(false);
+  const [zonasCerco, setZonasCerco] = useState([]);
+  const [radiosFuera, setRadiosFuera] = useState([]);
+  const [recorridoPuntos, setRecorridoPuntos] = useState([]);
+  const [recorridoIssi, setRecorridoIssi] = useState('');
   const [camarasFiltradas, setCamarasFiltradas] = useState([]);
   const [filtrosCamaras, setFiltrosCamaras] = useState(null);
   const [seguimientoCamara, setSeguimientoCamara] = useState(null);
@@ -295,6 +323,7 @@ const MapView = () => {
       visible: capasVisibles.camarasVecinales,
     },
     { name: 'bodycams', label: 'Bodycams / Patrullaje', visible: capasVisibles.bodycams },
+    { name: 'radios', label: 'Radios GPS', visible: capasVisibles.radios },
     { name: 'robos', label: 'Robos', visible: capasVisibles.robos, restrictedForOperator: true },
     { name: 'roboPersonas',   label: 'Robo a Personas',    visible: capasVisibles.roboPersonas,   restrictedForOperator: true },
     { name: 'roboCasa',       label: 'Robo Casa Habitada', visible: capasVisibles.roboCasa,       restrictedForOperator: true },
@@ -488,6 +517,31 @@ const MapView = () => {
           10
         }
       />
+      <ControlRadios
+        visible={capasVisibles.radios}
+        onRadioSeleccionado={setRadioSeleccionado}
+        onLimpiarSeleccion={() => setRadioSeleccionado(null)}
+        mapType={mapType}
+        topPosition={
+          (capasVisibles.busquedaDirecciones ? 450 : 0) +
+          (capasVisibles.rutas ? 280 : 0) +
+          (capasVisibles.camaras ? 100 : 0) +
+          (capasVisibles.bodycams ? 100 : 0) +
+          10
+        }
+        puntoSeleccionado={puntoSeleccionado}
+        seleccionandoPunto={seleccionandoPunto}
+        onActivarSeleccionPunto={() => setSeleccionandoPunto(p => !p)}
+        onLimpiarPunto={() => { setPuntoSeleccionado(null); setRadiosEncontrados([]); setSeleccionandoPunto(false); }}
+        onBusquedaCercanosChange={(radios, mt) => { setRadiosEncontrados(radios); setMetrosBusqueda(mt); }}
+        dibujandoCerco={dibujandoCerco}
+        puntosDibujo={puntosDibujo}
+        onIniciarDibujo={() => setDibujandoCerco(true)}
+        onCancelarDibujo={() => { setDibujandoCerco(false); setPuntosDibujo([]); }}
+        onZonasChange={setZonasCerco}
+        radiosFuera={radiosFuera}
+        onRecorridoChange={(puntos, issi) => { setRecorridoPuntos(puntos); setRecorridoIssi(issi); }}
+      />
       <ControlClusters
         visible={capasVisibles.clusters}
         mapType={mapType}
@@ -537,7 +591,9 @@ const MapView = () => {
               ubicadorActivo={
                 capasVisibles.ubicadorPunto ||
                 capasVisibles.busquedaDirecciones ||
-                capasVisibles.rutas
+                capasVisibles.rutas ||
+                seleccionandoPunto ||
+                dibujandoCerco
               }
               camaraConVision={camaraConVision}
               camaraSeleccionada={camaraSeleccionada}
@@ -560,6 +616,30 @@ const MapView = () => {
             <CapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
           )}
           <CapaBodycams visible={capasVisibles.bodycams} bodycamSeleccionada={bodycamSeleccionada} />
+          <CapaRadios visible={capasVisibles.radios} radioSeleccionado={radioSeleccionado} />
+          <GpsMapEvents
+            seleccionandoPunto={seleccionandoPunto}
+            onPuntoSeleccionado={(p) => { setPuntoSeleccionado(p); setSeleccionandoPunto(false); }}
+          />
+          <CapaPuntosCercanos
+            visible={capasVisibles.radios}
+            puntoSeleccionado={puntoSeleccionado}
+            radiosEncontrados={radiosEncontrados}
+            metros={metrosBusqueda}
+          />
+          <CapaCercosGPS
+            visible={capasVisibles.radios}
+            zonas={zonasCerco}
+            dibujando={dibujandoCerco}
+            puntosDibujo={puntosDibujo}
+            onPuntoAgregado={(p) => setPuntosDibujo(prev => [...prev, p])}
+            onRadiosFuera={setRadiosFuera}
+          />
+          <CapaRecorridoRadio
+            visible={capasVisibles.radios && recorridoPuntos.length > 0}
+            puntos={recorridoPuntos}
+            issi={recorridoIssi}
+          />
           <CapaParaderosAutorizados visible={capasVisibles.paraderosAutorizados} />
           <CapaParaderosNoAutorizados visible={capasVisibles.paraderosNoAutorizados} />
           <CapaRobos visible={capasVisibles.robos} filtros={filtrosRobos} />
@@ -606,7 +686,9 @@ const MapView = () => {
             ubicadorActivo={
               capasVisibles.ubicadorPunto ||
               capasVisibles.busquedaDirecciones ||
-              capasVisibles.rutas
+              capasVisibles.rutas ||
+              seleccionandoPunto ||
+              dibujandoCerco
             }
             camaraConVision={camaraConVision}
             camaraSeleccionada={camaraSeleccionada}
@@ -626,7 +708,9 @@ const MapView = () => {
               ubicadorActivo={
                 capasVisibles.ubicadorPunto ||
                 capasVisibles.busquedaDirecciones ||
-                capasVisibles.rutas
+                capasVisibles.rutas ||
+                seleccionandoPunto ||
+                dibujandoCerco
               }
               camaraConVision={camaraConVision}
               camaraSeleccionada={camaraSeleccionada}
@@ -676,7 +760,9 @@ const MapView = () => {
             ubicadorActivo={
               capasVisibles.ubicadorPunto ||
               capasVisibles.busquedaDirecciones ||
-              capasVisibles.rutas
+              capasVisibles.rutas ||
+              seleccionandoPunto ||
+              dibujandoCerco
             }
             camaraConVision={camaraConVision}
             camaraSeleccionada={camaraSeleccionada}

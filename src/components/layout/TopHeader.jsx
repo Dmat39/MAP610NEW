@@ -12,6 +12,14 @@ const PAGE_META = {
   '/admin/camaras-municipales':{ title: 'Cámaras Municipales',    sub: 'Gestión de cámaras de vigilancia municipal' },
   '/admin/usuarios':           { title: 'Usuarios',               sub: 'Gestión de usuarios del sistema' },
   '/admin/auditoria':          { title: 'Auditoría del Sistema',  sub: 'Registro de cambios y acciones' },
+  '/admin/radios-gps':         { title: 'Radios GPS',             sub: 'Unidades · Zonas · Historial · Kilometraje' },
+  '/admin/comisarias':         { title: 'Comisarías',             sub: 'Gestión de comisarías' },
+  '/admin/puntos-campana':     { title: 'Puntos de Obra',         sub: 'Gestión de puntos de campaña' },
+  '/admin/tipos-incidencia':   { title: 'Tipos de Incidencia',    sub: 'Gestión de tipos de incidencia' },
+  '/admin/subtipos-incidencia':{ title: 'Subtipos de Incidencia', sub: 'Gestión de subtipos de incidencia' },
+  '/admin/modalidades-incidencia':{ title: 'Modalidades PNP',     sub: 'Gestión de modalidades de incidencia' },
+  '/admin/roles':              { title: 'Roles',                  sub: 'Gestión de roles y permisos' },
+  '/reportes/incidencias':     { title: 'Reportes',               sub: 'Reportes de incidencias' },
 };
 
 const getRoleLabel = role => {
