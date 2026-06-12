@@ -69,7 +69,7 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
     },
     tools: {
       title: 'Herramientas',
-      layers: ['clusters', 'clusterCombinado', 'clusterPNP', 'busquedaDirecciones', 'ubicadorPunto', 'rutas'],
+      layers: ['clusters', 'clusterCombinado', 'clusterPNP', 'busquedaDirecciones', 'ubicadorPunto', 'rutas', 'rutasBodycams'],
     },
     
   };

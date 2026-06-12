@@ -21,9 +21,13 @@ export const obtenerBodycams = async () => {
   }
 };
 
-export const obtenerHistorialBodycam = async (codigo, limite = 100) => {
+export const obtenerHistorialBodycam = async (codigo, desde = null, hasta = null, limite = 10000) => {
   try {
-    const response = await apiClient.get(`/api/ubicaciones/${codigo}?limite=${limite}`);
+    let url = `/api/ubicaciones/${codigo}?limite=${limite}`;
+    if (desde) url += `&desde=${encodeURIComponent(desde)}`;
+    if (hasta) url += `&hasta=${encodeURIComponent(hasta)}`;
+    
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
     console.error(`Error al obtener historial de la bodycam ${codigo}:`, error);
