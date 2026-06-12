@@ -44,8 +44,8 @@ const ControlRutasBodycams = ({ visible, setVisible, onRutaEncontrada }) => {
     setError(null);
     onRutaEncontrada(null); // Limpiamos la ruta actual antes de buscar
 
-    const desdeISO = new Date(`${fechaDesde}T${horaDesde}:00`).toISOString();
-    const hastaISO = new Date(`${fechaHasta}T${horaHasta}:59`).toISOString();
+    const desdeISO = `${fechaDesde} ${horaDesde}:00`;
+    const hastaISO = `${fechaHasta} ${horaHasta}:59`;
 
     try {
       const data = await obtenerHistorialBodycam(selectedBodycam, desdeISO, hastaISO);
