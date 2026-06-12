@@ -20,6 +20,7 @@ import GestionPuntosCampana         from './components/admin/GestionPuntosCampan
 import GestionTiposIncidencia       from './components/admin/GestionTiposIncidencia';
 import GestionSubtiposIncidencia    from './components/admin/GestionSubtiposIncidencia';
 import GestionModalidadesIncidencia from './components/admin/GestionModalidadesIncidencia';
+import GestionRadiosGPS from './components/admin/GestionRadiosGPS';
 
 const SIDEBAR_COLLAPSED = '70px';
 const SIDEBAR_EXPANDED  = '220px';
@@ -136,6 +137,11 @@ const AppLayout = ({ sidebarExpanded, onToggle, onClose, isMobile }) => {
           <Route path="/reportes/incidencias" element={
             <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR', 'SUPERVISOR', 'CODISEC']} moduleKey="reportes-incidencias">
               <ReporteIncidencias />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/radios-gps" element={
+            <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR']} moduleKey="radios-gps">
+              <GestionRadiosGPS />
             </ProtectedRoute>
           } />
           <Route path="*" element={<Navigate to="/" replace />} />
