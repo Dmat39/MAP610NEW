@@ -29,6 +29,7 @@ const AVAILABLE_MODULES = [
   { key: 'roles',                label: 'Roles' },
   { key: 'comisarias',           label: 'Comisarías' },
   { key: 'puntos-campana',       label: 'Puntos de Obra' },
+  { key: 'radios-gps',           label: 'Radios GPS' },
 ];
 
 const AVAILABLE_LAYERS = [
