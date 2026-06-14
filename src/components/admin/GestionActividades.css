@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  background-color: #f1f5f9;
+  background-color: var(--theme-bg);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   position: relative;
   z-index: 1;
@@ -17,12 +17,12 @@
 
 /* Header */
 .actividades-header {
-  background: white;
+  background: var(--theme-surface);
   border-radius: 12px;
   padding: 18px 24px;
   margin-bottom: 16px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-top: 4px solid #16a34a;
   flex-shrink: 0;
   display: flex;
@@ -56,14 +56,14 @@
   font-size: 22px;
   font-weight: bold;
   margin: 0 0 4px 0;
-  color: #0f172a;
+  color: var(--theme-text);
 }
 
 .actividades-header-text p {
   font-size: 13px;
   margin: 0;
   opacity: 0.95;
-  color: #64748b;
+  color: var(--theme-text-3);
 }
 
 .actividades-header-actions {
@@ -88,9 +88,9 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: white;
-  color: #374151;
-  border: 1px solid #e2e8f0;
+  background: var(--theme-surface);
+  color: var(--theme-text-2);
+  border: 1px solid var(--theme-border);
   border-radius: 8px;
   padding: 9px 16px;
   font-size: 13px;
@@ -100,17 +100,17 @@
 }
 
 .btn-actividades-refresh:hover {
-  background: #f9fafb;
+  background: var(--theme-surface-2);
 }
 
 .btn-actividades-excel {
   display: flex; align-items: center; gap: 6px;
-  background: white; color: #374151;
-  border: 1px solid #e2e8f0; border-radius: 8px;
+  background: var(--theme-surface); color: var(--theme-text-2);
+  border: 1px solid var(--theme-border); border-radius: 8px;
   padding: 9px 16px; font-size: 13px; font-weight: 500;
   cursor: pointer; transition: background 0.15s;
 }
-.btn-actividades-excel:hover { background: #f9fafb; }
+.btn-actividades-excel:hover { background: var(--theme-surface-2); }
 .btn-actividades-excel:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .btn-actividades-excel:disabled {
@@ -188,7 +188,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: white;
+  background: var(--theme-surface);
   border-radius: 12px;
   margin-bottom: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -220,20 +220,20 @@
 
 .actividades-count-text {
   font-size: 14px;
-  color: #374151;
+  color: var(--theme-text-2);
   font-weight: 500;
 }
 
 .actividades-count-number {
   font-weight: 700;
-  color: #374151;
+  color: var(--theme-text-2);
   font-size: 16px;
 }
 
 /* Content */
 .actividades-content {
   flex: 1;
-  background: white;
+  background: var(--theme-surface);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -249,20 +249,20 @@
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  color: #6b7280;
+  color: var(--theme-text-3);
   text-align: center;
   gap: 16px;
 }
 
 .actividades-empty-state h3 {
   font-size: 18px;
-  color: #374151;
+  color: var(--theme-text-2);
   margin: 0;
 }
 
 .actividades-empty-state p {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--theme-text-3);
   margin: 0;
 }
 
@@ -298,7 +298,7 @@
 }
 
 .actividades-table tbody tr {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--theme-border);
   transition: background-color 0.2s ease;
 }
 
@@ -309,7 +309,7 @@
 .actividades-table td {
   padding: 14px 16px;
   font-size: 13px;
-  color: #374151;
+  color: var(--theme-text-2);
 }
 
 /* Table Cells */
@@ -317,7 +317,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #6b7280;
+  color: var(--theme-text-3);
   font-size: 13px;
 }
 
@@ -334,7 +334,7 @@
 
 .actividades-badge-type {
   background: rgba(59, 130, 246, 0.15);
-  color: #374151;
+  color: var(--theme-text-2);
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
@@ -346,7 +346,7 @@
 
 .actividades-badge-gray {
   background: rgba(107, 114, 128, 0.15);
-  color: #4b5563;
+  color: var(--theme-text-2);
   border: 1px solid rgba(107, 114, 128, 0.3);
 }
 
@@ -404,7 +404,7 @@
 }
 
 .actividades-modal-content {
-  background: white;
+  background: var(--theme-surface);
   border-radius: 16px;
   max-width: 800px;
   width: 100%;
@@ -419,8 +419,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--theme-surface);
+  border-bottom: 1px solid var(--theme-border);
   border-radius: 16px 16px 0 0;
   position: sticky;
   top: 0;
@@ -430,7 +430,7 @@
 .actividades-modal-header h2 {
   font-size: 19px;
   font-weight: 600;
-  color: #374151;
+  color: var(--theme-text-2);
   margin: 0;
   display: flex;
   align-items: center;
@@ -453,7 +453,7 @@
   gap: 6px;
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: var(--theme-text-2);
   margin-bottom: 8px;
 }
 
@@ -462,13 +462,13 @@
 .actividades-form-group textarea {
   width: 100%;
   padding: 11px 14px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--theme-border);
   border-radius: 8px;
   font-size: 14px;
   box-sizing: border-box;
   transition: all 0.3s ease;
-  background: white;
-  color: #374151;
+  background: var(--theme-surface);
+  color: var(--theme-text-2);
 }
 
 .actividades-form-group input:focus,
@@ -541,7 +541,7 @@
   gap: 12px;
   margin-top: 28px;
   padding-top: 20px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--theme-border);
 }
 
 .actividades-modal-footer button {
@@ -558,7 +558,7 @@
 
 .actividades-modal-footer .btn-cancel {
   background: rgba(107, 114, 128, 0.1);
-  color: #4b5563;
+  color: var(--theme-text-2);
   border: 1px solid rgba(107, 114, 128, 0.3);
 }
 
@@ -779,7 +779,7 @@
     padding: 14px 20px;
     position: sticky;
     bottom: 0;
-    background: white;
+    background: var(--theme-surface);
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
   }
 

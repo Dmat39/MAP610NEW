@@ -3,7 +3,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  background-color: #f1f5f9;
+  background-color: var(--theme-bg);
   font-family: 'Segoe UI', system-ui, sans-serif;
   position: relative;
   z-index: 1;
@@ -15,11 +15,11 @@
 
 /* Header */
 .auditoria-header {
-  background: white;
+  background: var(--theme-surface);
   border-radius: 12px;
   padding: 18px 24px;
   margin-bottom: 0;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-top: 4px solid #16a34a;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   flex-shrink: 0;
@@ -50,19 +50,19 @@
   flex-shrink: 0;
 }
 
-.auditoria-header-text h1 { font-size: 19px; font-weight: 700; margin: 0 0 3px; color: #0f172a; }
-.auditoria-header-text p  { font-size: 13px; margin: 0; color: #64748b; }
+.auditoria-header-text h1 { font-size: 19px; font-weight: 700; margin: 0 0 3px; color: var(--theme-text); }
+.auditoria-header-text p  { font-size: 13px; margin: 0; color: var(--theme-text-3); }
 
 .auditoria-header-actions { display: flex; gap: 10px; align-items: center; }
 
 .btn-auditoria-secondary {
   display: flex; align-items: center; gap: 6px;
-  background: white; color: #374151;
-  border: 1px solid #e2e8f0; border-radius: 8px;
+  background: var(--theme-surface); color: var(--theme-text-2);
+  border: 1px solid var(--theme-border); border-radius: 8px;
   padding: 9px 16px; font-size: 13px; font-weight: 500;
   cursor: pointer; transition: background 0.15s;
 }
-.btn-auditoria-secondary:hover { background: #f9fafb; }
+.btn-auditoria-secondary:hover { background: var(--theme-surface-2); }
 
 /* Alerts */
 .auditoria-alert {
@@ -95,8 +95,8 @@
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
   border-radius: 10px;
   padding: 12px 16px;
 }
@@ -111,11 +111,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--theme-border);
   border-radius: 8px;
   padding: 7px 12px;
-  background: #f9fafb;
-  color: #6b7280;
+  background: var(--theme-surface-2);
+  color: var(--theme-text-3);
 }
 
 .auditoria-search-box input {
@@ -124,7 +124,7 @@
   background: transparent;
   font-size: 0.875rem;
   width: 200px;
-  color: #111827;
+  color: var(--theme-text);
 }
 
 .btn-auditoria-search {
@@ -147,16 +147,16 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #6b7280;
+  color: var(--theme-text-3);
 }
 
 .auditoria-filters select {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--theme-border);
   border-radius: 8px;
   padding: 7px 10px;
   font-size: 0.875rem;
-  background: #f9fafb;
-  color: #374151;
+  background: var(--theme-surface-2);
+  color: var(--theme-text-2);
   cursor: pointer;
   outline: none;
 }
@@ -182,18 +182,18 @@
 .auditoria-count {
   margin-left: auto;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--theme-text-3);
 }
 
 .auditoria-count strong {
-  color: #111827;
+  color: var(--theme-text);
 }
 
 /* Content */
 .auditoria-content {
   flex: 1;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
   border-radius: 10px;
   overflow: hidden;
   display: flex;
@@ -207,13 +207,13 @@
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  color: #9ca3af;
+  color: var(--theme-text-4);
   gap: 12px;
 }
 
 .auditoria-empty h3 {
   margin: 0;
-  color: #374151;
+  color: var(--theme-text-2);
   font-size: 1rem;
 }
 
@@ -253,7 +253,7 @@
 }
 
 .auditoria-table tbody tr {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--theme-border-2);
   transition: background 0.12s;
 }
 
@@ -263,14 +263,14 @@
 
 .auditoria-table td {
   padding: 12px 14px;
-  color: #374151;
+  color: var(--theme-text-2);
   vertical-align: middle;
 }
 
 .auditoria-date {
   white-space: nowrap;
   font-size: 0.8rem;
-  color: #6b7280 !important;
+  color: var(--theme-text-3) !important;
 }
 
 .auditoria-badge {
@@ -289,13 +289,13 @@
 
 .auditoria-performer {
   font-weight: 600;
-  color: #1e293b !important;
+  color: var(--theme-text) !important;
 }
 
 .auditoria-changes {
   max-width: 300px;
   font-size: 0.8rem;
-  color: #6b7280 !important;
+  color: var(--theme-text-3) !important;
   word-break: break-word;
 }
 
@@ -306,9 +306,9 @@
   justify-content: center;
   gap: 16px;
   padding: 16px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--theme-border-2);
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--theme-text-3);
 }
 
 .btn-auditoria-page {
@@ -317,11 +317,11 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--theme-border);
   border-radius: 6px;
-  background: white;
+  background: var(--theme-surface);
   cursor: pointer;
-  color: #374151;
+  color: var(--theme-text-2);
   transition: all 0.15s;
 }
 

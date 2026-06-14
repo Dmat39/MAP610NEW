@@ -3,7 +3,7 @@
   left: 10px;
   top: var(--pc-top, 10px);
   width: 300px;
-  background: white;
+  background: var(--theme-surface);
   border-radius: 8px;
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   z-index: 1000;
@@ -18,7 +18,7 @@
 .ctrl-pc-header {
   padding: 12px 15px;
   background: linear-gradient(to right, #fffbeb, #fff);
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--theme-border);
   cursor: pointer;
   user-select: none;
 }
@@ -33,7 +33,7 @@
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--theme-text);
   flex-grow: 1;
 }
 
@@ -51,7 +51,7 @@
 .pc-collapse-btn {
   background: none;
   border: none;
-  color: #6b7280;
+  color: var(--theme-text-3);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -65,10 +65,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--theme-border);
   border-radius: 6px;
-  background: #f9fafb;
-  color: #6b7280;
+  background: var(--theme-surface-2);
+  color: var(--theme-text-3);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
@@ -87,7 +87,7 @@
 }
 
 .pc-btn-seleccionar:hover:not(.activo) {
-  border-color: #9ca3af;
+  border-color: var(--theme-text-4);
   background: #f3f4f6;
 }
 
@@ -109,7 +109,7 @@
 .pc-label {
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  color: var(--theme-text-2);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -117,11 +117,11 @@
 .pc-select {
   width: 100%;
   padding: 7px 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--theme-border);
   border-radius: 6px;
   font-size: 13px;
-  background: white;
-  color: #374151;
+  background: var(--theme-surface);
+  color: var(--theme-text-2);
   cursor: pointer;
   outline: none;
 }
@@ -174,9 +174,9 @@
   align-items: center;
   gap: 8px;
   padding: 7px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--theme-border);
   border-radius: 6px;
-  background: white;
+  background: var(--theme-surface);
 }
 
 .pc-item-dot {
@@ -191,13 +191,13 @@
 .pc-item-nombre {
   font-size: 12px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--theme-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.pc-item-detalle { font-size: 11px; color: #6b7280; }
+.pc-item-detalle { font-size: 11px; color: var(--theme-text-3); }
 
 .pc-item-dist {
   display: flex;
@@ -212,7 +212,7 @@
 
 .pc-vacio {
   text-align: center;
-  color: #9ca3af;
+  color: var(--theme-text-4);
   font-size: 13px;
   padding: 12px;
 }
