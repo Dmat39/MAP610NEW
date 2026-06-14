@@ -1,21 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Polyline, Polygon, CircleMarker, useMapEvents, GeoJSON } from 'react-leaflet';
+import { useTheme } from '../../context/ThemeContext';
+
+const TILE_LIGHT = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILE_DARK  = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 import './GestionCamarasMunicipales.css';
 import './GestionRadiosGPS.css';
 import {
   Radio, MapPin, Route, BarChart2, RefreshCw, Download,
-  X, Eye, EyeOff, Trash2, Plus, Check, Save, Filter,
+  X, Eye, EyeOff, Trash2, Plus, Check, Save, Filter, Pencil,
 } from 'lucide-react';
-import { obtenerRadios, obtenerHistoricoRadio, obtenerKmDias } from '../../services/radiosService';
+import { obtenerRadios, obtenerHistoricoRadio, obtenerKmDias, buscarInfoRadio, actualizarRadio } from '../../services/radiosService';
 import { obtenerZonas, crearZona, actualizarZona, eliminarZona } from '../../services/zonaService';
 import SearchInput from '../Table/SearchInput';
 import TablePagination from '../Table/TablePagination';
 
 /* ─── helpers ────────────────────────────────────────────────────── */
 const BADGE_COLOR = {
-  verde:    { label: 'OK',      bg: '#dcfce7', color: '#16a34a' },
-  amarillo: { label: 'SIN GPS', bg: '#fef9c3', color: '#a16207' },
-  rojo:     { label: 'APAGADO', bg: '#fee2e2', color: '#dc2626' },
+  verde:    { label: 'OK',      bg: 'rgba(22,163,74,0.18)',   color: 'var(--badge-ok)' },
+  amarillo: { label: 'SIN GPS', bg: 'rgba(234,179,8,0.18)',   color: 'var(--badge-singps)' },
+  rojo:     { label: 'APAGADO', bg: 'rgba(220,38,38,0.18)',   color: 'var(--badge-apagado)' },
 };
 const badgeRadio = (r) => BADGE_COLOR[r.color] ?? { label: r.color || '—', bg: '#f3f4f6', color: '#6b7280' };
 const COLORES_ZONA = ['#6366f1','#22c55e','#ef4444','#f59e0b','#3b82f6','#ec4899','#8b5cf6','#14b8a6'];
@@ -44,6 +48,7 @@ const PolyClickHandler = ({ onAdd, canClose, onClose }) => {
 const jurisStyle = f => ({ color: f.properties.color || '#34b429', weight: 1.5, fillOpacity: 0.12, interactive: false });
 
 const ZonaPolyMap = ({ color, coords, closed, onAdd, onClose, onClear, mapKey }) => {
+  const { dark } = useTheme();
   const [jurisData, setJurisData] = useState(null);
   useEffect(() => {
     fetch('/data/juridiccion.geojson').then(r => r.json()).then(setJurisData).catch(() => {});
@@ -59,7 +64,7 @@ const ZonaPolyMap = ({ color, coords, closed, onAdd, onClose, onClear, mapKey })
         doubleClickZoom={false}
         scrollWheelZoom={false}
       >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
+        <TileLayer url={dark ? TILE_DARK : TILE_LIGHT} attribution={dark ? '&copy; CARTO' : '&copy; OpenStreetMap'} />
         {jurisData && <GeoJSON data={jurisData} style={jurisStyle} interactive={false} />}
         <PolyClickHandler onAdd={onAdd} canClose={!closed && coords.length >= 3} onClose={onClose} />
         {/* Línea de trayecto abierto */}
@@ -237,7 +242,7 @@ const ToolbarRadios = ({ radios, loading, onRecargar, filtros, setFiltros }) => 
   );
 };
 
-const TablaRadios = ({ radios, filtros, setFiltros }) => {
+const TablaRadios = ({ radios, filtros, setFiltros, onEditar }) => {
   const { busqueda, filtroEstado, filtroTipo, pagina, pageSize } = filtros;
 
   const filtrados = radios.filter(r => {
@@ -264,7 +269,7 @@ const TablaRadios = ({ radios, filtros, setFiltros }) => {
       <div className="municipales-table-wrapper" style={{ flex:1, overflowY:'auto', overflowX:'auto' }}>
         <table className="municipales-table">
           <thead>
-            <tr><th>#</th><th>ISSI</th><th>Código</th><th>Tipo</th><th>Estado</th><th>Velocidad</th><th>Dirección</th><th>Última act.</th></tr>
+            <tr><th>#</th><th>ISSI</th><th>Código</th><th>Tipo</th><th>Estado</th><th>Velocidad</th><th>Dirección</th><th>Última act.</th><th>Acciones</th></tr>
           </thead>
           <tbody>
             {paginados.map((r,i) => {
@@ -284,6 +289,11 @@ const TablaRadios = ({ radios, filtros, setFiltros }) => {
                   <td>{r.velocidad} km/h</td>
                   <td className="rgps-td-truncate">{r.direccion||'—'}</td>
                   <td style={{whiteSpace:'nowrap'}}>{r.fechaHora||'—'}</td>
+                  <td>
+                    <div className="municipales-action-buttons">
+                      <button className="btn-icon-municipales btn-edit" onClick={() => onEditar(r)} title="Editar"><Pencil size={13}/></button>
+                    </div>
+                  </td>
                 </tr>
               );
             })}
@@ -561,6 +571,14 @@ const GestionRadiosGPS = () => {
   // ── radios tab state ──
   const [filtros, setFiltros] = useState({ busqueda:'', filtroEstado:'TODOS', filtroTipo:'TODOS', pagina:1, pageSize:20 });
 
+  // ── modal editar radio ──
+  const [showModalRadio, setShowModalRadio] = useState(false);
+  const [loadingInfoRadio, setLoadingInfoRadio] = useState(false);
+  const [savingRadio, setSavingRadio] = useState(false);
+  const [errorRadio, setErrorRadio] = useState(null);
+  const [successRadio, setSuccessRadio] = useState(null);
+  const [formRadio, setFormRadio] = useState({ issi:'', tipdesc:'', tipabre:'', unicodigo:'', unidesc:'', uniplaca:'', unimodelo:'', imei:'', idtipunidad:0 });
+
   // ── zonas tab state ──
   const [zonas, setZonas]           = useState([]);
   const [loadingZonas, setLoadingZonas] = useState(false);
@@ -673,6 +691,49 @@ const GestionRadiosGPS = () => {
     setLoadingKm(false);
   };
 
+  /* ── editar radio (Dolphin) ── */
+  const abrirEditarRadio = async (radio) => {
+    setErrorRadio(null); setSuccessRadio(null);
+    setFormRadio({ issi: radio.issi, tipdesc:'', tipabre:'', unicodigo:'', unidesc:'', uniplaca:'', unimodelo:'', imei:'', idtipunidad:0 });
+    setShowModalRadio(true);
+    setLoadingInfoRadio(true);
+    try {
+      const info = await buscarInfoRadio(radio.issi);
+      setFormRadio({
+        issi:        info.issi,
+        idtipunidad: info.idtipunidad ?? 0,
+        tipdesc:     info.tipdesc    ?? '',
+        tipabre:     info.tipabre    ?? '',
+        unicodigo:   info.unicodigo  ?? '',
+        unidesc:     info.unidesc    ?? '',
+        uniplaca:    info.uniplaca   ?? '',
+        unimodelo:   info.unimodelo  ?? '',
+        imei:        info.imei       ?? '',
+      });
+    } catch { setErrorRadio('No se pudo cargar la información de la radio'); }
+    setLoadingInfoRadio(false);
+  };
+
+  const guardarRadio = async () => {
+    setSavingRadio(true); setErrorRadio(null);
+    try {
+      await actualizarRadio(formRadio.issi, {
+        idtipunidad: formRadio.idtipunidad,
+        tipdesc:     formRadio.tipdesc,
+        tipabre:     formRadio.tipabre,
+        unicodigo:   formRadio.unicodigo,
+        unidesc:     formRadio.unidesc,
+        uniplaca:    formRadio.uniplaca,
+        unimodelo:   formRadio.unimodelo,
+        imei:        formRadio.imei,
+      });
+      setSuccessRadio('Radio actualizada correctamente');
+      setShowModalRadio(false);
+      cargarRadios();
+    } catch { setErrorRadio('Error al guardar los cambios'); }
+    setSavingRadio(false);
+  };
+
   /* ── limpiar handlers ── */
   const limpiarHistorial = () => {
     setFormHist({ issi:'', fechaInicio:'', horaInicio:'00:00', fechaFin:'', horaFin:'23:59' });
@@ -686,7 +747,15 @@ const GestionRadiosGPS = () => {
   /* ── render toolbars (fuera del card) ── */
   const renderToolbar = () => {
     if (tab === 'radios') return (
-      <ToolbarRadios radios={radios} loading={loadingRadios} onRecargar={cargarRadios} filtros={filtros} setFiltros={setFiltros} />
+      <>
+        {successRadio && (
+          <div className="municipales-alert municipales-alert-success" style={{margin:'0 0 8px'}}>
+            <Check size={14}/><span>{successRadio}</span>
+            <button className="municipales-alert-close" onClick={() => setSuccessRadio(null)}><X size={12}/></button>
+          </div>
+        )}
+        <ToolbarRadios radios={radios} loading={loadingRadios} onRecargar={cargarRadios} filtros={filtros} setFiltros={setFiltros} />
+      </>
     );
     if (tab === 'zonas') return (
       <>
@@ -712,7 +781,7 @@ const GestionRadiosGPS = () => {
     if (tab === 'radios') return (
       loadingRadios
         ? <div className="municipales-loading-state"><RefreshCw size={28} className="spinning"/><p>Cargando radios GPS...</p></div>
-        : <TablaRadios radios={radios} filtros={filtros} setFiltros={setFiltros}/>
+        : <TablaRadios radios={radios} filtros={filtros} setFiltros={setFiltros} onEditar={abrirEditarRadio}/>
     );
     if (tab === 'zonas') return (
       loadingZonas
@@ -752,6 +821,59 @@ const GestionRadiosGPS = () => {
       <div className="municipales-content rgps-content">
         {renderTabla()}
       </div>
+
+      {/* Modal editar radio */}
+      {showModalRadio && (
+        <div className="municipales-modal-overlay">
+          <div className="municipales-modal-content" style={{maxWidth:480}}>
+            <div className="municipales-modal-header">
+              <h2><Pencil size={18}/><span>Editar Radio — ISSI {formRadio.issi}</span></h2>
+              <button className="btn-icon-municipales" onClick={() => setShowModalRadio(false)}><X size={16}/></button>
+            </div>
+            <div className="municipales-modal-body">
+              {errorRadio && <div className="municipales-alert municipales-alert-error"><X size={13}/><span>{errorRadio}</span></div>}
+              {loadingInfoRadio ? (
+                <div className="municipales-loading-state"><RefreshCw size={24} className="spinning"/><p>Cargando datos...</p></div>
+              ) : (
+                <>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                    <div className="municipales-form-group">
+                      <label><span>Tipo (desc)</span></label>
+                      <input value={formRadio.tipdesc} onChange={e => setFormRadio(p=>({...p,tipdesc:e.target.value}))} placeholder="Ej: POLICIA"/>
+                    </div>
+                    <div className="municipales-form-group">
+                      <label><span>Tipo (abrev)</span></label>
+                      <input value={formRadio.tipabre} onChange={e => setFormRadio(p=>({...p,tipabre:e.target.value}))} placeholder="Ej: POL"/>
+                    </div>
+                    <div className="municipales-form-group">
+                      <label><span>Código único</span></label>
+                      <input value={formRadio.unicodigo} onChange={e => setFormRadio(p=>({...p,unicodigo:e.target.value}))} placeholder="Código"/>
+                    </div>
+                    <div className="municipales-form-group">
+                      <label><span>Descripción</span></label>
+                      <input value={formRadio.unidesc} onChange={e => setFormRadio(p=>({...p,unidesc:e.target.value}))} placeholder="Descripción"/>
+                    </div>
+                    <div className="municipales-form-group">
+                      <label><span>Placa</span></label>
+                      <input value={formRadio.uniplaca} onChange={e => setFormRadio(p=>({...p,uniplaca:e.target.value}))} placeholder="Placa"/>
+                    </div>
+                    <div className="municipales-form-group">
+                      <label><span>Modelo</span></label>
+                      <input value={formRadio.unimodelo} onChange={e => setFormRadio(p=>({...p,unimodelo:e.target.value}))} placeholder="Modelo"/>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="municipales-modal-footer" style={{paddingTop:8, paddingBottom:12, justifyContent:'flex-end', paddingRight:10}}>
+              <button className="btn-cancel" onClick={() => setShowModalRadio(false)}>Cancelar</button>
+              <button className="btn-save" onClick={guardarRadio} disabled={savingRadio||loadingInfoRadio}>
+                {savingRadio ? <><RefreshCw size={13} className="spinning"/> Guardando...</> : <><Save size={13}/> Guardar</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal zonas */}
       {showModalZona && (
