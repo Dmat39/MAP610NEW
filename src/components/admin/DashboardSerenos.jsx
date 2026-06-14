@@ -12,14 +12,14 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const PRIMARY    = '#1d4ed8';
-const BG         = '#f8fafc';
-const CARD       = '#ffffff';
-const BORDER     = '1px solid #e8edf2';
-const SHADOW     = '0 2px 8px rgba(0,0,0,0.06)';
+const BG         = 'var(--theme-bg)';
+const CARD       = 'var(--theme-surface)';
+const BORDER     = '1px solid var(--theme-border)';
+const SHADOW     = 'var(--theme-shadow)';
 const RADIUS     = 14;
-const TEXT_DARK  = '#111827';
-const TEXT_MID   = '#6b7280';
-const TEXT_LIGHT = '#9ca3af';
+const TEXT_DARK  = 'var(--theme-text)';
+const TEXT_MID   = 'var(--theme-text-3)';
+const TEXT_LIGHT = 'var(--theme-text-4)';
 
 const SHIFT_COLORS = { MORNING: '#f59e0b', AFTERNOON: '#3b82f6', NIGHT: '#7c3aed' };
 const SHIFT_LABELS = { MORNING: 'Mañana', AFTERNOON: 'Tarde', NIGHT: 'Noche' };

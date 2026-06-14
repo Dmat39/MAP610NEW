@@ -1,8 +1,8 @@
 /* LeyendaCamaras.css — Diseño blanco/verde para TV */
 .leyenda-camaras {
   position: fixed;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
   border-top: 4px solid #16a34a;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
@@ -18,7 +18,7 @@
 
 .leyenda-header {
   margin-bottom: 10px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--theme-border);
   padding-bottom: 8px;
 }
 
@@ -26,7 +26,7 @@
   margin: 0;
   font-size: 13.5px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--theme-text);
   display: flex;
   align-items: center;
   gap: 7px;
@@ -63,7 +63,7 @@
   margin: 0 0 6px 0;
   font-size: 10.5px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--theme-text-3);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -84,7 +84,7 @@
 }
 
 .leyenda-item:hover {
-  background: #f0fdf4;
+  background: var(--theme-surface-2);
 }
 
 .leyenda-item-label {
@@ -134,7 +134,7 @@
 
 .leyenda-item span {
   font-size: 12.5px;
-  color: #374151;
+  color: var(--theme-text-2);
   font-weight: 500;
 }
 
@@ -150,9 +150,9 @@
 
 /* Scrollbar */
 .leyenda-camaras::-webkit-scrollbar { width: 5px; }
-.leyenda-camaras::-webkit-scrollbar-track { background: #f8fafc; border-radius: 3px; }
-.leyenda-camaras::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-.leyenda-camaras::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.leyenda-camaras::-webkit-scrollbar-track { background: var(--theme-surface-2); border-radius: 3px; }
+.leyenda-camaras::-webkit-scrollbar-thumb { background: var(--theme-scrollbar-thumb); border-radius: 3px; }
+.leyenda-camaras::-webkit-scrollbar-thumb:hover { background: var(--theme-text-4); }
 
 /* Responsive */
 @media (max-width: 768px) {

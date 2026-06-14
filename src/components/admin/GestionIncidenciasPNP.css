@@ -3,7 +3,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  background-color: #f1f5f9;
+  background-color: var(--theme-bg);
   font-family: 'Segoe UI', system-ui, sans-serif;
   padding: 20px;
   box-sizing: border-box;
@@ -11,11 +11,11 @@
 }
 
 .pnp-header {
-  background: white;
+  background: var(--theme-surface);
   border-radius: 12px;
   padding: 18px 24px;
   margin-bottom: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-top: 4px solid #16a34a;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   display: flex;
@@ -34,8 +34,8 @@
   display: flex; align-items: center; justify-content: center;
   color: #16a34a;
 }
-.pnp-header-text h1 { font-size: 19px; font-weight: 700; margin: 0 0 3px; color: #0f172a; }
-.pnp-header-text p  { font-size: 13px; margin: 0; color: #64748b; }
+.pnp-header-text h1 { font-size: 19px; font-weight: 700; margin: 0 0 3px; color: var(--theme-text); }
+.pnp-header-text p  { font-size: 13px; margin: 0; color: var(--theme-text-3); }
 .pnp-header-actions { display: flex; gap: 10px; align-items: center; }
 
 .btn-pnp-primary {
@@ -51,12 +51,12 @@
 
 .btn-pnp-secondary {
   display: flex; align-items: center; gap: 6px;
-  background: white; color: #374151;
-  border: 1px solid #e2e8f0; border-radius: 8px;
+  background: var(--theme-surface); color: var(--theme-text-2);
+  border: 1px solid var(--theme-border); border-radius: 8px;
   padding: 9px 16px; font-size: 13px; font-weight: 500;
   cursor: pointer; transition: background 0.15s;
 }
-.btn-pnp-secondary:hover { background: #f9fafb; }
+.btn-pnp-secondary:hover { background: var(--theme-surface-2); }
 
 .btn-pnp-filter-toggle {
   position: relative;
@@ -95,9 +95,9 @@
 
 /* ── Filters Card ─────────────────────────────────────────── */
 .pnp-filters-card {
-  background: white;
+  background: var(--theme-surface);
   border-radius: 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-left: 4px solid #16a34a;
   box-shadow: 0 2px 12px rgba(0,0,0,0.07);
   margin-bottom: 16px;
@@ -110,7 +110,7 @@
   justify-content: space-between;
   padding: 12px 20px;
   background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--theme-border);
 }
 
 .pnp-filters-title {
@@ -173,27 +173,27 @@
   gap: 5px;
   font-size: 11px;
   font-weight: 700;
-  color: #64748b;
+  color: var(--theme-text-3);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .pnp-select-filter {
   width: 100%;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--theme-border);
   border-radius: 9px;
   padding: 9px 12px;
   font-size: 13px;
-  color: #1e293b;
-  background: #f8fafc;
+  color: var(--theme-text);
+  background: var(--theme-surface-2);
   cursor: pointer;
   font-family: inherit;
   transition: all 0.2s;
   appearance: auto;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
-.pnp-select-filter:hover { border-color: #86efac; background: white; }
-.pnp-select-filter:focus { outline: none; border-color: #16a34a; background: white; box-shadow: 0 0 0 3px rgba(22,163,74,0.12); }
+.pnp-select-filter:hover { border-color: #86efac; background: var(--theme-surface); }
+.pnp-select-filter:focus { outline: none; border-color: #16a34a; background: var(--theme-surface); box-shadow: 0 0 0 3px rgba(22,163,74,0.12); }
 
 /* Toggle personalizado */
 .pnp-toggle-custom-dates {
@@ -203,9 +203,9 @@
   margin-left: auto;
   padding: 3px 9px;
   border-radius: 12px;
-  border: 1.5px solid #e2e8f0;
-  background: #f8fafc;
-  color: #64748b;
+  border: 1.5px solid var(--theme-border);
+  background: var(--theme-surface-2);
+  color: var(--theme-text-3);
   font-size: 10px;
   font-weight: 600;
   cursor: pointer;
@@ -248,9 +248,9 @@
 .pnp-preset-chip {
   padding: 4px 13px;
   border-radius: 20px;
-  border: 1.5px solid #e2e8f0;
-  background: #f8fafc;
-  color: #475569;
+  border: 1.5px solid var(--theme-border);
+  background: var(--theme-surface-2);
+  color: var(--theme-text-3);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -275,14 +275,14 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
+  background: var(--theme-surface-2);
+  border: 1.5px solid var(--theme-border);
   border-radius: 9px;
   padding: 6px 12px;
   transition: all 0.2s;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
-.pnp-daterange:focus-within { border-color: #16a34a; background: white; box-shadow: 0 0 0 3px rgba(22,163,74,0.12); }
+.pnp-daterange:focus-within { border-color: #16a34a; background: var(--theme-surface); box-shadow: 0 0 0 3px rgba(22,163,74,0.12); }
 
 .pnp-daterange-field {
   display: flex;
@@ -294,7 +294,7 @@
 .pnp-daterange-tag {
   font-size: 10px;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--theme-text-4);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
@@ -304,7 +304,7 @@
   border: none;
   background: transparent;
   font-size: 13px;
-  color: #1e293b;
+  color: var(--theme-text);
   font-family: inherit;
   cursor: pointer;
   width: 100%;
@@ -314,11 +314,11 @@
 
 .pnp-daterange-arrow {
   font-size: 14px;
-  color: #cbd5e1;
+  color: var(--theme-text-5);
   font-weight: 700;
   flex-shrink: 0;
-  border-left: 1px solid #e2e8f0;
-  border-right: 1px solid #e2e8f0;
+  border-left: 1px solid var(--theme-border);
+  border-right: 1px solid var(--theme-border);
   padding: 0 8px;
   align-self: stretch;
   display: flex;
@@ -342,7 +342,7 @@
 .pnp-daterange-clear:hover { background: #fca5a5; }
 
 .pnp-table-wrapper {
-  flex: 1; overflow: auto; background: white;
+  flex: 1; overflow: auto; background: var(--theme-surface);
   border-radius: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.08);
 }
 
@@ -355,8 +355,8 @@
   letter-spacing: 0.05em; white-space: nowrap; position: sticky; top: 0; z-index: 1;
 }
 .pnp-table td {
-  padding: 11px 14px; border-bottom: 1px solid #f1f5f9;
-  color: #1e293b; vertical-align: middle;
+  padding: 11px 14px; border-bottom: 1px solid var(--theme-border-2);
+  color: var(--theme-text); vertical-align: middle;
 }
 .pnp-table tr:hover td { background: #f0fdf4; }
 .pnp-desc-cell { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -380,7 +380,7 @@
 .btn-pnp-icon.delete:hover { background: #fecaca; }
 
 .pnp-loading, .pnp-empty {
-  text-align: center; padding: 48px; color: #9ca3af; font-size: 14px;
+  text-align: center; padding: 48px; color: var(--theme-text-4); font-size: 14px;
 }
 
 /* ── Modal overlay ─────────────────────────────────────────── */
@@ -404,7 +404,7 @@
 }
 
 .pnp-modal {
-  background: white;
+  background: var(--theme-surface);
   border-radius: 20px;
   width: 100%; max-width: 800px;
   /* Nunca más alto que el espacio disponible bajo el header */
@@ -493,8 +493,8 @@
 .pnp-modal-footer {
   display: flex; justify-content: flex-end; gap: 10px;
   padding: 12px 24px;
-  border-top: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border-top: 1px solid var(--theme-border);
+  background: var(--theme-surface-2);
   flex-shrink: 0;
 }
 
@@ -505,11 +505,11 @@
 
 .pnp-form-section-header {
   display: flex; align-items: center; justify-content: flex-start; gap: 7px;
-  font-size: 10.5px; font-weight: 700; color: #64748b;
+  font-size: 10.5px; font-weight: 700; color: var(--theme-text-3);
   text-transform: uppercase; letter-spacing: 0.07em;
   margin-bottom: 10px;
   padding-bottom: 7px;
-  border-bottom: 1.5px solid #e2e8f0;
+  border-bottom: 1.5px solid var(--theme-border);
   text-align: left;
   width: 100%;
 }
@@ -531,7 +531,7 @@
 .pnp-form-group.full { grid-column: 1 / -1; }
 
 .pnp-form-group label {
-  font-size: 11px; font-weight: 700; color: #475569;
+  font-size: 11px; font-weight: 700; color: var(--theme-text-3);
   text-transform: uppercase; letter-spacing: 0.04em;
   display: flex; align-items: center; justify-content: flex-start;
   text-align: left; width: 100%; flex-shrink: 0;
@@ -542,12 +542,12 @@
 .pnp-form-group textarea {
   width: 100%;
   box-sizing: border-box;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--theme-border);
   border-radius: 9px;
   padding: 9px 12px;
   font-size: 13px;
-  color: #111827;
-  background: #f8fafc;
+  color: var(--theme-text);
+  background: var(--theme-surface-2);
   transition: all 0.18s;
   font-family: inherit;
   resize: vertical;
@@ -557,14 +557,14 @@
 .pnp-form-group select:hover,
 .pnp-form-group textarea:hover {
   border-color: #86efac;
-  background: white;
+  background: var(--theme-surface);
 }
 .pnp-form-group input:focus,
 .pnp-form-group select:focus,
 .pnp-form-group textarea:focus {
   outline: none;
   border-color: #16a34a;
-  background: white;
+  background: var(--theme-surface);
   box-shadow: 0 0 0 3px rgba(22,163,74,0.12);
 }
 .pnp-form-group textarea { min-height: 72px; }
@@ -579,7 +579,7 @@
 }
 
 .btn-map-toggle {
-  background: white !important;
+  background: var(--theme-surface) !important;
   color: #15803d !important;
   border: 1.5px solid #86efac !important;
   width: 100%;
@@ -649,13 +649,13 @@
 
 /* ── Modal footer buttons ──────────────────────────────────── */
 .pnp-modal-footer .btn-pnp-secondary {
-  background: white; color: #374151;
-  border: 1.5px solid #e2e8f0;
+  background: var(--theme-surface); color: var(--theme-text-2);
+  border: 1.5px solid var(--theme-border);
   padding: 10px 20px !important;
   border-radius: 10px !important;
   font-size: 14px !important;
 }
-.pnp-modal-footer .btn-pnp-secondary:hover { background: #f1f5f9; }
+.pnp-modal-footer .btn-pnp-secondary:hover { background: var(--theme-bg); }
 
 .pnp-modal-footer .btn-pnp-primary {
   padding: 10px 24px !important;
@@ -684,16 +684,16 @@
 .pnp-map-search-input {
   flex: 1;
   padding: 8px 12px;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--theme-border);
   border-radius: 8px;
   font-size: 13px;
-  color: #1e293b;
+  color: var(--theme-text);
   outline: none;
   transition: border-color 0.15s;
   box-sizing: border-box;
 }
 .pnp-map-search-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-.pnp-map-search-input::placeholder { color: #94a3b8; }
+.pnp-map-search-input::placeholder { color: var(--theme-text-4); }
 
 .pnp-map-search-btn {
   display: flex;
@@ -716,8 +716,8 @@
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
   list-style: none;
@@ -734,9 +734,9 @@
   gap: 8px;
   padding: 9px 14px;
   font-size: 12.5px;
-  color: #374151;
+  color: var(--theme-text-2);
   cursor: pointer;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--theme-border-2);
   transition: background 0.1s;
   line-height: 1.4;
 }
@@ -751,10 +751,10 @@
 
 .pnp-search-results-close {
   justify-content: center !important;
-  color: #94a3b8 !important;
+  color: var(--theme-text-4) !important;
   font-size: 11px !important;
   padding: 6px 14px !important;
-  background: #f8fafc !important;
+  background: var(--theme-surface-2) !important;
 }
 
 .pnp-map-search-noresult {
@@ -774,7 +774,7 @@
   gap: 5px;
   width: 100%;
   padding: 7px 10px;
-  background: #fff;
+  background: var(--theme-input-bg);
   color: #2563eb;
   border: 1.5px solid #bfdbfe;
   border-radius: 7px;
@@ -799,7 +799,7 @@
   gap: 5px;
   font-size: 11px !important;
   font-weight: 500 !important;
-  color: #64748b !important;
+  color: var(--theme-text-3) !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
   width: auto !important;
@@ -818,18 +818,18 @@
 /* Placeholder cuando no hay hora */
 .pnp-no-time-display {
   padding: 9px 12px;
-  border: 1.5px dashed #e2e8f0;
+  border: 1.5px dashed var(--theme-border);
   border-radius: 8px;
   font-size: 13px;
-  color: #94a3b8;
-  background: #f8fafc;
+  color: var(--theme-text-4);
+  background: var(--theme-surface-2);
   text-align: center;
 }
 
 /* Modal footer buttons override (dark bg context) */
 .pnp-modal-footer .btn-pnp-secondary {
-  background: #f3f4f6; color: #374151;
-  border: 1px solid #e5e7eb;
+  background: #f3f4f6; color: var(--theme-text-2);
+  border: 1px solid var(--theme-border);
 }
 .pnp-modal-footer .btn-pnp-secondary:hover { background: #e5e7eb; }
 

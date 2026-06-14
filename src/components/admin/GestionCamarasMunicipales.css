@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  background-color: #f1f5f9;
+  background-color: var(--theme-bg);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   position: relative;
   z-index: 1;
@@ -17,12 +17,12 @@
 
 /* Header */
 .municipales-header {
-  background: white;
+  background: var(--theme-surface);
   border-radius: 12px;
   padding: 18px 24px;
   margin-bottom: 16px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-top: 4px solid #16a34a;
   flex-shrink: 0;
   display: flex;
@@ -56,14 +56,14 @@
   font-size: 22px;
   font-weight: bold;
   margin: 0 0 4px 0;
-  color: #0f172a;
+  color: var(--theme-text);
 }
 
 .municipales-header-text p {
   font-size: 13px;
   margin: 0;
   opacity: 0.95;
-  color: #64748b;
+  color: var(--theme-text-3);
 }
 
 .municipales-header-actions {
@@ -88,9 +88,9 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: white;
-  color: #374151;
-  border: 1px solid #e2e8f0;
+  background: var(--theme-surface);
+  color: var(--theme-text-2);
+  border: 1px solid var(--theme-border);
   border-radius: 8px;
   padding: 9px 16px;
   font-size: 13px;
@@ -100,17 +100,17 @@
 }
 
 .btn-municipales-refresh:hover {
-  background: #f9fafb;
+  background: var(--theme-surface-2);
 }
 
 .btn-municipales-excel {
   display: flex; align-items: center; gap: 6px;
-  background: white; color: #374151;
-  border: 1px solid #e2e8f0; border-radius: 8px;
+  background: var(--theme-surface); color: var(--theme-text-2);
+  border: 1px solid var(--theme-border); border-radius: 8px;
   padding: 9px 16px; font-size: 13px; font-weight: 500;
   cursor: pointer; transition: background 0.15s;
 }
-.btn-municipales-excel:hover { background: #f9fafb; }
+.btn-municipales-excel:hover { background: var(--theme-surface-2); }
 .btn-municipales-excel:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .btn-municipales-secondary {
@@ -182,10 +182,10 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: white;
+  background: var(--theme-surface);
   border-radius: 12px;
   margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--theme-shadow);
   gap: 16px;
   flex-wrap: wrap;
 }
@@ -214,13 +214,13 @@
 
 .municipales-filter-select {
   padding: 9px 14px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--theme-border);
   border-radius: 8px;
   font-size: 13px;
-  background: white;
+  background: var(--theme-input-bg);
   cursor: pointer;
   transition: all 0.3s ease;
-  color: #374151;
+  color: var(--theme-text-2);
   min-width: 160px;
   width: 160px;
   flex-shrink: 0;
@@ -234,23 +234,23 @@
 
 .municipales-count-text {
   font-size: 14px;
-  color: #374151;
+  color: var(--theme-text-2);
   font-weight: 500;
 }
 
 .municipales-count-number {
   font-weight: 700;
-  color: #374151;
+  color: var(--theme-text-2);
   font-size: 16px;
 }
 
 /* Content */
 .municipales-content {
   flex: 1;
-  background: white;
+  background: var(--theme-surface);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--theme-shadow);
   display: flex;
   flex-direction: column;
 }
@@ -263,20 +263,20 @@
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  color: #6b7280;
+  color: var(--theme-text-3);
   text-align: center;
   gap: 16px;
 }
 
 .municipales-empty-state h3 {
   font-size: 18px;
-  color: #374151;
+  color: var(--theme-text-2);
   margin: 0;
 }
 
 .municipales-empty-state p {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--theme-text-3);
   margin: 0;
 }
 
@@ -312,7 +312,7 @@
 }
 
 .municipales-table tbody tr {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--theme-border);
   transition: background-color 0.2s ease;
 }
 
@@ -323,7 +323,7 @@
 .municipales-table td {
   padding: 14px 16px;
   font-size: 13px;
-  color: #374151;
+  color: var(--theme-text-2);
 }
 
 /* Table Cells */
@@ -331,7 +331,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #6b7280;
+  color: var(--theme-text-3);
   font-size: 13px;
 }
 
@@ -408,7 +408,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--theme-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -418,13 +418,13 @@
 }
 
 .municipales-modal-content {
-  background: white;
+  background: var(--theme-surface);
   border-radius: 16px;
   max-width: 800px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--theme-shadow-lg);
   animation: slideInUp 0.3s ease;
 }
 
@@ -433,8 +433,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--theme-surface);
+  border-bottom: 1px solid var(--theme-border);
   border-radius: 16px 16px 0 0;
   position: sticky;
   top: 0;
@@ -444,7 +444,7 @@
 .municipales-modal-header h2 {
   font-size: 19px;
   font-weight: 600;
-  color: #374151;
+  color: var(--theme-text-2);
   margin: 0;
   display: flex;
   align-items: center;
@@ -456,7 +456,7 @@
   padding: 24px;
   overflow-y: auto;
   flex: 1;
-  background: white;
+  background: var(--theme-surface);
 }
 
 .municipales-form-group {
@@ -470,13 +470,13 @@
   gap: 6px;
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: var(--theme-text-2);
   margin-bottom: 8px;
 }
 
 .municipales-form-hint {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--theme-text-4);
   margin-left: 4px;
   font-weight: 400;
 }
@@ -486,13 +486,13 @@
 .municipales-form-group textarea {
   width: 100%;
   padding: 11px 14px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--theme-input-border);
   border-radius: 8px;
   font-size: 14px;
   box-sizing: border-box;
   transition: all 0.3s ease;
-  background: white;
-  color: #374151;
+  background: var(--theme-input-bg);
+  color: var(--theme-text-2);
 }
 
 .municipales-form-group input:focus,
@@ -542,7 +542,7 @@
 
 .municipales-checkbox-item label {
   font-size: 14px;
-  color: #374151;
+  color: var(--theme-text-2);
   cursor: pointer;
   font-weight: 500;
   margin: 0;
@@ -551,7 +551,7 @@
 /* Geometry Editor */
 .municipales-geometry-section {
   margin: 24px 0;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--theme-border);
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.3s ease;
@@ -580,7 +580,7 @@
   border: none;
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: var(--theme-text-2);
   cursor: pointer;
   flex: 1;
   padding: 0;
@@ -597,37 +597,38 @@
 
 .municipales-geometry-content {
   padding: 20px;
-  background: white;
+  background: var(--theme-surface);
 }
 
 .municipales-geometry-help {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--theme-text-3);
   margin: 0 0 12px 0;
 }
 
 .municipales-geometry-example {
-  background: #f9fafb;
+  background: var(--theme-surface-2);
   padding: 14px;
   border-radius: 8px;
   font-size: 12px;
-  color: #374151;
+  color: var(--theme-text-2);
   overflow-x: auto;
   margin-bottom: 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--theme-border);
   font-family: 'Courier New', monospace;
 }
 
 .municipales-geometry-textarea {
   width: 100%;
   padding: 14px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--theme-input-border);
   border-radius: 8px;
   font-size: 13px;
   font-family: 'Courier New', monospace;
   resize: vertical;
   box-sizing: border-box;
-  background: white;
+  background: var(--theme-input-bg);
+  color: var(--theme-text-2);
   transition: all 0.3s ease;
 }
 
@@ -784,7 +785,7 @@
   gap: 12px;
   margin-top: 28px;
   padding-top: 20px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--theme-border);
 }
 
 .municipales-modal-footer button {
@@ -1022,7 +1023,7 @@
     padding: 14px 20px;
     position: sticky;
     bottom: 0;
-    background: white;
+    background: var(--theme-surface);
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
   }
 
@@ -1126,4 +1127,37 @@
   .municipales-vision-preview {
     height: 250px;
   }
+}
+
+/* ── Dark mode overrides ──────────────────────────────────────────── */
+[data-theme="dark"] {
+  /* Alerts */
+  .municipales-alert-error  { color: #fca5a5; }
+  .municipales-alert-success { color: #6ee7b7; }
+
+  /* Badges */
+  .municipales-badge-type    { color: #93c5fd; }
+  .municipales-badge-success { color: #6ee7b7; }
+  .municipales-badge-gray    { color: #9ca3af; }
+
+  /* Geometry clear button */
+  .municipales-geometry-clear { color: var(--theme-text-3); }
+
+  /* Checkbox items */
+  .municipales-checkbox-item       { background: var(--theme-surface-2); }
+  .municipales-checkbox-item:hover { background: var(--theme-surface); }
+
+  /* Geometry header */
+  .municipales-geometry-header       { background: var(--theme-surface-2); border-color: var(--theme-border); }
+  .municipales-geometry-header:hover { background: var(--theme-surface); }
+
+  /* Map / vision hints */
+  .municipales-map-hint    { background: var(--theme-surface-2); border-color: var(--theme-border); color: #6ee7b7; }
+  .municipales-map-hint strong { color: #34d399; }
+  .municipales-map-preview { border-color: var(--theme-border); }
+  .municipales-vision-hint { background: var(--theme-surface-2); border-color: var(--theme-border); }
+  .municipales-vision-hint p { color: #6ee7b7; }
+
+  /* Header icon (verde → usar surface) */
+  .municipales-header-icon { background: var(--theme-surface-2); border-color: var(--theme-border); }
 }

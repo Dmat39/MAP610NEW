@@ -2,10 +2,10 @@
 .control-rutas {
   position: fixed;
   left: calc(var(--sidebar-width, 70px) + 15px);
-  background: #ffffff;
+  background: var(--theme-surface);
   border-radius: 14px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.10);
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--theme-border);
   z-index: 2000;
   min-width: 320px;
   max-width: 380px;
@@ -17,20 +17,20 @@
 }
 
 .control-rutas.google-mode {
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--theme-border);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.10);
 }
 
 .control-rutas::-webkit-scrollbar { width: 5px; }
-.control-rutas::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
+.control-rutas::-webkit-scrollbar-track { background: var(--theme-bg); border-radius: 3px; }
 .control-rutas::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 .control-rutas::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 /* Header */
 .control-rutas-header {
-  background: #ffffff;
+  background: var(--theme-surface);
   border-top: 4px solid #16a34a;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--theme-border);
   padding: 13px 16px;
   cursor: pointer;
   user-select: none;
@@ -39,7 +39,7 @@
 }
 
 .control-rutas-header:hover {
-  background: #f8fafc;
+  background: var(--theme-surface-2);
 }
 
 .header-content {
@@ -53,7 +53,7 @@
   flex: 1;
   font-size: 14px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--theme-text);
   letter-spacing: -0.01em;
 }
 
@@ -73,7 +73,7 @@
 .control-rutas-content p {
   margin: 0;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--theme-text-3);
   line-height: 1.5;
 }
 
@@ -94,12 +94,12 @@
 
 .instrucciones ol li {
   font-size: 13px;
-  color: #374151;
+  color: var(--theme-text-2);
   line-height: 1.5;
 }
 
 .instrucciones ol li strong {
-  color: #1f2937;
+  color: var(--theme-text);
 }
 
 .caracteristicas-box {
@@ -129,13 +129,13 @@
 
 .caracteristicas-box ul li {
   font-size: 12px;
-  color: #374151;
+  color: var(--theme-text-2);
 }
 
 /* Información de la ruta */
 .ruta-info {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--theme-surface-2);
+  border: 1px solid var(--theme-border);
   border-radius: 10px;
   padding: 12px;
   display: flex;
@@ -147,7 +147,7 @@
   margin: 0 0 10px 0;
   font-size: 11px;
   font-weight: 700;
-  color: #374151;
+  color: var(--theme-text-2);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   display: flex;
@@ -166,7 +166,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 7px 0;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--theme-border-2);
   font-size: 13px;
 }
 
@@ -176,7 +176,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #6b7280;
+  color: var(--theme-text-3);
   font-size: 12px;
 }
 
@@ -207,7 +207,7 @@
   justify-content: center;
   gap: 6px;
   padding: 9px 14px;
-  background: white;
+  background: var(--theme-surface);
   color: #dc2626;
   border: 1.5px solid #fecaca;
   border-radius: 8px;

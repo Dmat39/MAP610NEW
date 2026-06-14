@@ -1,16 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import {
   LogOut, MapPin, Camera, Map, Video, Users,
   Calendar, ChevronRight, ChevronLeft, Shield, ClipboardList,
   LayoutDashboard, ShieldCheck, KeyRound, Building2, Tag, Layers, GitBranch, FileBarChart, Flag, Radio,
+  Sun, Moon,
 } from 'lucide-react';
 import ConfirmModal from '../Modal/ConfirmModal';
 import './Sidebar.css';
 
 const Sidebar = ({ isExpanded, onToggle, isMobile, onClose }) => {
   const { user, logout, hasModuleAccess, customRolePerms } = useAuth();
+  const { dark, toggle: toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -139,8 +142,15 @@ const Sidebar = ({ isExpanded, onToggle, isMobile, onClose }) => {
       {/* Footer: toggle arriba, avatar abajo */}
       <div className="sidebar-footer">
 
-        {/* Botón toggle: siempre visible, centrado */}
+        {/* Botón toggle + theme toggle: siempre visibles */}
         <div className="sidebar-bottom">
+          <button
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            title={dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          >
+            {dark ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
           <button
             className="toggle-btn"
             onClick={onToggle}

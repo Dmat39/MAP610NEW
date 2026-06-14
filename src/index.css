@@ -2,7 +2,141 @@
 :root {
   --sidebar-width: 70px;
   --top-header-height: 64px;
+
+  /* ── Theme variables — Light mode ── */
+  --theme-bg: #f1f5f9;
+  --theme-surface: #ffffff;
+  --theme-surface-2: #f8fafc;
+  --theme-border: #e2e8f0;
+  --theme-border-2: #f1f5f9;
+  --theme-text: #0f172a;
+  --theme-text-2: #374151;
+  --theme-text-3: #64748b;
+  --theme-text-4: #94a3b8;
+  --theme-text-5: #cbd5e1;
+  --theme-thead: #f8fafc;
+  --theme-tr-hover: rgba(0,0,0,0.03);
+  --theme-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --theme-shadow-lg: 0 4px 16px rgba(0,0,0,0.12);
+  --theme-overlay: rgba(0,0,0,0.5);
+  --theme-input-bg: #ffffff;
+  --theme-input-border: #e2e8f0;
+  --theme-input-focus: #6366f1;
+  --theme-scrollbar: #e2e8f0;
+  --theme-scrollbar-thumb: #cbd5e1;
+
+  /* Badge estado GPS */
+  --badge-ok:      #16a34a;
+  --badge-singps:  #a16207;
+  --badge-apagado: #dc2626;
 }
+
+[data-theme="dark"] {
+  --theme-bg: #0f172a;
+  --theme-surface: #1e293b;
+  --theme-surface-2: #162032;
+  --theme-border: #334155;
+  --theme-border-2: #1e293b;
+  --theme-text: #f1f5f9;
+  --theme-text-2: #e2e8f0;
+  --theme-text-3: #94a3b8;
+  --theme-text-4: #64748b;
+  --theme-text-5: #475569;
+  --theme-thead: #162032;
+  --theme-tr-hover: rgba(255,255,255,0.04);
+  --theme-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  --theme-shadow-lg: 0 4px 16px rgba(0,0,0,0.5);
+  --theme-overlay: rgba(0,0,0,0.7);
+  --theme-input-bg: #1e293b;
+  --theme-input-border: #334155;
+  --theme-input-focus: #818cf8;
+  --theme-scrollbar: #334155;
+  --theme-scrollbar-thumb: #475569;
+
+  /* Badge estado GPS */
+  --badge-ok:      #4ade80;
+  --badge-singps:  #facc15;
+  --badge-apagado: #f87171;
+}
+
+/* ── Dark mode map: night navy tint ── */
+[data-theme="dark"] .leaflet-container {
+  background: #0d1b2e !important;
+}
+[data-theme="dark"] .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.9);
+  opacity: 0.88;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* ── Dark mode map icons: soften for night feel ── */
+
+/* ── Dark mode map icons: night glow ── */
+[data-theme="dark"] .leaflet-marker-pane .leaflet-marker-icon {
+  filter: drop-shadow(0 0 6px rgba(148,210,255,0.5)) drop-shadow(0 3px 6px rgba(0,0,0,0.8)) !important;
+}
+
+/* ── Dark mode Leaflet UI elements ── */
+[data-theme="dark"] .leaflet-popup-content-wrapper {
+  background: var(--theme-surface) !important;
+  color: var(--theme-text) !important;
+  border: 1px solid var(--theme-border) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+}
+[data-theme="dark"] .leaflet-popup-tip {
+  background: var(--theme-surface) !important;
+}
+[data-theme="dark"] .leaflet-popup-content div,
+[data-theme="dark"] .leaflet-popup-content span,
+[data-theme="dark"] .leaflet-popup-content p,
+[data-theme="dark"] .leaflet-popup-content td,
+[data-theme="dark"] .leaflet-popup-content th,
+[data-theme="dark"] .leaflet-popup-content label {
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+}
+[data-theme="dark"] .leaflet-popup-content [style*="background:#f"] ,
+[data-theme="dark"] .leaflet-popup-content [style*="background: #f"] {
+  background: var(--theme-surface-2) !important;
+}
+
+/* Tooltips de capas */
+[data-theme="dark"] .custom-tooltip-vecinal,
+[data-theme="dark"] .seguimiento-tooltip,
+[data-theme="dark"] .leaflet-tooltip {
+  background: var(--theme-surface) !important;
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+}
+[data-theme="dark"] .custom-tooltip-vecinal::before,
+[data-theme="dark"] .seguimiento-tooltip::before,
+[data-theme="dark"] .leaflet-tooltip::before {
+  border-top-color: var(--theme-surface) !important;
+}
+
+/* Attribution bar */
+[data-theme="dark"] .leaflet-control-attribution {
+  background: rgba(15,23,42,0.85) !important;
+  color: var(--theme-text-4) !important;
+}
+[data-theme="dark"] .leaflet-control-attribution a {
+  color: var(--theme-text-3) !important;
+}
+
+/* Smooth theme transition ── */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Exclude animated/map elements from theme transition */
+.spinning, .spinning *,
+.leaflet-container, .leaflet-container *,
+canvas, canvas * {
+  transition: none !important;
+}
+
 
 html, body, #root {
   height: 100%;
@@ -10,6 +144,8 @@ html, body, #root {
   padding: 0;
   overflow: hidden;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--theme-bg);
+  color: var(--theme-text);
 }
 
 /* Main Content — offsets sidebar, transitions with it */
@@ -23,7 +159,7 @@ html, body, #root {
   height: 100vh;
   overflow: auto;
   z-index: 1;
-  background-color: #f5f5f5;
+  background-color: var(--theme-bg);
   transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
               width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -74,17 +210,17 @@ html, body, #root {
   display: none;
   align-items: center;
   justify-content: center;
-  background: white;
-  border: 1.5px solid #e2e8f0;
+  background: var(--theme-surface);
+  border: 1.5px solid var(--theme-border);
   border-radius: 10px;
-  color: #374151;
+  color: var(--theme-text-2);
   cursor: pointer;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
   transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .mobile-menu-fab:hover {
-  background: #f9fafb;
+  background: var(--theme-surface-2);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
 }
 
@@ -172,27 +308,29 @@ html, body, #root {
 .paradero-no-autorizado-tooltip,
 .defensa-civil-tooltip,
 .sostenimiento-tooltip {
-  background: white !important;
-  border: 2px solid #ddd !important;
+  background: var(--theme-surface) !important;
+  border: 2px solid var(--theme-border) !important;
   border-radius: 6px !important;
   padding: 4px 8px !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: var(--theme-shadow) !important;
+  color: var(--theme-text) !important;
 }
 
 .paradero-tooltip::before,
 .paradero-no-autorizado-tooltip::before,
 .defensa-civil-tooltip::before,
 .sostenimiento-tooltip::before {
-  border-top-color: white !important;
+  border-top-color: var(--theme-surface) !important;
 }
 
 /* Estilos para tooltips de residuos */
 .residuos-tooltip {
-  background: white !important;
-  border: 2px solid #ddd !important;
+  background: var(--theme-surface) !important;
+  border: 2px solid var(--theme-border) !important;
   border-radius: 6px !important;
   padding: 6px 10px !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: var(--theme-shadow) !important;
+  color: var(--theme-text) !important;
 }
 
 .residuos-tooltip.verde {
@@ -271,6 +409,97 @@ html, body, #root {
 /* Remover sombras del shadow pane completo */
 .leaflet-shadow-pane {
   display: none !important;
+}
+
+/* ── Inputs / selects globales ─────────────────────────────────────────────── */
+input, select, textarea {
+  background: var(--theme-input-bg);
+  color: var(--theme-text);
+  border-color: var(--theme-input-border);
+}
+input::placeholder, textarea::placeholder { color: var(--theme-text-4); }
+
+/* ══════════════════════════════════════════════════════════════════
+   DARK MODE — overrides globales para colores hardcodeados
+   ══════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  /* ── Alerts (texto oscuro → claro) ── */
+  .municipales-alert-error,
+  .camaras-alert-error    { color: #fca5a5 !important; background: rgba(239,68,68,0.15) !important; }
+
+  .municipales-alert-success,
+  .camaras-alert-success,
+  .catalogo-alert.success,
+  .comisarias-alert-success,
+  .pnp-alert-success,
+  .campana-alert-success  { color: #6ee7b7 !important; background: rgba(16,185,129,0.15) !important; }
+
+  /* ── Badges ── */
+  .municipales-badge-type    { color: #93c5fd !important; }
+  .municipales-badge-success { color: #6ee7b7 !important; }
+  .municipales-badge-gray    { color: #9ca3af !important; }
+
+  /* ── Fondos #f0fdf4 y #dcfce7 (verde claro) → surface oscuro ── */
+  .municipales-checkbox-item,
+  .municipales-geometry-header,
+  .municipales-map-hint,
+  .municipales-vision-hint,
+  .pnp-select-all-bar,
+  .pnp-form-section,
+  .pnp-detail-header,
+  .pnp-detail-section,
+  .pnp-info-bar,
+  .comisarias-table tbody tr:hover td,
+  .campana-table tbody tr:hover td,
+  .modules-table-row-wrapper.enabled,
+  .field-item.active,
+  .role-permissions-section,
+  .role-layer-section      { background: var(--theme-surface-2) !important; }
+
+  .municipales-checkbox-item:hover,
+  .municipales-geometry-header:hover,
+  .modules-table-row-wrapper.enabled:hover,
+  .field-item:hover        { background: var(--theme-surface) !important; }
+
+  /* ── Textos verdes oscuros sobre fondo claro → aclarar ── */
+  .municipales-map-hint,
+  .municipales-map-hint strong,
+  .municipales-vision-hint p,
+  .comisarias-badge-active,
+  .campana-badge-active    { color: #6ee7b7 !important; }
+
+  /* ── Geometry clear / secondary buttons ── */
+  .municipales-geometry-clear { color: var(--theme-text-3) !important; }
+
+  /* ── Header icons (fondo verde claro → surface) ── */
+  .municipales-header-icon,
+  .camaras-header-icon,
+  .pnp-header-icon,
+  .comisarias-header-icon,
+  .campana-header-icon     { background: var(--theme-surface-2) !important; border-color: var(--theme-border) !important; }
+
+  /* ── Roles: fondos activos ── */
+  .modules-table-row-wrapper.enabled { border-color: var(--theme-border) !important; }
+  .field-item:hover { color: var(--theme-text-2) !important; border-color: var(--theme-border) !important; }
+  .field-item.active { border-color: #4ade80 !important; }
+
+  /* ── Usuarios: texto error ── */
+  .usuarios-alert-error { color: #fca5a5 !important; }
+
+  /* ── Table row hovers (light green / fafafa → dark surface) ── */
+  .data-table tbody tr:hover,
+  .camaras-table tbody tr:hover,
+  .auditoria-table tbody tr:hover,
+  .comisarias-table tbody tr:hover,
+  .campana-table tbody tr:hover,
+  .actividades-table tbody tr:hover,
+  .municipales-table tbody tr:hover { background: var(--theme-tr-hover) !important; }
+
+  .pnp-table tr:hover td { background: var(--theme-tr-hover) !important; }
+
+  .gestion-municipales-container .municipales-table tbody tr:hover { background: rgba(99,102,241,0.08) !important; }
+
+  .modules-table-row-wrapper:not(.enabled) .modules-table-row:hover { background: var(--theme-surface-2) !important; }
 }
 
 /* Asegurar que no haya elementos ocultos con sombras */

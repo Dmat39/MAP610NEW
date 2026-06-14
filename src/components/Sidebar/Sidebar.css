@@ -9,8 +9,8 @@
   top: 0;
   bottom: 0;
   width: 70px;
-  background: white;
-  border-right: 1px solid #e2e8f0;
+  background: var(--theme-surface);
+  border-right: 1px solid var(--theme-border);
   display: flex;
   flex-direction: column;
   z-index: 9999;
@@ -29,7 +29,7 @@
   align-items: center;
   gap: 12px;
   padding: 0 14px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--theme-border);
   flex-shrink: 0;
   overflow: hidden;
   height: var(--top-header-height, 64px);
@@ -53,7 +53,7 @@
 .sidebar-title {
   font-size: 12.5px;
   font-weight: 700;
-  color: #111827;
+  color: var(--theme-text);
   white-space: nowrap;
   letter-spacing: 0.4px;
   opacity: 0;
@@ -81,7 +81,7 @@
 .sidebar-nav::-webkit-scrollbar { width: 3px; }
 .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
 .sidebar-nav::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
+  background: var(--theme-scrollbar-thumb);
   border-radius: 2px;
 }
 
@@ -94,7 +94,7 @@
   background: transparent;
   border: none;
   border-radius: 8px;
-  color: #6b7280;
+  color: var(--theme-text-3);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
   text-align: left;
@@ -103,8 +103,8 @@
 }
 
 .nav-item:hover {
-  background: #f9fafb;
-  color: #111827;
+  background: var(--theme-surface-2);
+  color: var(--theme-text);
 }
 
 .nav-item.active {
@@ -139,7 +139,7 @@
 /* ── Footer: toggle arriba + avatar abajo ─── */
 .sidebar-footer {
   padding: 10px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--theme-border);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -151,6 +151,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   min-height: 28px;
 }
 
@@ -162,10 +163,10 @@
   width: 26px;
   min-width: 26px;
   height: 26px;
-  background: #f9fafb;
-  border: 1px solid #e2e8f0;
+  background: var(--theme-surface-2);
+  border: 1px solid var(--theme-border);
   border-radius: 7px;
-  color: #6b7280;
+  color: var(--theme-text-3);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -175,8 +176,30 @@
 }
 
 .toggle-btn:hover {
-  background: #f1f5f9;
-  color: #374151;
+  background: var(--theme-border);
+  color: var(--theme-text-2);
+}
+
+/* Theme toggle button */
+.theme-toggle-btn {
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  background: var(--theme-surface-2);
+  border: 1px solid var(--theme-border);
+  border-radius: 7px;
+  color: var(--theme-text-3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--theme-border);
+  color: var(--theme-text-2);
 }
 
 /* Botón de usuario (avatar + info) */
@@ -197,8 +220,8 @@
 }
 
 .sidebar-user:hover {
-  background: #f9fafb;
-  border-color: #e2e8f0;
+  background: var(--theme-surface-2);
+  border-color: var(--theme-border);
 }
 
 .sidebar-user.active {
@@ -249,7 +272,7 @@
 .user-name {
   font-size: 12px;
   font-weight: 600;
-  color: #111827;
+  color: var(--theme-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -269,10 +292,10 @@
 .user-dropdown {
   position: fixed;
   width: 210px;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--theme-shadow-lg);
   overflow: hidden;
   animation: dropup-in 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 10000;
@@ -316,7 +339,7 @@
 .user-dropdown-name {
   font-size: 13px;
   font-weight: 700;
-  color: #111827;
+  color: var(--theme-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -333,7 +356,7 @@
 
 .user-dropdown-divider {
   height: 1px;
-  background: #f1f5f9;
+  background: var(--theme-border-2);
   margin: 0;
 }
 
@@ -390,7 +413,7 @@
   .app-sidebar.expanded {
     width: 260px;
     box-shadow: 4px 0 32px rgba(0, 0, 0, 0.18);
-    border-right: 1px solid #e2e8f0;
+    border-right: 1px solid var(--theme-border);
     z-index: 20000;
   }
 }
