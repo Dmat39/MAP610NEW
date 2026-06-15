@@ -5,7 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   LogOut, MapPin, Camera, Map, Video, Users,
   Calendar, ChevronRight, ChevronLeft, Shield, ClipboardList,
-  LayoutDashboard, ShieldCheck, KeyRound, Building2, Tag, Layers, GitBranch, FileBarChart, Flag, Radio,
+  LayoutDashboard, ShieldCheck, KeyRound, Building2, Tag, Layers, GitBranch, FileBarChart, Flag, Radio, Smartphone,
   Sun, Moon,
 } from 'lucide-react';
 import ConfirmModal from '../Modal/ConfirmModal';
@@ -105,6 +105,7 @@ const Sidebar = ({ isExpanded, onToggle, isMobile, onClose }) => {
     { path: '/admin/subtipos-incidencia',     icon: Layers,      label: 'Subtipos Incidencia', show: canSeeModule('subtipos-incidencia',     isAdmin) },
     { path: '/admin/modalidades-incidencia',  icon: GitBranch,   label: 'Modalidades PNP',     show: canSeeModule('modalidades-incidencia',  isAdmin) },
     { path: '/admin/radios-gps',          icon: Radio,          label: 'Radios GPS',           show: canSeeModule('radios-gps',         isAdmin) },
+    { path: '/admin/bodycams',            icon: Smartphone,     label: 'Bodycams',             show: canSeeModule('bodycams',           isAdmin) },
     { path: '/admin/camaras-vecinales',   icon: Camera,         label: 'Cám. Vecinales',      show: canSeeModule('camaras-vecinales',  isAdmin) },
     { path: '/admin/camaras-municipales', icon: Video,          label: 'Cám. Municipales',    show: canSeeModule('camaras-municipales',isAdmin) },
     { path: '/admin/comisarias',          icon: Building2,      label: 'Comisarías',           show: canSeeModule('comisarias',          isAdmin) },
