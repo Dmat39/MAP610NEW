@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Camera, MapPin, RefreshCw, Smartphone } from 'lucide-react';
+import { Camera, MapPin, RefreshCw, Smartphone, Search, X } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { obtenerBodycams } from '../../services/bodycamService';
 import SearchInput from '../Table/SearchInput';
 import TablePagination from '../Table/TablePagination';
+
+// Importamos el CSS específico de bodycams
 import './GestionBodycams.css';
 
 const GestionBodycams = () => {
@@ -55,100 +57,130 @@ const GestionBodycams = () => {
   };
 
   return (
-    <div className={`admin-container ${dark ? 'dark' : ''}`}>
-      <div className="admin-header">
-        <div className="header-title">
-          <Smartphone size={24} className="header-icon" />
-          <div>
-            <h1>Listado de Bodycams</h1>
-            <p>Visualiza todas las bodycams registradas en el sistema GPS</p>
+    <div className={`gestion-bodycams-container ${dark ? 'dark' : ''}`}>
+      
+      {/* Tarjeta de Encabezado (Header Card) */}
+      <div className="gestion-bodycams-header">
+        <div className="bodycams-header-content">
+          <div className="bodycams-header-icon">
+            <Smartphone size={24} />
+          </div>
+          <div className="bodycams-header-text">
+            <h1>Gestión de Bodycams</h1>
+            <p>Administra las bodycams del sistema</p>
           </div>
         </div>
-        <div className="header-actions">
-          <button className="btn btn-secondary" onClick={loadBodycams} disabled={loading}>
+        
+        <div className="bodycams-header-actions">
+          <button onClick={loadBodycams} className="btn-bodycams-secondary" disabled={loading} title="Actualizar">
             <RefreshCw size={18} className={loading ? 'spinning' : ''} />
             <span>Actualizar</span>
           </button>
+          {/* Ocultamos botones de Excel o Nueva Cámara si no se requieren por ahora */}
         </div>
       </div>
 
       {error && (
-        <div className="admin-alert error">
+        <div className="bodycams-alert bodycams-alert-error">
+          <X size={18} />
           <span>{error}</span>
-          <button onClick={() => setError(null)}>×</button>
+          <button onClick={() => setError(null)} className="bodycams-alert-close">
+            <X size={16} />
+          </button>
         </div>
       )}
 
-      <div className="admin-content-box">
-        <div className="table-controls">
+      {/* Toolbar (Buscador y Contador) */}
+      <div className="bodycams-toolbar">
+        <div className="bodycams-toolbar-left">
           <SearchInput 
             value={searchTerm} 
             onChange={(val) => { setSearchTerm(val); setCurrentPage(1); }}
             placeholder="Buscar por nombre o código..." 
           />
-          <div className="table-info">
-            Total encontradas: <strong>{filteredBodycams.length}</strong>
+        </div>
+
+        <div className="bodycams-toolbar-right">
+          <span className="bodycams-count-text">
+            Total: <span className="bodycams-count-number">{filteredBodycams.length}</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Contenido / Tabla */}
+      <div className="bodycams-content">
+        {loading && bodycams.length === 0 ? (
+          <div className="bodycams-loading-state">
+            <RefreshCw size={32} className="spinning" />
+            <p>Cargando bodycams...</p>
           </div>
-        </div>
-
-        <div className="table-responsive">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Código Dispositivo</th>
-                <th>Estado</th>
-                <th>Última Ubicación</th>
-                <th>Latitud / Longitud</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && bodycams.length === 0 ? (
-                <tr>
-                  <td colSpan="6" style={{textAlign:'center', padding:'2rem'}}>Cargando bodycams...</td>
-                </tr>
-              ) : currentItems.length > 0 ? (
-                currentItems.map((cam) => (
-                  <tr key={cam.id || cam.codigo}>
-                    <td>{cam.id || '-'}</td>
-                    <td><strong>{cam.nombre || 'Sin nombre'}</strong></td>
-                    <td style={{fontFamily:'monospace'}}>{cam.codigo}</td>
-                    <td>
-                      <span className={`status-badge ${cam.activa ? 'active' : 'inactive'}`}>
-                        {cam.activa ? 'Activa' : 'Inactiva'}
-                      </span>
-                    </td>
-                    <td style={{fontSize:'0.85rem'}}>{formatDate(cam.ultima_ubicacion)}</td>
-                    <td style={{fontSize:'0.85rem'}}>
-                      {cam.latitud && cam.longitud ? (
-                        <div style={{display:'flex', alignItems:'center', gap:'4px', color:'#2563eb'}}>
-                          <MapPin size={14} />
-                          {cam.latitud.toString().substring(0, 8)}, {cam.longitud.toString().substring(0, 8)}
-                        </div>
-                      ) : (
-                        <span style={{color:'#9ca3af'}}>Sin datos GPS</span>
-                      )}
-                    </td>
+        ) : filteredBodycams.length === 0 ? (
+          <div className="bodycams-empty-state">
+            <Smartphone size={48} />
+            <h3>No se encontraron bodycams</h3>
+            <p>{searchTerm ? 'Intenta buscar con otro término' : 'No hay bodycams registradas'}</p>
+          </div>
+        ) : (
+          <>
+            <div className="bodycams-table-wrapper">
+              <table className="bodycams-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>Código</th>
+                    <th>Estado</th>
+                    <th>Última Ubicación</th>
+                    <th>Coordenadas</th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" style={{textAlign:'center', padding:'2rem'}}>
-                    No se encontraron bodycams {searchTerm ? 'con esa búsqueda' : 'registradas'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {currentItems.map((cam, index) => {
+                    const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
+                    return (
+                      <tr key={cam.id || cam.codigo}>
+                        <td>{globalIndex}</td>
+                        <td>
+                          <strong>{cam.nombre || 'Sin nombre'}</strong>
+                        </td>
+                        <td style={{ fontFamily: 'monospace' }}>
+                          {cam.codigo}
+                        </td>
+                        <td>
+                          <span className={`bodycams-badge ${cam.activa ? 'bodycams-badge-brand' : 'bodycams-badge-mode'}`}>
+                            {cam.activa ? 'ACTIVA' : 'INACTIVA'}
+                          </span>
+                        </td>
+                        <td>
+                          {formatDate(cam.ultima_ubicacion)}
+                        </td>
+                        <td>
+                          {cam.latitud && cam.longitud ? (
+                            <div className="bodycams-address-cell">
+                              <MapPin size={14} />
+                              {cam.latitud.toString().substring(0, 8)}, {cam.longitud.toString().substring(0, 8)}
+                            </div>
+                          ) : (
+                            <span style={{ color: '#9ca3af' }}>Sin datos GPS</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-        {totalPages > 1 && (
-          <TablePagination 
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
+            {totalPages > 1 && (
+              <TablePagination 
+                currentPage={currentPage}
+                totalItems={filteredBodycams.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={setCurrentPage}
+                onLimitChange={() => {}} /* Local pagination doesn't change limit dynamically yet */
+              />
+            )}
+          </>
         )}
       </div>
     </div>
