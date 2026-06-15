@@ -62,7 +62,7 @@ const ZonaPolyMap = ({ color, coords, closed, onAdd, onClose, onClear, mapKey })
         zoom={13}
         style={{ height:'100%', width:'100%' }}
         doubleClickZoom={false}
-        scrollWheelZoom={false}
+        scrollWheelZoom={true}
       >
         <TileLayer url={dark ? TILE_DARK : TILE_LIGHT} attribution={dark ? '&copy; CARTO' : '&copy; OpenStreetMap'} />
         {jurisData && <GeoJSON data={jurisData} style={jurisStyle} interactive={false} />}
@@ -87,8 +87,8 @@ const ZonaPolyMap = ({ color, coords, closed, onAdd, onClose, onClear, mapKey })
       </MapContainer>
 
       {/* Instrucción flotante */}
-      <div style={{ position:'absolute', bottom:8, left:8, right:8, zIndex:500, display:'flex', justifyContent:'space-between', alignItems:'flex-end', pointerEvents:'none' }}>
-        <span style={{ background:'rgba(255,255,255,0.92)', padding:'3px 8px', borderRadius:6, fontSize:11, color:'#374151' }}>
+      <div style={{ position:'absolute', bottom:24, left:8, right:8, zIndex:500, display:'flex', justifyContent:'space-between', alignItems:'flex-end', pointerEvents:'none' }}>
+        <span style={{ background: dark ? 'rgba(30,41,59,0.92)' : 'rgba(255,255,255,0.92)', padding:'3px 8px', borderRadius:6, fontSize:11, color: dark ? '#e2e8f0' : '#374151' }}>
           {closed
             ? `✓ Polígono cerrado — ${coords.length} vértices`
             : coords.length === 0
@@ -99,7 +99,7 @@ const ZonaPolyMap = ({ color, coords, closed, onAdd, onClose, onClear, mapKey })
         </span>
         {coords.length > 0 && (
           <button onClick={onClear}
-            style={{ pointerEvents:'all', background:'white', border:'1px solid #fca5a5', borderRadius:6, padding:'3px 8px', fontSize:11, cursor:'pointer', color:'#dc2626' }}>
+            style={{ pointerEvents:'all', background:'var(--theme-surface)', border:'1px solid #fca5a5', borderRadius:6, padding:'3px 8px', fontSize:11, cursor:'pointer', color:'#dc2626' }}>
             Limpiar
           </button>
         )}
@@ -110,6 +110,7 @@ const ZonaPolyMap = ({ color, coords, closed, onAdd, onClose, onClear, mapKey })
 
 /* ─── Selector múltiple de radios para el modal de zona ──────────── */
 const RadiosPicker = ({ radios, selected, onChange }) => {
+  const { dark } = useTheme();
   const [q, setQ] = useState('');
   const filtrados = radios.filter(r => {
     if (!q) return true;
@@ -122,8 +123,8 @@ const RadiosPicker = ({ radios, selected, onChange }) => {
     onChange(selected.includes(s) ? selected.filter(x => x !== s) : [...selected, s]);
   };
   return (
-    <div style={{ border:'1px solid #e2e8f0', borderRadius:8, overflow:'hidden', marginTop:4 }}>
-      <div style={{ padding:'6px 10px', borderBottom:'1px solid #f1f5f9', display:'flex', alignItems:'center', gap:8, background:'#f8fafc' }}>
+    <div style={{ border:'1px solid var(--theme-border)', borderRadius:8, overflow:'hidden', marginTop:4 }}>
+      <div style={{ padding:'6px 10px', borderBottom:'1px solid var(--theme-border-2)', display:'flex', alignItems:'center', gap:8, background:'var(--theme-surface-2)' }}>
         <input placeholder="Buscar radio..." value={q} onChange={e => setQ(e.target.value)}
           className="rgps-filter-select" style={{ flex:1, height:30 }} />
         {selected.length > 0 && (
@@ -143,8 +144,8 @@ const RadiosPicker = ({ radios, selected, onChange }) => {
               const badge = BADGE_COLOR[r.color];
               return (
                 <label key={r.issi} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px',
-                  cursor:'pointer', background: checked ? '#eef2ff' : 'white',
-                  borderBottom:'1px solid #f8fafc', fontSize:13, color: checked ? '#4f46e5' : '#374151' }}>
+                  cursor:'pointer', background: checked ? (dark ? 'rgba(99,102,241,0.15)' : '#eef2ff') : 'var(--theme-surface)',
+                  borderBottom:'1px solid var(--theme-border-2)', fontSize:13, color: checked ? '#6366f1' : 'var(--theme-text-2)' }}>
                   <input type="checkbox" checked={checked} onChange={() => toggle(issi)}
                     style={{ accentColor:'#6366f1', width:14, height:14, flexShrink:0 }} />
                   <span style={{ flex:1 }}>{labelR(r)}</span>
@@ -364,6 +365,7 @@ const TablaZonas = ({ zonas, onEditar, onToggle, onBorrar }) => {
 
 /* ── RadioSelector: input de búsqueda + select filtrado ─────────────────────── */
 const RadioSelector = ({ radios, value, onChange }) => {
+  const { dark } = useTheme();
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -395,9 +397,9 @@ const RadioSelector = ({ radios, value, onChange }) => {
           : <span style={{ position:'absolute', right:8, color:'#94a3b8', fontSize:10 }}>▼</span>}
       </div>
       {open && (
-        <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'white',
-          border:'1px solid #e2e8f0', borderRadius:8, boxShadow:'0 4px 12px rgba(0,0,0,0.1)', zIndex:9999 }}>
-          <div style={{ padding:'6px 8px', borderBottom:'1px solid #f1f5f9' }}>
+        <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'var(--theme-surface)',
+          border:'1px solid var(--theme-border)', borderRadius:8, boxShadow:'var(--theme-shadow-lg)', zIndex:9999 }}>
+          <div style={{ padding:'6px 8px', borderBottom:'1px solid var(--theme-border-2)' }}>
             <input autoFocus className="rgps-filter-select" style={{ width:'100%', height:30, boxSizing:'border-box' }}
               placeholder="Buscar..." value={q} onChange={e => setQ(e.target.value)} onClick={e => e.stopPropagation()} />
           </div>
@@ -406,10 +408,10 @@ const RadioSelector = ({ radios, value, onChange }) => {
               ? <div style={{ padding:'8px 12px', fontSize:12, color:'#94a3b8' }}>Sin resultados</div>
               : filtrados.map(r => (
                 <div key={r.issi} onClick={() => select(r)}
-                  style={{ padding:'7px 12px', fontSize:13, cursor:'pointer', color:'#374151',
-                    background: String(r.issi)===String(value) ? '#eef2ff' : 'white' }}
-                  onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
-                  onMouseLeave={e => e.currentTarget.style.background = String(r.issi)===String(value)?'#eef2ff':'white'}>
+                  style={{ padding:'7px 12px', fontSize:13, cursor:'pointer', color:'var(--theme-text-2)',
+                    background: String(r.issi)===String(value) ? (dark?'rgba(99,102,241,0.15)':'#eef2ff') : 'var(--theme-surface)' }}
+                  onMouseEnter={e => e.currentTarget.style.background='var(--theme-surface-2)'}
+                  onMouseLeave={e => e.currentTarget.style.background = String(r.issi)===String(value)?(dark?'rgba(99,102,241,0.15)':'#eef2ff'):'var(--theme-surface)'}>
                   {label(r)}
                 </div>
               ))}
