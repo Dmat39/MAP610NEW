@@ -267,3 +267,79 @@
 
 /* Paginación */
 .campana-pagination { margin-top: 12px; flex-shrink: 0; }
+
+/* ── Toolbar de dibujo ─────────────────────────────────────────────────── */
+.draw-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+}
+
+.draw-vcount {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 3px 10px;
+  margin-right: 4px;
+}
+
+.btn-draw-action {
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.btn-draw-finish {
+  background: #16a34a;
+  color: white;
+  border-color: #15803d;
+}
+.btn-draw-finish:hover { background: #15803d; }
+
+.btn-draw-undo {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+.btn-draw-undo:hover { background: #dbeafe; }
+
+.btn-draw-clear {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+.btn-draw-clear:hover { background: #fee2e2; }
+
+.btn-draw-redo {
+  background: #fefce8;
+  color: #ca8a04;
+  border-color: #fde68a;
+}
+.btn-draw-redo:hover { background: #fef9c3; }
+
+/* Info cuando hay forma guardada y el mapa está oculto */
+.draw-saved-info {
+  font-size: 12px;
+  color: #16a34a;
+  font-weight: 600;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 7px 12px;
+  margin-bottom: 8px;
+  text-align: center;
+}
