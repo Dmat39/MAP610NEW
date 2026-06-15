@@ -12,14 +12,14 @@ import pnpIncidenceService from '../../services/pnpIncidenceService';
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const PRIMARY    = '#1e3a5f';
 const ACCENT     = '#2563eb';
-const BG         = '#f8fafc';
-const CARD       = '#ffffff';
-const BORDER     = '1px solid #e8edf2';
-const SHADOW     = '0 2px 8px rgba(0,0,0,0.06)';
+const BG         = 'var(--theme-bg)';
+const CARD       = 'var(--theme-surface)';
+const BORDER     = '1px solid var(--theme-border)';
+const SHADOW     = 'var(--theme-shadow)';
 const RADIUS     = 14;
-const TEXT_DARK  = '#111827';
-const TEXT_MID   = '#6b7280';
-const TEXT_LIGHT = '#9ca3af';
+const TEXT_DARK  = 'var(--theme-text)';
+const TEXT_MID   = 'var(--theme-text-3)';
+const TEXT_LIGHT = 'var(--theme-text-4)';
 
 const STATUS_COLORS = { INVESTIGATING: '#ef4444', REFERRED: '#f59e0b', CLOSED: '#22c55e' };
 const STATUS_LABELS = { INVESTIGATING: 'Investigando', REFERRED: 'Derivado', CLOSED: 'Cerrado' };

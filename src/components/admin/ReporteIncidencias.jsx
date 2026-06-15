@@ -10,14 +10,14 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 // ── Diseño ────────────────────────────────────────────────────────────────────
 const PRIMARY    = '#1d4ed8';
-const BG         = '#f8fafc';
-const CARD       = '#ffffff';
-const BORDER     = '1px solid #e8edf2';
-const SHADOW     = '0 2px 8px rgba(0,0,0,0.06)';
+const BG         = 'var(--theme-bg)';
+const CARD       = 'var(--theme-surface)';
+const BORDER     = '1px solid var(--theme-border)';
+const SHADOW     = 'var(--theme-shadow)';
 const RADIUS     = 12;
-const TEXT_DARK  = '#111827';
-const TEXT_MID   = '#6b7280';
-const TEXT_LIGHT = '#9ca3af';
+const TEXT_DARK  = 'var(--theme-text)';
+const TEXT_MID   = 'var(--theme-text-3)';
+const TEXT_LIGHT = 'var(--theme-text-4)';
 
 // ── Catálogo de tipos ─────────────────────────────────────────────────────────
 const GRUPOS = [
@@ -386,7 +386,7 @@ const ReporteIncidencias = () => {
               const keys=g.items.map(i=>i.key), activeC=keys.filter(k=>selected[k]).length, allOn=activeC===keys.length, isExp=expanded[g.key];
               return (
                 <div key={g.key} style={{ marginBottom:3 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 8px', borderRadius:7, background:'#f8fafc', border:BORDER, marginBottom:isExp?3:0 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 8px', borderRadius:7, background:'var(--theme-surface-2)', border:BORDER, marginBottom:isExp?3:0 }}>
                     <input type="checkbox" checked={allOn}
                       ref={el=>{ if(el) el.indeterminate=activeC>0&&!allOn; }}
                       onChange={()=>toggleGrupo(g.key)}
@@ -416,7 +416,7 @@ const ReporteIncidencias = () => {
             })}
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:3, marginTop:4 }}>
               {SIMPLES.map(item=>(
-                <label key={item.key} style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 6px', borderRadius:6, background:'#f8fafc', border:BORDER, cursor:'pointer', fontSize:12, color:TEXT_MID }}>
+                <label key={item.key} style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 6px', borderRadius:6, background:'var(--theme-surface-2)', border:BORDER, cursor:'pointer', fontSize:12, color:TEXT_MID }}>
                   <input type="checkbox" checked={!!selected[item.key]} onChange={()=>toggleItem(item.key)}
                     style={{ width:13, height:13, accentColor:item.color, cursor:'pointer' }}/>
                   {item.label}
@@ -480,7 +480,7 @@ const ReporteIncidencias = () => {
                   </tr></thead>
                   <tbody>
                     {[...rawData].sort((a,b)=>b.registros.length-a.registros.length).map((row,i)=>(
-                      <tr key={i} style={{ borderBottom:'1px solid #f8fafc' }}
+                      <tr key={i} style={{ borderBottom:'1px solid var(--theme-border-2)' }}
                         onMouseEnter={e=>e.currentTarget.style.background='#f9fafb'}
                         onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                         <td style={{ padding:'9px 16px', color:TEXT_DARK, fontWeight:500 }}>{row.label}</td>
@@ -511,7 +511,7 @@ const ReporteIncidencias = () => {
                     </tr></thead>
                     <tbody>
                       {rawData.flatMap(row=>row.registros.map(r=>({...r,tipo:row.label}))).slice(0,20).map((r,i)=>(
-                        <tr key={i} style={{ borderBottom:'1px solid #f8fafc' }}
+                        <tr key={i} style={{ borderBottom:'1px solid var(--theme-border-2)' }}
                           onMouseEnter={e=>e.currentTarget.style.background='#f9fafb'}
                           onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                           <td style={{ padding:'7px 14px', whiteSpace:'nowrap' }}>
@@ -591,7 +591,7 @@ const ReporteIncidencias = () => {
                           cl.puntos.forEach(p=>{ tipoCount[p.Tipo||'—']=(tipoCount[p.Tipo||'—']||0)+1; });
                           const intensidad = cl.cantidad<=3?{bg:'#fef3c7',color:'#92400e'}:cl.cantidad<=6?{bg:'#fee2e2',color:'#991b1b'}:{bg:'#fde8d8',color:'#9a3412'};
                           return (
-                            <tr key={i} style={{ borderBottom:'1px solid #f8fafc' }}
+                            <tr key={i} style={{ borderBottom:'1px solid var(--theme-border-2)' }}
                               onMouseEnter={e=>e.currentTarget.style.background='#f9fafb'}
                               onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                               <td style={{ padding:'9px 14px', fontWeight:700, color:TEXT_DARK }}>{i+1}</td>

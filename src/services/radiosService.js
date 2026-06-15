@@ -33,6 +33,26 @@ export const obtenerKmDias = async (issi, fechaInicio, fechaFin) => {
   return json.data ?? json;
 };
 
+export const buscarInfoRadio = async (issi) => {
+  const token = localStorage.getItem('token');
+  const res = await fetch(`${API_URL}gps-radio/info?issi=${encodeURIComponent(issi)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const json = await res.json();
+  return json.data ?? json;
+};
+
+export const actualizarRadio = async (issi, data) => {
+  const token = localStorage.getItem('token');
+  const res = await fetch(`${API_URL}gps-radio/${encodeURIComponent(issi)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  return json.data ?? json;
+};
+
 let _pendingRadios = null;
 
 export const obtenerRadios = async () => {

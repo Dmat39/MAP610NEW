@@ -1,5 +1,9 @@
 import { MapContainer, TileLayer, Pane, useMapEvents } from 'react-leaflet';
 import { useState, useCallback, useMemo } from 'react';
+import { useTheme } from './context/ThemeContext';
+
+const TILE_LIGHT = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILE_DARK  = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 const GpsMapEvents = ({ seleccionandoPunto, onPuntoSeleccionado }) => {
   useMapEvents({
@@ -108,6 +112,7 @@ const PNP_TIPOS = [
 ];
 
 const MapView = () => {
+  const { dark } = useTheme();
   const { user, hasLayerAccess, isAdmin } = useAuth();
   const userRole = user?.role;
   const isViewer = userRole === 'VIEWER';
@@ -591,8 +596,9 @@ const MapView = () => {
           maxZoom={20}
         >
           <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            url={dark ? TILE_DARK : TILE_LIGHT}
             maxZoom={20}
+            attribution="&copy; OpenStreetMap"
           />
           {/* Pane para incidencias: encima de polígonos (overlayPane=400) pero bajo marcadores (600) */}
           <Pane name="incidenciasPane" style={{ zIndex: 420 }} />

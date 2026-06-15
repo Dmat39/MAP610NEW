@@ -1,10 +1,10 @@
 .control-clusters {
   position: fixed;
   width: 300px;
-  background: #ffffff;
+  background: var(--theme-surface);
   border-radius: 14px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.10);
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--theme-border);
   z-index: 2000;
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
   overflow: hidden;
@@ -19,9 +19,9 @@
 
 /* Header */
 .control-clusters-header {
-  background: #ffffff;
+  background: var(--theme-surface);
   border-top: 4px solid #16a34a;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--theme-border);
   padding: 13px 16px;
   cursor: pointer;
   user-select: none;
@@ -29,7 +29,7 @@
 }
 
 .control-clusters-header:hover {
-  background: #f8fafc;
+  background: var(--theme-surface-2);
 }
 
 .header-content {
@@ -43,15 +43,15 @@
   flex: 1;
   font-size: 14px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--theme-text);
   letter-spacing: -0.01em;
 }
 
 .collapse-btn {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background: var(--theme-bg);
+  border: 1px solid var(--theme-border);
   border-radius: 7px;
-  color: #64748b;
+  color: var(--theme-text-3);
   cursor: pointer;
   padding: 5px;
   display: flex;
@@ -63,7 +63,7 @@
 
 .collapse-btn:hover {
   background: #e2e8f0;
-  color: #374151;
+  color: var(--theme-text-2);
 }
 
 /* Content */
@@ -79,7 +79,7 @@
 }
 
 .control-clusters-content::-webkit-scrollbar { width: 5px; }
-.control-clusters-content::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
+.control-clusters-content::-webkit-scrollbar-track { background: var(--theme-bg); border-radius: 3px; }
 .control-clusters-content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 .control-clusters-content::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
@@ -89,8 +89,8 @@
 
 /* Período */
 .periodo-info {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--theme-surface-2);
+  border: 1px solid var(--theme-border);
   border-radius: 10px;
   padding: 12px;
 }
@@ -105,7 +105,7 @@
 .periodo-label {
   font-size: 11px;
   font-weight: 700;
-  color: #374151;
+  color: var(--theme-text-2);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -126,7 +126,7 @@
 .fecha-input-group label {
   font-size: 10px;
   font-weight: 700;
-  color: #64748b;
+  color: var(--theme-text-3);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -134,12 +134,12 @@
 .fecha-input {
   width: 100%;
   padding: 7px 8px;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--theme-border);
   border-radius: 7px;
   font-size: 12px;
   font-weight: 600;
-  color: #1f2937;
-  background: #ffffff;
+  color: var(--theme-text);
+  background: var(--theme-surface);
   transition: all 0.2s ease;
   cursor: pointer;
   box-sizing: border-box;
@@ -188,7 +188,7 @@
 .radio-control label {
   font-size: 12px;
   font-weight: 700;
-  color: #374151;
+  color: var(--theme-text-2);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -247,14 +247,14 @@
 /* Tipos de incidencias */
 .filtros-incidencias {
   padding-bottom: 14px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--theme-border);
 }
 
 .filtros-incidencias h4 {
   margin: 0 0 10px 0;
   font-size: 11px;
   font-weight: 700;
-  color: #374151;
+  color: var(--theme-text-2);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -276,8 +276,8 @@
   transition: all 0.15s ease;
   font-size: 12px;
   font-weight: 500;
-  color: #374151;
-  background: #f8fafc;
+  color: var(--theme-text-2);
+  background: var(--theme-surface-2);
 }
 
 .filtro-checkbox:hover {
@@ -306,12 +306,12 @@
   gap: 6px;
   padding: 6px 8px;
   border-radius: 7px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background: var(--theme-bg);
+  border: 1px solid var(--theme-border);
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  color: var(--theme-text-2);
   transition: all 0.15s ease;
   user-select: none;
 }
@@ -342,7 +342,7 @@
 .filtro-checkbox.sub {
   font-size: 11px;
   padding: 4px 7px;
-  background: #f8fafc;
+  background: var(--theme-surface-2);
 }
 
 /* Estadísticas */
@@ -356,7 +356,7 @@
   margin: 0 0 8px 0;
   font-size: 11px;
   font-weight: 700;
-  color: #374151;
+  color: var(--theme-text-2);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -366,14 +366,14 @@
   justify-content: space-between;
   align-items: center;
   padding: 7px 0;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--theme-border-2);
 }
 
 .stat-item:last-child { border-bottom: none; }
 
 .stat-label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--theme-text-3);
 }
 
 .stat-value {
@@ -387,7 +387,7 @@
   margin: 0 0 8px 0;
   font-size: 11px;
   font-weight: 700;
-  color: #374151;
+  color: var(--theme-text-2);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -398,7 +398,7 @@
   gap: 8px;
   padding: 5px 0;
   font-size: 12px;
-  color: #374151;
+  color: var(--theme-text-2);
 }
 
 .color-box {

@@ -3,7 +3,7 @@
   left: 10px;
   top: var(--cc-top, 10px);
   width: 320px;
-  background: white;
+  background: var(--theme-surface);
   border-radius: 8px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   z-index: 1000;
@@ -26,7 +26,7 @@
 .control-bodycams-header {
   padding: 12px 15px;
   background: linear-gradient(to right, #fdf4ff, #fff);
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--theme-border);
   cursor: pointer;
   user-select: none;
 }
@@ -41,14 +41,14 @@
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--theme-text);
   flex-grow: 1;
 }
 
 .collapse-btn {
   background: none;
   border: none;
-  color: #6b7280;
+  color: var(--theme-text-3);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -60,7 +60,7 @@
 
 .collapse-btn:hover {
   background-color: #f3f4f6;
-  color: #1f2937;
+  color: var(--theme-text);
 }
 
 .control-bodycams-content {
@@ -92,13 +92,13 @@
   left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--theme-text-4);
 }
 
 .busqueda-input {
   width: 100%;
   padding: 8px 10px 8px 36px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--theme-border);
   border-radius: 6px;
   font-size: 13px;
   outline: none;
@@ -136,10 +136,10 @@
 .stats-compactas {
   display: flex;
   justify-content: space-around;
-  background: #f9fafb;
+  background: var(--theme-surface-2);
   padding: 10px;
   border-radius: 6px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--theme-border);
 }
 
 .stat-item {
@@ -157,7 +157,7 @@
 
 .stat-label {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--theme-text-3);
   font-weight: 500;
   text-transform: uppercase;
 }
@@ -197,14 +197,14 @@
   justify-content: center;
   gap: 10px;
   padding: 15px;
-  color: #6b7280;
+  color: var(--theme-text-3);
   font-size: 13px;
 }
 
 .spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--theme-border);
   border-top-color: #f97316;
   border-radius: 50%;
   animation: spin 1s linear infinite;

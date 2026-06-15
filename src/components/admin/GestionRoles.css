@@ -43,7 +43,7 @@
 }
 
 .role-description {
-  color: #64748b;
+  color: var(--theme-text-3);
   font-size: 13px;
 }
 
@@ -73,8 +73,8 @@
 
 .users-badge {
   background: #fafafa;
-  color: #374151;
-  border: 1px solid #e5e7eb;
+  color: var(--theme-text-2);
+  border: 1px solid var(--theme-border);
 }
 
 /* ── Modal: layout flex para scroll correcto ───────────────────────────────── */
@@ -117,8 +117,8 @@
   justify-content: flex-end;
   gap: 10px;
   padding: 14px 22px;
-  background: white;
-  border-top: 1px solid #e5e7eb;
+  background: var(--theme-surface);
+  border-top: 1px solid var(--theme-border);
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
 }
 
@@ -133,11 +133,11 @@
   gap: 7px;
   font-size: 13px;
   font-weight: 700;
-  color: #374151;
+  color: var(--theme-text-2);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--theme-border);
   margin-bottom: 14px;
 }
 
@@ -156,7 +156,7 @@
 
 /* ── Tabla de módulos ──────────────────────────────────────────────────────── */
 .modules-table {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--theme-border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -164,21 +164,21 @@
 .modules-table-header {
   display: grid;
   grid-template-columns: 1fr 60px 60px 60px 60px;
-  background: #f8fafc;
+  background: var(--theme-surface-2);
   padding: 8px 12px;
   font-size: 11px;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--theme-text-3);
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--theme-border);
   text-align: center;
 }
 
 .modules-table-header span:first-child { text-align: left; }
 
 .modules-table-row-wrapper {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--theme-border-2);
 }
 .modules-table-row-wrapper:last-child { border-bottom: none; }
 .modules-table-row-wrapper.enabled { background: #f0fdf4; }
@@ -224,8 +224,8 @@
 }
 
 .module-visible-fields.disabled {
-  background: #fafafa;
-  border-top-color: #e5e7eb;
+  background: var(--theme-surface-2);
+  border-top-color: var(--theme-border);
   opacity: 0.65;
 }
 
@@ -237,7 +237,7 @@
 }
 
 .module-visible-fields.disabled .module-fields-header {
-  color: #9ca3af;
+  color: var(--theme-text-4);
 }
 
 .module-fields-label {
@@ -275,9 +275,9 @@
   border-radius: 6px;
   cursor: pointer;
   font-size: 12.5px;
-  color: #374151;
-  background: white;
-  border: 1px solid #e5e7eb;
+  color: var(--theme-text-2);
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
   transition: all 0.12s;
   user-select: none;
 }
@@ -292,13 +292,13 @@
 
 .module-fields-hint {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--theme-text-3);
   font-style: italic;
 }
 
 .module-label {
   font-size: 13.5px;
-  color: #1e293b;
+  color: var(--theme-text);
   text-align: left;
 }
 
@@ -352,7 +352,7 @@
 
 /* ── Grupos de capas ───────────────────────────────────────────────────────── */
 .layer-group {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--theme-border);
   border-radius: 8px;
   margin-bottom: 10px;
   overflow: hidden;
@@ -363,30 +363,30 @@
   align-items: center;
   justify-content: space-between;
   padding: 9px 12px;
-  background: #f8fafc;
+  background: var(--theme-surface-2);
   cursor: pointer;
   user-select: none;
   transition: background 0.12s;
 }
 
-.layer-group-header:hover { background: #f1f5f9; }
+.layer-group-header:hover { background: var(--theme-bg); }
 
 .layer-group-left {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #374151;
+  color: var(--theme-text-2);
 }
 
 .layer-group-name {
   font-size: 13px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--theme-text);
 }
 
 .layer-group-count {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--theme-text-3);
   background: #e2e8f0;
   padding: 1px 7px;
   border-radius: 10px;
@@ -401,9 +401,9 @@
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 5px;
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #374151;
+  border: 1px solid var(--theme-border);
+  background: var(--theme-surface);
+  color: var(--theme-text-2);
   cursor: pointer;
   font-weight: 500;
   transition: all 0.12s;
@@ -420,7 +420,7 @@
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 2px;
   padding: 8px;
-  background: white;
+  background: var(--theme-surface);
 }
 
 .layer-item {
@@ -431,12 +431,12 @@
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
-  color: #374151;
+  color: var(--theme-text-2);
   transition: background 0.1s;
   user-select: none;
 }
 
-.layer-item:hover { background: #f1f5f9; }
+.layer-item:hover { background: var(--theme-bg); }
 .layer-item.checked {
   background: #f0fdf4;
   color: #15803d;
@@ -494,7 +494,7 @@
 
 /* ── Sección jurisdicciones ────────────────────────────────────────────────── */
 .jurisdiction-section {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--theme-border);
   border-radius: 10px;
   overflow: hidden;
   margin-top: 4px;
@@ -505,8 +505,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--theme-surface-2);
+  border-bottom: 1px solid var(--theme-border);
 }
 
 .jurisdiction-header-left {
@@ -518,7 +518,7 @@
 .jurisdiction-title {
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: var(--theme-text-2);
 }
 
 .jurisdiction-badge {
@@ -556,8 +556,8 @@
 
 .jur-action-none {
   background: #f3f4f6;
-  color: #6b7280;
-  border-color: #e5e7eb;
+  color: var(--theme-text-3);
+  border-color: var(--theme-border);
 }
 .jur-action-none:hover { background: #e5e7eb; }
 
@@ -565,7 +565,7 @@
   padding: 10px;
   max-height: 220px;
   overflow-y: auto;
-  background: #fff;
+  background: var(--theme-input-bg);
 }
 
 .jurisdiction-loading,
@@ -575,7 +575,7 @@
   gap: 8px;
   padding: 10px 6px;
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--theme-text-4);
   font-style: italic;
 }
 
@@ -590,7 +590,7 @@
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--theme-border);
   border-radius: 8px;
   cursor: pointer;
   background: #fafafa;
@@ -599,8 +599,8 @@
 }
 
 .jurisdiction-item:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+  background: var(--theme-bg);
+  border-color: var(--theme-text-5);
 }
 
 .jurisdiction-item.checked {
@@ -610,7 +610,7 @@
 
 .jurisdiction-item-label {
   font-size: 13px;
-  color: #374151;
+  color: var(--theme-text-2);
   font-weight: 400;
   line-height: 1.3;
 }

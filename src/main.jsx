@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { MapProvider } from './context/MapContext.jsx';
 import { MapLayoutProvider } from './context/MapLayoutContext.jsx';
+import { ThemeProvider } from './context/ThemeContext.jsx';
 import Router from './Router.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import 'leaflet/dist/leaflet.css';
@@ -27,15 +28,17 @@ const queryClient = new QueryClient({
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <MapProvider>
-            <MapLayoutProvider>
-              <Router />
-            </MapLayoutProvider>
-          </MapProvider>
-        </AuthProvider>
-      </QueryClientProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <MapProvider>
+              <MapLayoutProvider>
+                <Router />
+              </MapLayoutProvider>
+            </MapProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   </React.StrictMode>
 );
