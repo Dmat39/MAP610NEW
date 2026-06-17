@@ -1,5 +1,5 @@
 // CapaJurisdiccion.jsx
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, memo } from 'react';
 import { GeoJSON } from 'react-leaflet';
 import { logger } from '../../../utils/logger.js';
 
@@ -117,4 +117,4 @@ const CapaJurisdiccion = ({
   );
 };
 
-export default CapaJurisdiccion;
+export default memo(CapaJurisdiccion);

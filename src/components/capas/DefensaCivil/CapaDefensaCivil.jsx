@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { Marker, Popup, LayerGroup, Tooltip } from 'react-leaflet';
 import FiltroGiro from '../../filtros/FiltroGiro';
 import { logger } from '../../../utils/logger.js';
@@ -188,4 +188,4 @@ const CapaDefensaCivil = ({ visible }) => {
   );
 };
 
-export default CapaDefensaCivil;
+export default memo(CapaDefensaCivil);

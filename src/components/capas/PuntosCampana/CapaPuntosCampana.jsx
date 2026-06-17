@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { CircleMarker, Polygon, Popup, Tooltip, LayerGroup } from 'react-leaflet';
 import { Filter, RotateCcw, ChevronUp, ChevronDown } from 'lucide-react';
@@ -387,4 +387,4 @@ const CapaPuntosCampana = ({ visible }) => {
   );
 };
 
-export default CapaPuntosCampana;
+export default memo(CapaPuntosCampana);

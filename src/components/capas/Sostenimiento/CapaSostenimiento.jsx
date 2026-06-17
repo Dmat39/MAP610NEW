@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { Marker, Popup, LayerGroup, Tooltip } from 'react-leaflet';
 import { logger } from '../../../utils/logger.js';
 import { createSostenimientoIcon } from '../../../utils/adaptiveIcons';
@@ -149,4 +149,4 @@ const CapaSostenimiento = ({ visible }) => {
   );
 };
 
-export default CapaSostenimiento;
+export default memo(CapaSostenimiento);

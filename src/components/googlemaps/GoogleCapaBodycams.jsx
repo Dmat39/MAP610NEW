@@ -20,7 +20,7 @@ const GoogleCapaBodycams = ({ visible, bodycamSeleccionada }) => {
     };
 
     fetchBodycams();
-    const interval = setInterval(fetchBodycams, 15000);
+    const interval = setInterval(fetchBodycams, 30000);
 
     return () => clearInterval(interval);
   }, [visible]);

@@ -1,10 +1,10 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useClusterWorker } from '../../hooks/useClusterWorker';
 import ExcelJS from 'exceljs';
 import {
   FileDown, Filter, RefreshCw, CalendarDays,
   ChevronDown, ChevronRight, BarChart2, AlertTriangle, ScatterChart, SlidersHorizontal,
 } from 'lucide-react';
-import { realizarClustering } from '../../utils/clustering.utils.js';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -254,9 +254,11 @@ const ReporteIncidencias = () => {
   };
   const activeItems = ALL_ITEMS.filter(i=>selected[i.key]);
 
-  // Clusters calculados en tiempo real desde rawData
-  const clusters = useMemo(() => {
-    if (!rawData || modo !== 'clusters') return [];
+  // Clusters calculados en tiempo real desde rawData (en Web Worker para no bloquear el hilo principal)
+  const clusterAsync = useClusterWorker();
+  const [clusters, setClusters] = useState([]);
+  useEffect(() => {
+    if (!rawData || modo !== 'clusters') { setClusters([]); return; }
     const allPuntos = rawData.flatMap(({ label, registros }) =>
       registros.map(r => ({ ...r, Tipo: label }))
     );
@@ -265,8 +267,16 @@ const ReporteIncidencias = () => {
       const k = p.codigo || `${p.Latitud.toFixed(5)},${p.Longitud.toFixed(5)}`;
       if (seen.has(k)) return false; seen.add(k); return true;
     });
-    return realizarClustering(uniq, radio).sort((a,b)=>b.cantidad-a.cantidad);
-  }, [rawData, radio, modo]);
+    let cancelled = false;
+    clusterAsync(uniq, radio).then(result => {
+      if (cancelled) return;
+      setClusters(result.sort((a,b)=>b.cantidad-a.cantidad));
+    }).catch(err => {
+      if (cancelled || err?.name === 'AbortError') return;
+      setClusters([]);
+    });
+    return () => { cancelled = true; };
+  }, [rawData, radio, modo, clusterAsync]);
 
   const cargar = useCallback(async () => {
     if (!activeItems.length) return;

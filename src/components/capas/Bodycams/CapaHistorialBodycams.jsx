@@ -94,4 +94,4 @@ const CapaHistorialBodycams = ({ dataRecorrido }) => {
   );
 };
 
-export default CapaHistorialBodycams;
+export default React.memo(CapaHistorialBodycams);

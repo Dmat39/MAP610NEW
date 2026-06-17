@@ -1,5 +1,5 @@
 // CapaCamarasVecinales.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { Marker, Popup, Tooltip, LayerGroup, useMap } from "react-leaflet";
 import { useAuth } from "../../../context/AuthContext";
 import L from "leaflet";
@@ -206,13 +206,18 @@ const getZoomNivelVecinal = zoom => {
   return 3;
 };
 
-// Pin moderno: misma forma drop-pin que municipales, pero fondo blanco + borde/ícono coloreado
+// Cache de iconos para evitar recrearlos en cada render
+const _iconCacheVecinal = new Map();
+
 const crearIconoVecinalModerno = (marca, nivelZoom) => {
+  const cacheKey = `${marca}-${nivelZoom}`;
+  if (_iconCacheVecinal.has(cacheKey)) return _iconCacheVecinal.get(cacheKey);
+
   const color = COLORES_MARCA[marca] || COLOR_VECINAL_DEFAULT;
+  let icon;
 
   if (nivelZoom >= 3) {
-    // Nivel 3: Drop-pin outline (fondo blanco, borde y cámara del color de la marca)
-    return new L.DivIcon({
+    icon = new L.DivIcon({
       html: `<div class="vec-pin-wrap">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="28" viewBox="0 0 28 36" style="display:block">
           <path d="M14 0C6.27 0 0 6.27 0 14c0 9.75 14 22 14 22S28 23.75 28 14C28 6.27 21.73 0 14 0z"
@@ -229,27 +234,26 @@ const crearIconoVecinalModerno = (marca, nivelZoom) => {
       popupAnchor: [0, -28],
       className: '',
     });
-  }
-
-  if (nivelZoom === 2) {
-    // Nivel 2: Teardrop outline sin ícono
-    return new L.DivIcon({
+  } else if (nivelZoom === 2) {
+    icon = new L.DivIcon({
       html: `<div class="vec-pin-mid" style="--vec-color:${color};"></div>`,
       iconSize: [14, 18],
       iconAnchor: [7, 18],
       popupAnchor: [0, -18],
       className: '',
     });
+  } else {
+    icon = new L.DivIcon({
+      html: `<div class="vec-pin-dot" style="background:${color};"></div>`,
+      iconSize: [8, 8],
+      iconAnchor: [4, 4],
+      popupAnchor: [0, -8],
+      className: '',
+    });
   }
 
-  // Nivel 1: Punto pequeño
-  return new L.DivIcon({
-    html: `<div class="vec-pin-dot" style="background:${color};"></div>`,
-    iconSize: [8, 8],
-    iconAnchor: [4, 4],
-    popupAnchor: [0, -8],
-    className: '',
-  });
+  _iconCacheVecinal.set(cacheKey, icon);
+  return icon;
 };
 
 // Función para crear icono personalizado según la marca (legado, no usado)
@@ -430,45 +434,8 @@ const CapaCamarasVecinales = ({ visible }) => {
   if (!visible) return null;
 
   // Mostrar mensajes de estado
-  if (cargando) {
-    return (
-      <LayerGroup>
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: 'white',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-          zIndex: 1000
-        }}>
-          Cargando cámaras vecinales...
-        </div>
-      </LayerGroup>
-    );
-  }
-
-  if (error) {
-    return (
-      <LayerGroup>
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: '#fee',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-          zIndex: 1000,
-          color: '#c00'
-        }}>
-          Error: {error}
-        </div>
-      </LayerGroup>
-    );
+  if (cargando || error) {
+    return <LayerGroup />;
   }
 
   // Filtrar cámaras por marca
@@ -501,4 +468,4 @@ const CapaCamarasVecinales = ({ visible }) => {
   );
 };
 
-export default CapaCamarasVecinales;
+export default memo(CapaCamarasVecinales);

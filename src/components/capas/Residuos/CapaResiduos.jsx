@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { LayerGroup, Marker, Popup, Tooltip } from "react-leaflet";
 import ClipLoader from "react-spinners/ClipLoader";
 import "./CapaResiduos.css";
@@ -200,4 +200,4 @@ const CapaResiduos = ({ visible }) => {
   );
 };
 
-export default CapaResiduos; 
+export default memo(CapaResiduos); 

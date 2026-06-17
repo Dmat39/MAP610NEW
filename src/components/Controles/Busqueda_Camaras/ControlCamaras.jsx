@@ -588,4 +588,4 @@ const ControlCamaras = ({
   );
 };
 
-export default ControlCamaras;
+export default React.memo(ControlCamaras);

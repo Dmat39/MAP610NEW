@@ -133,4 +133,4 @@ const CapaBusquedaDirecciones = ({ visible, resultados = [], resultadoSelecciona
   );
 };
 
-export default CapaBusquedaDirecciones;
+export default React.memo(CapaBusquedaDirecciones);

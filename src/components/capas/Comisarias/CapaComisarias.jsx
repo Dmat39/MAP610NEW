@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { Marker, Popup, LayerGroup, Tooltip } from 'react-leaflet';
 import { createComisariaIcon } from '../../../utils/adaptiveIcons';
 import { logger } from '../../../utils/logger.js';
@@ -97,4 +97,4 @@ const CapaComisarias = ({ visible }) => {
   );
 };
 
-export default CapaComisarias;
+export default memo(CapaComisarias);

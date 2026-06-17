@@ -88,7 +88,7 @@ const ControlRadios = ({
   useEffect(() => {
     if (!visible) return;
     cargarRadios();
-    const interval = setInterval(cargarRadios, 15000);
+    const interval = setInterval(cargarRadios, 30000);
     return () => clearInterval(interval);
   }, [visible]);
 

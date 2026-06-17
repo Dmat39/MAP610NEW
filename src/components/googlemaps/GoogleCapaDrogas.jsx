@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, memo } from "react";
 import { useDrogasQuery } from "../../hooks/useIncidenciasQuery";
 
 const getColorByTurno = (turno = "") => {
@@ -193,4 +193,4 @@ const GoogleCapaDrogas = ({ visible, filtros = null, map, google }) => {
   return null;
 };
 
-export default GoogleCapaDrogas;
+export default memo(GoogleCapaDrogas);

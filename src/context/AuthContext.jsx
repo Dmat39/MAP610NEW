@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import authService from '../services/authService';
 import rolesService from '../services/rolesService';
@@ -75,8 +75,8 @@ export const AuthProvider = ({ children }) => {
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
 
-    // Polling cada 10 segundos para detección casi inmediata
-    const interval = setInterval(checkPerms, 10_000);
+    // Polling cada 30s — el listener de visibilitychange ya cubre el caso de regreso a la pestaña
+    const interval = setInterval(checkPerms, 30_000);
 
     return () => {
       clearInterval(interval);
@@ -84,25 +84,22 @@ export const AuthProvider = ({ children }) => {
     };
   }, [user?.username]);
 
-  const login = async (username, password) => {
+  const login = useCallback(async (username, password) => {
     try {
       const data = await authService.login(username, password);
-      // console.log('Datos recibidos en login:', data); // COMENTADO: No exponer datos de login en producción
-      // console.log('Usuario a setear:', data.user); // COMENTADO: No exponer datos de usuario en producción
       setUser(data.user);
-      // console.log('isAuthenticated será:', !!data.user); // COMENTADO: No exponer estado de autenticación en producción
       return { success: true, data };
     } catch (error) {
       console.error('Error en AuthContext login:', error);
       return { success: false, error: error.message };
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await authService.logout();
     queryClient.clear();
     setUser(null);
-  };
+  }, [queryClient]);
 
   const role = user?.role?.toUpperCase() || null;
   const isSuperAdmin = role === 'SUPERADMIN';
@@ -112,21 +109,21 @@ export const AuthProvider = ({ children }) => {
   const isViewer = role === 'VIEWER';
   const isCodisec = role === 'CODISEC';
   const isPnp = role === 'PNP';
-  const hasRole = (r) => role === r?.toUpperCase();
-  const hasAnyRole = (roles) => roles.some(r => r?.toUpperCase() === role);
+  const hasRole = useCallback((r) => role === r?.toUpperCase(), [role]);
+  const hasAnyRole = useCallback((roles) => roles.some(r => r?.toUpperCase() === role), [role]);
 
   // Verifica si el usuario puede acceder a un módulo.
-  const hasModuleAccess = (moduleKey) => {
+  const hasModuleAccess = useCallback((moduleKey) => {
     if (role === 'SUPERADMIN') return true;
     if (!customRolePerms) return true;
     const perm = customRolePerms.module_permissions?.find(p => p.module_key === moduleKey);
     if (!perm) return false;
     // can_access controla el acceso al panel; fallback true para datos previos sin este campo
     return perm.can_access ?? true;
-  };
+  }, [role, customRolePerms]);
 
   // Verifica si el usuario puede ejecutar una operación dentro de un módulo.
-  const hasModuleOp = (moduleKey, op = 'create') => {
+  const hasModuleOp = useCallback((moduleKey, op = 'create') => {
     if (role === 'SUPERADMIN') return true;
     if (!customRolePerms) return true;
     const perm = customRolePerms.module_permissions?.find(p => p.module_key === moduleKey);
@@ -135,10 +132,10 @@ export const AuthProvider = ({ children }) => {
     if (op === 'edit')   return perm.can_edit   ?? false;
     if (op === 'delete') return perm.can_delete  ?? false;
     return false;
-  };
+  }, [role, customRolePerms]);
 
   // Verifica si el usuario puede ver una capa del mapa.
-  const hasLayerAccess = (layerKey) => {
+  const hasLayerAccess = useCallback((layerKey) => {
     if (role === 'SUPERADMIN') return true;
     if (!customRolePerms) return true;
     const perms = customRolePerms.layer_permissions ?? [];
@@ -151,19 +148,19 @@ export const AuthProvider = ({ children }) => {
     if (HURTO_SUBTIPO_KEYS.includes(layerKey) && perms.some(p => p.layer_key === 'hurtos')) return true;
     if (layerKey === 'danos' && perms.some(p => p.layer_key === 'danos')) return true;
     return false;
-  };
+  }, [role, customRolePerms]);
 
   // Devuelve el array de campos visibles para un módulo.
   // null = sin restricción (ver todo), [] = sin restricción (ver todo), ['x','y'] = solo esos campos.
-  const getVisibleFields = (moduleKey) => {
+  const getVisibleFields = useCallback((moduleKey) => {
     if (role === 'SUPERADMIN') return null;
     if (!customRolePerms) return null;
     const perm = customRolePerms.module_permissions?.find(p => p.module_key === moduleKey);
     if (!perm) return null;
     return perm.visible_fields ?? null;
-  };
+  }, [role, customRolePerms]);
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     login,
     logout,
@@ -184,7 +181,12 @@ export const AuthProvider = ({ children }) => {
     hasLayerAccess,
     getVisibleFields,
     customRolePerms,
-  };
+  }), [
+    user, login, logout, loading, customRoleLoading, role,
+    isSuperAdmin, isAdmin, isSupervisor, isOperator, isViewer, isCodisec, isPnp,
+    hasRole, hasAnyRole, hasModuleAccess, hasModuleOp, hasLayerAccess, getVisibleFields,
+    customRolePerms,
+  ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

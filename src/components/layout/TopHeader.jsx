@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Menu } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import './TopHeader.css';
 
 const PAGE_META = {
@@ -55,10 +56,23 @@ const TopHeader = ({ onMenuToggle, isMobile }) => {
   const initials = user?.username ? user.username.substring(0, 2).toUpperCase() : 'U';
   const avatarColor = getRoleColor(user?.role);
 
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('es-PE', {
-    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
-  });
+  const [dateStr, setDateStr] = useState(() =>
+    new Date().toLocaleDateString('es-PE', {
+      weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+    })
+  );
+
+  useEffect(() => {
+    const update = () =>
+      setDateStr(new Date().toLocaleDateString('es-PE', {
+        weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+      }));
+    // Actualizar a medianoche
+    const now = new Date();
+    const msHastaManana = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) - now;
+    const timer = setTimeout(() => { update(); }, msHastaManana);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <header className="top-header">

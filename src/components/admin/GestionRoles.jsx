@@ -85,6 +85,12 @@ const AVAILABLE_LAYERS = [
   { key: 'clusters',                 label: 'Clusters de Incidencias',    group: 'Herramientas' },
   { key: 'clusterCombinado',         label: 'Cluster Combinado',          group: 'Herramientas' },
   { key: 'clusterPNP',               label: 'Cluster PNP',                group: 'Herramientas' },
+  // ── Serenazgo GPS ────────────────────────────────────────────────────────────
+  { key: 'bodycams',                 label: 'Bodycams / Patrullaje',      group: 'Serenazgo GPS' },
+  { key: 'radios',                   label: 'Radios GPS',                 group: 'Serenazgo GPS' },
+  { key: 'rutasBodycams',            label: 'Rutas Bodycams',             group: 'Serenazgo GPS' },
+  { key: 'puntosCercanos',           label: 'Puntos Cercanos GPS',        group: 'Serenazgo GPS' },
+  { key: 'cercosGps',                label: 'Cercos GPS',                 group: 'Serenazgo GPS' },
 ];
 
 const LAYER_GROUPS = [...new Set(AVAILABLE_LAYERS.map(l => l.group))];

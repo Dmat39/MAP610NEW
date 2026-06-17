@@ -28,16 +28,22 @@ const colorMap = {
   gris:     '#6b7280',
 };
 
+// Cache de iconos por color para evitar recrear DivIcon en cada polling update
+const _iconCacheRadios = new Map();
+
 const crearIcono = (hexacolor) => {
   const color = hexacolor || '#6366f1';
+  if (_iconCacheRadios.has(color)) return _iconCacheRadios.get(color);
   const svg = svgRadio.replaceAll('#6366f1', color);
-  return new L.DivIcon({
+  const icon = new L.DivIcon({
     html: `<div style="background:white;border-radius:50%;padding:4px;box-shadow:0 2px 5px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">${svg}</div>`,
     iconSize: [36, 36],
     iconAnchor: [18, 18],
     popupAnchor: [0, -18],
     className: '',
   });
+  _iconCacheRadios.set(color, icon);
+  return icon;
 };
 
 const CapaRadios = ({ visible, radioSeleccionado }) => {
@@ -62,7 +68,7 @@ const CapaRadios = ({ visible, radioSeleccionado }) => {
     };
 
     fetchRadios(true);
-    const interval = setInterval(() => fetchRadios(false), 15000);
+    const interval = setInterval(() => fetchRadios(false), 30000);
     return () => clearInterval(interval);
   }, [visible]);
 
@@ -81,21 +87,7 @@ const CapaRadios = ({ visible, radioSeleccionado }) => {
 
   if (!visible) return null;
 
-  if (cargando) return (
-    <LayerGroup>
-      <Marker
-        position={[-11.9699, -76.998]}
-        icon={new L.DivIcon({
-          html: `<div style="background:white;padding:8px 12px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.2);font-size:12px;color:#6366f1;white-space:nowrap;display:flex;align-items:center;gap:6px;">
-            <div style="width:12px;height:12px;border:2px solid #e5e7eb;border-top-color:#6366f1;border-radius:50%;animation:spin 1s linear infinite"></div>
-            Cargando radios GPS...
-          </div>
-          <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`,
-          iconSize: [170, 36], iconAnchor: [85, 18], className: '',
-        })}
-      />
-    </LayerGroup>
-  );
+  if (cargando) return <LayerGroup />;
 
   return (
     <LayerGroup>

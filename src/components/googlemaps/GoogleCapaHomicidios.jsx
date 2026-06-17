@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, memo } from "react";
 import { useHomicidiosQuery } from "../../hooks/useIncidenciasQuery";
 
 // Función para obtener color por turno (mantenida localmente para el renderizado)
@@ -201,4 +201,4 @@ const GoogleCapaHomicidios = ({ visible, filtros = null, map, google }) => {
   return null;
 };
 
-export default GoogleCapaHomicidios;
+export default memo(GoogleCapaHomicidios);

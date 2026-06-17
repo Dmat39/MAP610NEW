@@ -265,4 +265,4 @@ const CapaUbicadorPunto = ({ visible }) => {
   );
 };
 
-export default CapaUbicadorPunto;
+export default React.memo(CapaUbicadorPunto);

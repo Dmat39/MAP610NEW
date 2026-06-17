@@ -1,6 +1,6 @@
 .control-radios {
-  position: absolute;
-  left: 10px;
+  position: fixed;
+  left: calc(var(--sidebar-width, 70px) + 15px);
   top: var(--cr-top, 10px);
   width: 320px;
   background: var(--theme-surface);
@@ -15,7 +15,6 @@
 }
 
 .control-radios.google-mode {
-  left: 10px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 

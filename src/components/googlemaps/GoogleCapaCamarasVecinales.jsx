@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { useMapContext } from "../../context/MapContext";
 import camarasVecinalesService from "../../services/camarasVecinalesService";
 
@@ -182,4 +182,4 @@ const GoogleCapaCamarasVecinales = ({ visible, map, google }) => {
   return null; // Este componente no renderiza JSX
 };
 
-export default GoogleCapaCamarasVecinales;
+export default memo(GoogleCapaCamarasVecinales);

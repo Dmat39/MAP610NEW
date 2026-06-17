@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 
 const GoogleCapaJurisdiccion = ({ map, google, ubicadorActivo = false, camaraConVision = null, camaraSeleccionada = null }) => {
   const [data, setData] = useState(null);
@@ -75,4 +75,4 @@ const GoogleCapaJurisdiccion = ({ map, google, ubicadorActivo = false, camaraCon
   return null; // Este componente no renderiza JSX
 };
 
-export default GoogleCapaJurisdiccion; 
+export default memo(GoogleCapaJurisdiccion);

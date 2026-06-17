@@ -1,6 +1,6 @@
 .ctrl-cg {
-  position: absolute;
-  left: 10px;
+  position: fixed;
+  left: calc(var(--sidebar-width, 70px) + 15px);
   top: var(--cg-top, 10px);
   width: 300px;
   background: var(--theme-surface);

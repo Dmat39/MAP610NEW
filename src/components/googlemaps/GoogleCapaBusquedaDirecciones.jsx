@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 
 const GoogleCapaBusquedaDirecciones = ({ visible, resultados = [], resultadoSeleccionado = null, map, google }) => {
   const [markers, setMarkers] = useState([]);
@@ -108,4 +108,4 @@ const GoogleCapaBusquedaDirecciones = ({ visible, resultados = [], resultadoSele
   return null; // Este componente no renderiza JSX
 };
 
-export default GoogleCapaBusquedaDirecciones; 
+export default memo(GoogleCapaBusquedaDirecciones);

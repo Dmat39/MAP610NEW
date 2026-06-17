@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { LayerGroup, Marker, Popup, Polygon } from 'react-leaflet';
 import { useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
@@ -53,26 +53,44 @@ const CapaCercosGPS = ({ visible, zonas, dibujando, puntosDibujo, onPuntoAgregad
       } catch {}
     };
     fetch_();
-    const interval = setInterval(fetch_, 15000);
+    const interval = setInterval(fetch_, 30000);
     return () => clearInterval(interval);
   }, [visible]);
 
-  useEffect(() => {
-    if (!visible || !zonas.length || !radios.length) return;
-    const fuera = radios.filter(r => {
-      return zonas.some(z => {
+  // Calcula una sola vez (por cambio de radios/zonas) qué radios están asignadas
+  // a alguna zona activa y si están dentro o fuera de su polígono. Antes este
+  // cálculo se repetía en el render (para los íconos) y en un efecto aparte
+  // (para onRadiosFuera), duplicando el costo de puntoDentroPoligono en cada render.
+  const radiosClasificados = useMemo(() => {
+    if (!zonas.length || !radios.length) return [];
+    return radios
+      .filter(r => zonas.some(z => {
         if (!z.activo) return false;
         try {
-          const issiAsignados = JSON.parse(z.radios_issi || '[]');
-          if (issiAsignados.length > 0 && !issiAsignados.includes(String(r.issi))) return false;
-          const gj = JSON.parse(z.geojson);
-          const coords = gj.geometry?.coordinates?.[0] || gj.coordinates?.[0] || [];
-          return !puntoDentroPoligono(r.latitud, r.longitud, coords);
-        } catch { return false; }
+          const issi = JSON.parse(z.radios_issi || '[]');
+          return issi.length === 0 || issi.includes(String(r.issi));
+        } catch { return true; }
+      }))
+      .map(r => {
+        let fuera = false;
+        for (const z of zonas) {
+          if (!z.activo) continue;
+          try {
+            const issiAsignados = JSON.parse(z.radios_issi || '[]');
+            if (issiAsignados.length > 0 && !issiAsignados.includes(String(r.issi))) continue;
+            const gj = JSON.parse(z.geojson);
+            const coords = gj.geometry?.coordinates?.[0] || gj.coordinates?.[0] || [];
+            if (!puntoDentroPoligono(r.latitud, r.longitud, coords)) { fuera = true; break; }
+          } catch {}
+        }
+        return { radio: r, fuera };
       });
-    });
-    if (onRadiosFuera) onRadiosFuera(fuera);
-  }, [radios, zonas, visible]);
+  }, [radios, zonas]);
+
+  useEffect(() => {
+    if (!visible || !zonas.length || !radios.length) return;
+    if (onRadiosFuera) onRadiosFuera(radiosClasificados.filter(rc => rc.fuera).map(rc => rc.radio));
+  }, [radiosClasificados, visible, zonas.length, radios.length]);
 
   if (!visible) return null;
 
@@ -116,26 +134,7 @@ const CapaCercosGPS = ({ visible, zonas, dibujando, puntosDibujo, onPuntoAgregad
       ))}
 
       {/* Radios clasificadas por zona — solo las asignadas a al menos una zona activa */}
-      {zonas.length > 0 && radios.filter(r => {
-        return zonas.some(z => {
-          if (!z.activo) return false;
-          try {
-            const issi = JSON.parse(z.radios_issi || '[]');
-            return issi.length === 0 || issi.includes(String(r.issi));
-          } catch { return true; }
-        });
-      }).map(r => {
-        let fuera = false;
-        for (const z of zonas) {
-          if (!z.activo) continue;
-          try {
-            const issiAsignados = JSON.parse(z.radios_issi || '[]');
-            if (issiAsignados.length > 0 && !issiAsignados.includes(String(r.issi))) continue;
-            const gj = JSON.parse(z.geojson);
-            const coords = gj.geometry?.coordinates?.[0] || gj.coordinates?.[0] || [];
-            if (!puntoDentroPoligono(r.latitud, r.longitud, coords)) { fuera = true; break; }
-          } catch {}
-        }
+      {radiosClasificados.map(({ radio: r, fuera }) => {
         const icono = fuera ? crearIconoFuera() : crearIconoDentro(r.hexacolor);
         return (
           <Marker key={`cerco-r-${r.issi}`} position={[r.latitud, r.longitud]} icon={icono} zIndexOffset={fuera ? 1600 : 1400}>

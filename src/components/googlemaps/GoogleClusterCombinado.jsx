@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { logger } from '../../utils/logger';
-import { realizarClustering, obtenerColorCluster } from '../../utils/clustering.utils.js';
+import { useClusterWorker } from '../../hooks/useClusterWorker';
+import { obtenerColorCluster } from '../../utils/clustering.utils.js';
 const API_URL = import.meta.env.VITE_API_URL;
 
 const SERENOS_TIPOS = [
@@ -21,6 +22,7 @@ const GoogleClusterCombinado = ({ visible, map, google, radio = 50, fechas }) =>
   const circlesRef = useRef([]);
   const [infoWindow, setInfoWindow] = useState(null);
   const abortControllerRef = useRef(null);
+  const clusterAsync = useClusterWorker();
 
   useEffect(() => {
     if (!map || !google || infoWindow) return;
@@ -165,12 +167,13 @@ const GoogleClusterCombinado = ({ visible, map, google, radio = 50, fechas }) =>
         .catch(err => { if (err.name === 'AbortError') return []; logger.warn('⚠️ PNP cluster:', err.message); return []; });
 
       Promise.all([...serenosFetches, pnpFetch])
-        .then(resultados => {
+        .then(async resultados => {
           if (signal.aborted) return;
           const data = resultados.flat();
           logger.log('📊 Google cluster combinado:', data.length, 'puntos');
 
-          const clustersGenerados = realizarClustering(data, radioCluster);
+          const clustersGenerados = await clusterAsync(data, radioCluster);
+          if (signal.aborted) return;
           const clustersMixtos = clustersGenerados.filter(c =>
             c.puntos.some(p => p.Origen === 'Sereno') &&
             c.puntos.some(p => p.Origen === 'PNP')

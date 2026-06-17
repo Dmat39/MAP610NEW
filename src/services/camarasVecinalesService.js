@@ -37,13 +37,10 @@ const camarasVecinalesService = {
       }
 
       const result = await response.json();
-      console.log('📡 Cámaras vecinales obtenidas:', result);
 
       // El backend retorna: { message: "...", data: { data: [...], totalCount: ... } }
       const camaras = result.data?.data || [];
       const totalCount = result.data?.totalCount || camaras.length;
-
-      console.log(`✅ Total de cámaras vecinales cargadas: ${camaras.length} de ${totalCount}`);
 
       return {
         count: totalCount,

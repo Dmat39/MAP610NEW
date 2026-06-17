@@ -3,7 +3,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useTheme } from './context/ThemeContext';
 
 const TILE_LIGHT = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-const TILE_DARK  = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 
 const GpsMapEvents = ({ seleccionandoPunto, onPuntoSeleccionado }) => {
   useMapEvents({
@@ -97,6 +97,15 @@ import GoogleClusterCombinado from './components/googlemaps/GoogleClusterCombina
 import ControlClusterCombinado from './components/Controles/Cluster_Combinado/ControlClusterCombinado';
 import ClusterIncidenciasPNP from './components/capas/ClusterIncidenciasPNP/ClusterIncidenciasPNP';
 import ControlClusterPNP from './components/Controles/Cluster_PNP/ControlClusterPNP';
+
+const PAYLOAD_VACIO = {
+  Año: '',
+  Mes: '',
+  Turno: '',
+  Dia: '',
+  Horario: '',
+  Jurisdiccion: '',
+};
 
 const PNP_TIPOS = [
   { key: 'pnpPatrimonio',       tipo: 'PATRIMONIO (DELITO)',                  label: 'Patrimonio' },
@@ -213,53 +222,45 @@ const MapView = () => {
   const [fechasClusterCombinado, setFechasClusterCombinado] = useState(getDefaultFechasCombinado);
   const [radioClusterPNP, setRadioClusterPNP]     = useState(50);
   const [fechasClusterPNP, setFechasClusterPNP]   = useState(getDefaultFechasCombinado);
-  const payloadVacio = {
-    Año: '',
-    Mes: '',
-    Turno: '',
-    Dia: '',
-    Horario: '',
-    Jurisdiccion: '',
-  };
 
   const handleFiltrar = useCallback(payload => {
     setPayloadFiltros(payload);
     const anyPatrimonio = capasVisibles.robos || PATRIMONIO_SUBTIPO_KEYS.some(k => capasVisibles[k]);
     if (anyPatrimonio) setFiltrosRobos(payload);
-    else setFiltrosRobos(payloadVacio);
+    else setFiltrosRobos(PAYLOAD_VACIO);
 
     if (capasVisibles.extorsiones) setFiltrosExtorsion(payload);
-    else setFiltrosExtorsion(payloadVacio);
+    else setFiltrosExtorsion(PAYLOAD_VACIO);
 
     if (capasVisibles.homicidios) setFiltrosHomicidios(payload);
-    else setFiltrosHomicidios(payloadVacio);
+    else setFiltrosHomicidios(PAYLOAD_VACIO);
 
     if (capasVisibles.feminicidios) setFiltrosFeminicidios(payload);
-    else setFiltrosFeminicidios(payloadVacio);
+    else setFiltrosFeminicidios(PAYLOAD_VACIO);
 
     if (capasVisibles.sicariatos) setFiltrosSicariatos(payload);
-    else setFiltrosSicariatos(payloadVacio);
+    else setFiltrosSicariatos(PAYLOAD_VACIO);
 
     if (capasVisibles.secuestros) setFiltrosSecuestros(payload);
-    else setFiltrosSecuestros(payloadVacio);
+    else setFiltrosSecuestros(PAYLOAD_VACIO);
 
     if (capasVisibles.drogas) setFiltrosDrogas(payload);
-    else setFiltrosDrogas(payloadVacio);
+    else setFiltrosDrogas(PAYLOAD_VACIO);
 
     if (capasVisibles.barras) setFiltrosBarras(payload);
-    else setFiltrosBarras(payloadVacio);
+    else setFiltrosBarras(PAYLOAD_VACIO);
   }, [capasVisibles]);
 
   const handleLimpiar = useCallback(() => {
     setPayloadFiltros(null);
-    setFiltrosRobos(payloadVacio);
-    setFiltrosExtorsion(payloadVacio);
-    setFiltrosHomicidios(payloadVacio);
-    setFiltrosFeminicidios(payloadVacio);
-    setFiltrosSicariatos(payloadVacio);
-    setFiltrosSecuestros(payloadVacio);
-    setFiltrosDrogas(payloadVacio);
-    setFiltrosBarras(payloadVacio);
+    setFiltrosRobos(PAYLOAD_VACIO);
+    setFiltrosExtorsion(PAYLOAD_VACIO);
+    setFiltrosHomicidios(PAYLOAD_VACIO);
+    setFiltrosFeminicidios(PAYLOAD_VACIO);
+    setFiltrosSicariatos(PAYLOAD_VACIO);
+    setFiltrosSecuestros(PAYLOAD_VACIO);
+    setFiltrosDrogas(PAYLOAD_VACIO);
+    setFiltrosBarras(PAYLOAD_VACIO);
   }, []);
 
   const handleBusquedaRealizada = useCallback((resultados, idSeleccionado) => {
@@ -306,25 +307,27 @@ const MapView = () => {
     setFiltrosCamaras(filtros);
   }, []);
 
-  const handleSeguimientoCamara = camara => {
+  const handleSeguimientoCamara = useCallback(camara => {
     setSeguimientoCamara(camara);
     // Limpiar seguimiento anterior después de un breve delay para permitir el re-render
     setTimeout(() => setSeguimientoCamara(null), 100);
-  };
+  }, []);
 
-  const handleLimpiarSeguimiento = () => {
+  const handleLimpiarSeguimiento = useCallback(() => {
     setLimpiarSeguimiento(Date.now()); // Usar timestamp para forzar re-render
     setTimeout(() => setLimpiarSeguimiento(null), 100);
-  };
+  }, []);
 
-  const handleLimpiarSeleccion = () => {
+  const handleLimpiarSeleccion = useCallback(() => {
     setCamaraSeleccionada(null);
     setCamarasFiltradas([]);
     setFiltrosCamaras(null);
-  };
+  }, []);
 
-  // Definir todas las capas
-  const todasLasCapas = [
+  // Definir todas las capas (memoizado: antes se recreaba en cada render del componente,
+  // generando una nueva referencia de array en cada toggle de cualquier estado de MapView
+  // y rompiendo cualquier memoización en LayerTogglePanel)
+  const todasLasCapas = useMemo(() => [
     { name: 'camaras', label: 'Cámaras Municipales', visible: capasVisibles.camaras },
     {
       name: 'camarasVecinales',
@@ -385,9 +388,12 @@ const MapView = () => {
     { name: 'zonasCodisec',   label: 'Comunas',         visible: capasVisibles.zonasCodisec,   codisecOnly: true },
     { name: 'jurisdicciones', label: 'Jurisdicciones',  visible: capasVisibles.jurisdicciones },
     ...PNP_TIPOS.map(t => ({ name: t.key, label: t.label, visible: capasVisibles[t.key] })),
-  ];
+  ], [capasVisibles]);
 
-  const capas = todasLasCapas.filter(capa => hasLayerAccess(capa.name));
+  const capas = useMemo(
+    () => todasLasCapas.filter(capa => hasLayerAccess(capa.name)),
+    [todasLasCapas, hasLayerAccess]
+  );
 
   const handleToggle = useCallback(nombre => {
     setCapasVisibles(prev => {
@@ -418,15 +424,15 @@ const MapView = () => {
         if (nombre === 'robos' || PATRIMONIO_SUBTIPO_KEYS.includes(nombre)) {
           const othersActive = (nombre !== 'robos' && updated.robos) ||
             PATRIMONIO_SUBTIPO_KEYS.filter(k => k !== nombre).some(k => updated[k]);
-          if (!othersActive) setFiltrosRobos(payloadVacio);
+          if (!othersActive) setFiltrosRobos(PAYLOAD_VACIO);
         }
-        if (nombre === 'extorsiones') setFiltrosExtorsion(payloadVacio);
-        if (nombre === 'homicidios') setFiltrosHomicidios(payloadVacio);
-        if (nombre === 'feminicidios') setFiltrosFeminicidios(payloadVacio);
-        if (nombre === 'sicariatos') setFiltrosSicariatos(payloadVacio);
-        if (nombre === 'secuestros') setFiltrosSecuestros(payloadVacio);
-        if (nombre === 'drogas') setFiltrosDrogas(payloadVacio);
-        if (nombre === 'barras') setFiltrosBarras(payloadVacio);
+        if (nombre === 'extorsiones') setFiltrosExtorsion(PAYLOAD_VACIO);
+        if (nombre === 'homicidios') setFiltrosHomicidios(PAYLOAD_VACIO);
+        if (nombre === 'feminicidios') setFiltrosFeminicidios(PAYLOAD_VACIO);
+        if (nombre === 'sicariatos') setFiltrosSicariatos(PAYLOAD_VACIO);
+        if (nombre === 'secuestros') setFiltrosSecuestros(PAYLOAD_VACIO);
+        if (nombre === 'drogas') setFiltrosDrogas(PAYLOAD_VACIO);
+        if (nombre === 'barras') setFiltrosBarras(PAYLOAD_VACIO);
       }
 
       return updated;
@@ -598,7 +604,13 @@ const MapView = () => {
           <TileLayer
             url={dark ? TILE_DARK : TILE_LIGHT}
             maxZoom={20}
-            attribution="&copy; OpenStreetMap"
+            attribution={dark
+              ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
+              : '&copy; OpenStreetMap'
+            }
+            updateWhenZooming={false}
+            keepBuffer={4}
+            detectRetina={true}
           />
           {/* Pane para incidencias: encima de polígonos (overlayPane=400) pero bajo marcadores (600) */}
           <Pane name="incidenciasPane" style={{ zIndex: 420 }} />

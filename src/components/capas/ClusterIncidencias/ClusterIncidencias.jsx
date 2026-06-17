@@ -3,8 +3,8 @@ import { LayerGroup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { logger } from '../../../utils';
 import { useMapContext } from '../../../context/MapContext';
+import { useClusterWorker } from '../../../hooks/useClusterWorker';
 import {
-  realizarClustering,
   obtenerColorCluster,
   contarTiposPorCluster,
 } from '../../../utils/clustering.utils.js';
@@ -140,6 +140,7 @@ const ClusterIncidencias = ({ visible, filtros = null }) => {
   const map = useMap();
   const circlesRef = useRef([]);
   const abortControllerRef = useRef(null);
+  const clusterAsync = useClusterWorker();
 
   const limpiarCirculos = () => {
     circlesRef.current.forEach(circle => {
@@ -313,7 +314,7 @@ const ClusterIncidencias = ({ visible, filtros = null }) => {
             })
         )
       )
-        .then(resultados => {
+        .then(async resultados => {
           if (signal.aborted) return;
 
           const raw = resultados.flat();
@@ -332,7 +333,8 @@ const ClusterIncidencias = ({ visible, filtros = null }) => {
           });
           logger.log('📊 Datos para clustering:', data.length, 'incidencias (', raw.length - data.length, 'duplicados eliminados)');
 
-          const clustersGenerados = realizarClustering(data, radioCluster);
+          const clustersGenerados = await clusterAsync(data, radioCluster);
+          if (signal.aborted) return;
           crearCirculosCluster(clustersGenerados);
 
           const puntosClusteados = clustersGenerados.reduce((s, c) => s + c.cantidad, 0);

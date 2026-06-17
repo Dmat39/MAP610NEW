@@ -48,11 +48,25 @@ const _svgPin = (color, esSeleccionada, enSeguimiento) => {
   </svg>`;
 };
 
+// Cache de iconos para evitar recrearlos en cada render
+const _iconCacheMunicipal = new Map();
+
 // Función principal: crea el DivIcon según tipo, nivel de zoom y estado
 const crearIconoCamaraModerno = (tipo, nivelZoom, esSeleccionada = false, enSeguimiento = false) => {
+  // Los iconos seleccionados/seguimiento son poco comunes: no los cacheamos para mantener el cache pequeño
+  if (!esSeleccionada && !enSeguimiento) {
+    const cacheKey = `${tipo}-${nivelZoom}`;
+    if (_iconCacheMunicipal.has(cacheKey)) return _iconCacheMunicipal.get(cacheKey);
+    const icon = _buildIconoCamaraModerno(tipo, nivelZoom, false, false);
+    _iconCacheMunicipal.set(cacheKey, icon);
+    return icon;
+  }
+  return _buildIconoCamaraModerno(tipo, nivelZoom, esSeleccionada, enSeguimiento);
+};
+
+const _buildIconoCamaraModerno = (tipo, nivelZoom, esSeleccionada, enSeguimiento) => {
   const color = COLORES_TIPO[tipo] || COLOR_DEFAULT;
 
-  // Siempre pin completo si está seleccionada
   if (esSeleccionada) {
     return new L.DivIcon({
       html: `<div class="cam-pin-wrap cam-pin-selected">${_svgPin(color, true, false)}</div>`,
@@ -85,7 +99,6 @@ const crearIconoCamaraModerno = (tipo, nivelZoom, esSeleccionada = false, enSegu
     });
   }
 
-  // Nivel 1: punto simple
   return new L.DivIcon({
     html: `<div class="cam-pin-dot" style="background:${color};"></div>`,
     iconSize: [10, 10],
@@ -532,16 +545,11 @@ const CapaCamarasMunicipales = ({
 
   if (seguimientoActivo && camarasCercanas.length > 0) {
     camarasAMostrar = camarasCercanas.map(item => item.feature);
-    logger.log('📍 Modo: Seguimiento -', camarasAMostrar.length, 'cámaras');
   } else if (hayFiltroActivo) {
-    // Características: OR (muestra si cumple CUALQUIERA)
-    // Jurisdicción: AND (acota por zona)
     camarasAMostrar = camaras.filter(feature => {
       const props = feature.properties;
-      // Primero acotar por jurisdicción si está activa
       if (filtrosCamaras.jurisdicciones?.length > 0 &&
           !filtrosCamaras.jurisdicciones.includes(props.jurisdiccion)) return false;
-      // Luego OR entre características
       const hayCaracteristica = filtrosCamaras.boton || filtrosCamaras.lpr || filtrosCamaras.megafono;
       if (hayCaracteristica) {
         return (filtrosCamaras.boton && !!props.boton) ||
@@ -550,10 +558,8 @@ const CapaCamarasMunicipales = ({
       }
       return true;
     });
-    logger.log('🔍 Modo: Filtradas -', camarasAMostrar.length, 'cámaras');
   } else {
     camarasAMostrar = camaras;
-    logger.log('📷 Modo: Todas -', camarasAMostrar.length, 'cámaras');
   }
 
   return (

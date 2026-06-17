@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, memo } from "react";
 import { getAngleFromCoords, isValidReferencia, parseReferencia, generateVisionField } from "../../utils";
 import "../capas/CamarasMunicipales/CapaCamarasMunicipales.css"; // Importar estilos de campos de visión
 import camarasService from "../../services/camarasService";
@@ -141,6 +141,7 @@ const GoogleCapaCamarasMunicipales = ({
   const [camarasCercanas, setCamarasCercanas] = useState([]);
   const [historialSeguimiento, setHistorialSeguimiento] = useState([]);
   const markersRef = useRef({});
+  const ctrlPressedRef = useRef(false);
 
   // Cargar cámaras desde el backend
   useEffect(() => {
@@ -271,11 +272,6 @@ const GoogleCapaCamarasMunicipales = ({
             // Abrir el InfoWindow de la cámara seleccionada
             marker.infoWindow.open(map, marker);
             marker.infoWindowOpen = true;
-
-            // Agregar listener para detectar cuando se cierra manualmente
-            marker.infoWindow.addListener('closeclick', () => {
-              marker.infoWindowOpen = false;
-            });
           }
         }, 1700); // Aumentar el tiempo para que coincida con la duración de la animación
       }
@@ -342,6 +338,20 @@ const GoogleCapaCamarasMunicipales = ({
       console.log('🎯 Event listeners de Ctrl removidos');
     };
   }, [seguimientoActivo, map]);
+
+  // Rastrea Ctrl globalmente para el atajo "Ctrl+clic" en cámaras (para iniciar seguimiento).
+  // Antes esto se hacía con variables en window (window.ctrlPressed/window.ctrlListenersAdded)
+  // agregadas una sola vez y nunca removidas; ahora usa un ref propio del componente con cleanup.
+  useEffect(() => {
+    const handleKeyDown = (e) => { if (e.key === 'Control') ctrlPressedRef.current = true; };
+    const handleKeyUp = (e) => { if (e.key === 'Control') ctrlPressedRef.current = false; };
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
   const iniciarSeguimientoCamaras = (camaraCentral) => {
     if (!camaraCentral || !map || !google) return;
@@ -469,15 +479,16 @@ const GoogleCapaCamarasMunicipales = ({
     // Agregar funcionalidad toggle al círculo también
     nuevoCirculo.circleInfoWindowOpen = false;
 
+    // Listener de cierre registrado una sola vez (antes se reagregaba en cada apertura,
+    // acumulando listeners duplicados sobre el mismo InfoWindow)
+    circleInfoWindow.addListener('closeclick', () => {
+      nuevoCirculo.circleInfoWindowOpen = false;
+    });
+
     nuevoCirculo.addListener('click', () => {
       if (!nuevoCirculo.circleInfoWindowOpen) {
         circleInfoWindow.open(map);
         nuevoCirculo.circleInfoWindowOpen = true;
-
-        // Agregar listener para detectar cuando se cierra manualmente
-        circleInfoWindow.addListener('closeclick', () => {
-          nuevoCirculo.circleInfoWindowOpen = false;
-        });
       } else {
         circleInfoWindow.close();
         nuevoCirculo.circleInfoWindowOpen = false;
@@ -868,47 +879,16 @@ const GoogleCapaCamarasMunicipales = ({
         `
       });
 
-      // Ya no necesitamos función global, usamos Ctrl+clic directamente
-
-      // Variable para rastrear si Ctrl está presionado (compartida globalmente)
-      if (!window.ctrlPressed) {
-        window.ctrlPressed = false;
-      }
-
-      // Event listeners para detectar Ctrl (solo agregar una vez)
-      if (!window.ctrlListenersAdded) {
-        const handleKeyDown = (e) => {
-          if (e.key === 'Control') {
-            window.ctrlPressed = true;
-            console.log('🎯 Ctrl presionado globalmente');
-          }
-        };
-
-        const handleKeyUp = (e) => {
-          if (e.key === 'Control') {
-            window.ctrlPressed = false;
-            console.log('🎯 Ctrl soltado globalmente');
-          }
-        };
-
-        document.addEventListener('keydown', handleKeyDown);
-        document.addEventListener('keyup', handleKeyUp);
-        window.ctrlListenersAdded = true;
-        
-        console.log('🎯 Event listeners globales de Ctrl agregados');
-      }
+      // Listener de cierre registrado una sola vez (antes se reagregaba en cada apertura,
+      // acumulando listeners duplicados sobre el mismo InfoWindow)
+      infoWindow.addListener('closeclick', () => {
+        marker.infoWindowOpen = false;
+        setCamaraConVision(null);
+      });
 
       marker.addListener("click", (event) => {
-        console.log('🖱️ Clic en marcador:', {
-          name: props.name,
-          enSeguimiento: enSeguimiento,
-          windowCtrlPressed: window.ctrlPressed,
-          eventDomEvent: event.domEvent,
-          ctrlKeyFromEvent: event.domEvent?.ctrlKey
-        });
-
         // Verificar si se presionó Ctrl y si está en modo seguimiento
-        const isCtrlClick = window.ctrlPressed || (event.domEvent && event.domEvent.ctrlKey);
+        const isCtrlClick = ctrlPressedRef.current || (event.domEvent && event.domEvent.ctrlKey);
         
         if (isCtrlClick && enSeguimiento) {
           // Ctrl+clic: Crear nuevo círculo de seguimiento centrado en esta cámara
@@ -965,23 +945,12 @@ const GoogleCapaCamarasMunicipales = ({
 
           // Mostrar campo de visión
           setCamaraConVision(props.name);
-          console.log('✅ camaraConVision actualizada a:', props.name);
-
-          // Agregar listener para detectar cuando se cierra manualmente
-          infoWindow.addListener('closeclick', () => {
-            console.log('❌ Cerrando InfoWindow para:', props.name);
-            marker.infoWindowOpen = false;
-            // Ocultar campo de visión cuando se cierra el InfoWindow
-            setCamaraConVision(null);
-          });
         } else {
           console.log('❌ Cerrando InfoWindow (toggle) para:', props.name);
           // Si se cierra el InfoWindow, ocultar campo de visión
           setCamaraConVision(null);
         }
       });
-
-      // Ya no necesitamos cleanup individual ya que usamos listeners globales
 
       // Guardar referencia del marker
       marker.infoWindow = infoWindow;
@@ -1018,4 +987,4 @@ const GoogleCapaCamarasMunicipales = ({
   return null; // Este componente no renderiza JSX
 };
 
-export default GoogleCapaCamarasMunicipales; 
+export default memo(GoogleCapaCamarasMunicipales);

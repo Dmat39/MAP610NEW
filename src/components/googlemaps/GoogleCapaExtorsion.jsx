@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, memo } from "react";
 import { useExtorsionesQuery } from "../../hooks/useIncidenciasQuery";
 
 // Función para obtener color por turno (mantenida localmente para el renderizado)
@@ -219,4 +219,4 @@ const GoogleCapaExtorsion = ({ visible, filtros = null, map, google }) => {
   return null; // Este componente no renderiza JSX
 };
 
-export default GoogleCapaExtorsion; 
+export default memo(GoogleCapaExtorsion);

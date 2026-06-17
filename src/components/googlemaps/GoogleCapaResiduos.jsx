@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, memo } from "react";
 
 const GoogleCapaResiduos = ({ visible, map, google }) => {
   const [puntos, setPuntos] = useState([]);
@@ -138,4 +138,4 @@ const GoogleCapaResiduos = ({ visible, map, google }) => {
   return null;
 };
 
-export default GoogleCapaResiduos; 
+export default memo(GoogleCapaResiduos);

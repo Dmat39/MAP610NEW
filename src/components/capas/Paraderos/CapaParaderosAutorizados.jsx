@@ -1,5 +1,5 @@
 // CapaParaderosAutorizados.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { Marker, Popup, Tooltip, LayerGroup } from "react-leaflet";
 import { createParaderoAutorizadoIcon } from "../../../utils/adaptiveIcons";
 
@@ -112,4 +112,4 @@ const CapaParaderosAutorizados = ({ visible }) => {
   );
 };
 
-export default CapaParaderosAutorizados;
+export default memo(CapaParaderosAutorizados);

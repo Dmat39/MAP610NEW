@@ -1,6 +1,6 @@
 .control-rutas-bodycams {
-  position: absolute;
-  left: 10px;
+  position: fixed;
+  left: calc(var(--sidebar-width, 70px) + 15px);
   top: 10px;
   width: 340px;
   background: white;

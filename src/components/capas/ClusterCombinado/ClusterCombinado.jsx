@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { LayerGroup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { logger } from '../../../utils';
-import { realizarClustering, obtenerColorCluster } from '../../../utils/clustering.utils.js';
+import { useClusterWorker } from '../../../hooks/useClusterWorker';
+import { obtenerColorCluster } from '../../../utils/clustering.utils.js';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -81,6 +82,7 @@ const ClusterCombinado = ({ visible, radio = 50, fechas }) => {
   const map = useMap();
   const circlesRef = useRef([]);
   const abortControllerRef = useRef(null);
+  const clusterAsync = useClusterWorker();
 
   const limpiarCirculos = () => {
     circlesRef.current.forEach(circle => {
@@ -248,7 +250,7 @@ const ClusterCombinado = ({ visible, radio = 50, fechas }) => {
         });
 
       Promise.all([...serenosFetches, pnpFetch])
-        .then(resultados => {
+        .then(async resultados => {
           if (signal.aborted) return;
 
           const raw = resultados.flat();
@@ -264,7 +266,8 @@ const ClusterCombinado = ({ visible, radio = 50, fechas }) => {
           const data = serenosDedup;
           logger.log('📊 Cluster combinado:', data.length, 'puntos únicos (', raw.length - data.length, 'duplicados eliminados)');
 
-          const clustersGenerados = realizarClustering(data, radioCluster);
+          const clustersGenerados = await clusterAsync(data, radioCluster);
+          if (signal.aborted) return;
           const clustersMixtos = clustersGenerados.filter(c =>
             c.puntos.some(p => p.Origen === 'Sereno') &&
             c.puntos.some(p => p.Origen === 'PNP')

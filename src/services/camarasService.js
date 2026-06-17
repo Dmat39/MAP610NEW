@@ -33,13 +33,10 @@ const camarasService = {
       }
 
       const result = await response.json();
-      console.log('📡 Cámaras municipales obtenidas:', result);
 
       // La API devuelve: { message, data: { data: [...], totalCount, currentPage, totalPages } }
       const camaras = result.data?.data || result.data || [];
       const totalCount = result.data?.totalCount || camaras.length;
-
-      console.log(`✅ Total de cámaras municipales cargadas: ${camaras.length} de ${totalCount}`);
 
       return {
         count: totalCount,
@@ -84,13 +81,10 @@ const camarasService = {
       }
 
       const result = await response.json();
-      console.log('📡 Cámaras vecinales obtenidas:', result);
 
       // La API devuelve: { message, data: { data: [...], totalCount, currentPage, totalPages } }
       const camaras = result.data?.data || result.data || [];
       const totalCount = result.data?.totalCount || camaras.length;
-
-      console.log(`✅ Total de cámaras vecinales cargadas: ${camaras.length} de ${totalCount}`);
 
       return {
         count: totalCount,

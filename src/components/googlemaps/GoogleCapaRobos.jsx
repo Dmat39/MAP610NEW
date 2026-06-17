@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, memo } from "react";
 import { useRobosQuery } from "../../hooks/useIncidenciasQuery";
 
 // Función para obtener color por turno (mantenida localmente para el renderizado)
@@ -219,4 +219,4 @@ const GoogleCapaRobos = ({ visible, filtros = null, map, google }) => {
   return null; // Este componente no renderiza JSX
 };
 
-export default GoogleCapaRobos; 
+export default memo(GoogleCapaRobos);

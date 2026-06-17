@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, memo } from 'react';
 import { GeoJSON, useMap } from 'react-leaflet';
 import { logger } from '../../../utils/logger.js';
 
@@ -83,4 +83,4 @@ const CapaJurisdiccionCodisec = ({
   ) : null;
 };
 
-export default CapaJurisdiccionCodisec;
+export default memo(CapaJurisdiccionCodisec);

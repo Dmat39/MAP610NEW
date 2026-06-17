@@ -59,13 +59,18 @@
   --badge-apagado: #f87171;
 }
 
+/* ── Tile pane GPU hint (ambos modos) ── */
+.leaflet-tile-pane {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
 /* ── Dark mode map: night navy tint ── */
 [data-theme="dark"] .leaflet-container {
   background: #0d1b2e !important;
 }
 [data-theme="dark"] .leaflet-tile-pane {
-  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.9);
-  opacity: 0.88;
+  /* tiles nativos CartoDB Dark — sin filter CSS para evitar GPU overhead */
   will-change: transform;
   transform: translateZ(0);
 }
@@ -148,20 +153,17 @@ html, body, #root {
   color: var(--theme-text);
 }
 
-/* Main Content — offsets sidebar, transitions with it */
+/* Main Content — offset fijo 70px: sidebar usa transform overlay, sin reflow */
 .main-content {
   position: fixed;
-  left: var(--sidebar-width);
+  left: 70px;
   top: 0;
   right: 0;
   bottom: 0;
-  width: calc(100% - var(--sidebar-width));
   height: 100vh;
   overflow: auto;
   z-index: 1;
   background-color: var(--theme-bg);
-  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* When top header bar is visible — push content down */
@@ -170,15 +172,14 @@ html, body, #root {
   height: calc(100vh - var(--top-header-height));
 }
 
-/* Inner map wrapper inside MapView — same offset as main-content */
+/* Inner map wrapper inside MapView — offset fijo, sin transición */
 .map-view-inner {
   position: fixed;
-  left: var(--sidebar-width);
+  left: 70px;
   top: 0;
   right: 0;
   bottom: 0;
   z-index: 1;
-  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ============================================
@@ -245,8 +246,7 @@ html, body, #root {
 }
 
 .leaflet-left {
-  left: calc(var(--sidebar-width) + 15px) !important;
-  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  left: 85px !important; /* 70px sidebar + 15px gap, fijo */
 }
 
 .leaflet-right {

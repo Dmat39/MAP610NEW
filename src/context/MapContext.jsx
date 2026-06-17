@@ -1,9 +1,18 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 
 /**
  * Context para gestionar el estado global del mapa
  * Centraliza: capas visibles, filtros, búsquedas, puntos de usuario, etc.
  */
+
+const PAYLOAD_VACIO = {
+  Año: '',
+  Mes: '',
+  Turno: '',
+  Dia: '',
+  Horario: '',
+  Jurisdiccion: '',
+};
 
 const MapContext = createContext(null);
 
@@ -33,15 +42,6 @@ export const MapProvider = ({ children }) => {
   });
 
   // ==================== FILTROS ====================
-  const payloadVacio = {
-    Año: '',
-    Mes: '',
-    Turno: '',
-    Dia: '',
-    Horario: '',
-    Jurisdiccion: '',
-  };
-
   const [payloadFiltros, setPayloadFiltros] = useState(null);
   const [filtrosRobos, setFiltrosRobos] = useState(null);
   const [filtrosExtorsion, setFiltrosExtorsion] = useState(null);
@@ -126,14 +126,14 @@ export const MapProvider = ({ children }) => {
           if (nombre === 'extorsiones' && payloadFiltros) setFiltrosExtorsion(payloadFiltros);
         } else {
           // Si se desactiva, fuerza vaciado
-          if (nombre === 'robos') setFiltrosRobos(payloadVacio);
-          if (nombre === 'extorsiones') setFiltrosExtorsion(payloadVacio);
+          if (nombre === 'robos') setFiltrosRobos(PAYLOAD_VACIO);
+          if (nombre === 'extorsiones') setFiltrosExtorsion(PAYLOAD_VACIO);
         }
 
         return updated;
       });
     },
-    [payloadFiltros, payloadVacio]
+    [payloadFiltros]
   );
 
   /**
@@ -143,21 +143,21 @@ export const MapProvider = ({ children }) => {
     payload => {
       setPayloadFiltros(payload);
       if (capasVisibles.robos) setFiltrosRobos(payload);
-      else setFiltrosRobos(payloadVacio);
+      else setFiltrosRobos(PAYLOAD_VACIO);
 
       if (capasVisibles.extorsiones) setFiltrosExtorsion(payload);
-      else setFiltrosExtorsion(payloadVacio);
+      else setFiltrosExtorsion(PAYLOAD_VACIO);
     },
-    [capasVisibles.robos, capasVisibles.extorsiones, payloadVacio]
+    [capasVisibles.robos, capasVisibles.extorsiones]
   );
 
   /**
    * Limpiar filtros
    */
   const handleLimpiarFiltros = useCallback(() => {
-    setFiltrosRobos(payloadVacio);
-    setFiltrosExtorsion(payloadVacio);
-  }, [payloadVacio]);
+    setFiltrosRobos(PAYLOAD_VACIO);
+    setFiltrosExtorsion(PAYLOAD_VACIO);
+  }, []);
 
   /**
    * Manejar búsqueda de direcciones
@@ -278,7 +278,7 @@ export const MapProvider = ({ children }) => {
   }, []);
 
   // ==================== VALOR DEL CONTEXT ====================
-  const value = {
+  const value = useMemo(() => ({
     // Estado
     capasVisibles,
     payloadFiltros,
@@ -325,7 +325,18 @@ export const MapProvider = ({ children }) => {
     handleToggleMarcaCamara,
     handleToggleTipoIncidenciaCluster,
     handleFechasClustersChange,
-  };
+  }), [
+    capasVisibles, payloadFiltros, filtrosRobos, filtrosExtorsion, filtrosCamaras,
+    radioCluster, resultadosBusqueda, resultadoSeleccionado, puntosUsuario, marcadorActivo,
+    rutaInfo, camaraSeleccionada, camarasFiltradas, seguimientoCamara, limpiarSeguimiento,
+    camaraConVision, marcasCamarasVisibles, conteoCamarasVecinales, tiposIncidenciasCluster,
+    fechasClusters,
+    handleToggleCapa, handleFiltrar, handleLimpiarFiltros, handleBusquedaRealizada,
+    handleToggleMarcador, handleAgregarPunto, handleEliminarPunto, handleRutaCalculada,
+    handleLimpiarRuta, handleCamaraSeleccionada, handleFiltrosCamaras, handleSeguimientoCamara,
+    handleLimpiarSeguimiento, handleLimpiarSeleccion, handleToggleMarcaCamara,
+    handleToggleTipoIncidenciaCluster, handleFechasClustersChange,
+  ]);
 
   return <MapContext.Provider value={value}>{children}</MapContext.Provider>;
 };

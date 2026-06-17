@@ -1,6 +1,6 @@
 import './LayerTogglePanel.css';
 import { Layers, X, ChevronDown } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useMapLayout } from '../../context/MapLayoutContext';
 
 const LayerTogglePanel = ({ capas, onToggle }) => {
@@ -249,4 +249,4 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
   );
 };
 
-export default LayerTogglePanel;
+export default memo(LayerTogglePanel);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import '../capas/Jurisdiccion/CapaJurisdiccionCodisec.css';
 
 const FUENTES = {
@@ -149,4 +149,4 @@ const GoogleCapaJurisdiccionCodisec = ({
   );
 };
 
-export default GoogleCapaJurisdiccionCodisec;
+export default memo(GoogleCapaJurisdiccionCodisec);

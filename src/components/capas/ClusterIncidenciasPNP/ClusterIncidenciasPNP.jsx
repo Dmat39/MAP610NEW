@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { LayerGroup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { logger } from '../../../utils';
-import { realizarClustering } from '../../../utils/clustering.utils.js';
+import { useClusterWorker } from '../../../hooks/useClusterWorker';
 
 // ─── Colores por tipo de incidencia PNP ────────────────────────────────────────
 const TIPO_COLORS = {
@@ -66,6 +66,7 @@ const ClusterIncidenciasPNP = ({ visible, radio = 50, fechas }) => {
   const map             = useMap();
   const circlesRef      = useRef([]);
   const abortRef        = useRef(null);
+  const clusterAsync    = useClusterWorker();
 
   const limpiar = () => {
     circlesRef.current.forEach(c => { if (map.hasLayer(c)) map.removeLayer(c); });
@@ -172,7 +173,8 @@ const ClusterIncidenciasPNP = ({ visible, radio = 50, fechas }) => {
           }))
           .filter(item => !isNaN(item.Latitud) && !isNaN(item.Longitud));
 
-        const clusters = realizarClustering(data, radio);
+        const clusters = await clusterAsync(data, radio);
+        if (signal.aborted) return;
         dibujarClusters(clusters);
 
         window.dispatchEvent(new CustomEvent('clustersPNPGenerados', {

@@ -42,7 +42,7 @@ const CapaBodycams = ({ visible, bodycamSeleccionada }) => {
     };
 
     fetchBodycams();
-    const interval = setInterval(fetchBodycams, 15000); // Refrescar cada 15 segundos
+    const interval = setInterval(fetchBodycams, 30000); // Refrescar cada 30 segundos
 
     return () => clearInterval(interval);
   }, [visible]);

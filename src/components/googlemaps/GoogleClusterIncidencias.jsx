@@ -11,8 +11,8 @@ import {
 } from '../../hooks/useIncidenciasQuery';
 import { logger } from '../../utils/logger';
 import { useMapContext } from '../../context/MapContext';
+import { useClusterWorker } from '../../hooks/useClusterWorker';
 import {
-  realizarClustering,
   obtenerColorCluster,
   contarTiposPorCluster,
 } from '../../utils/clustering.utils.js';
@@ -22,6 +22,7 @@ const GoogleClusterIncidencias = ({ visible, map, google, filtros = null }) => {
   const [loading, setLoading] = useState(false);
   const circlesRef = useRef([]);
   const [infoWindow, setInfoWindow] = useState(null);
+  const clusterAsync = useClusterWorker();
 
   const filtrosConFechas = useMemo(() => ({
     ...filtros,
@@ -215,18 +216,26 @@ const GoogleClusterIncidencias = ({ visible, map, google, filtros = null }) => {
       return;
     }
 
-    const clustersGenerados = realizarClustering(puntosValidos, radioCluster);
-    crearCirculosCluster(clustersGenerados);
+    let cancelled = false;
+    clusterAsync(puntosValidos, radioCluster).then(clustersGenerados => {
+      if (cancelled) return;
+      crearCirculosCluster(clustersGenerados);
 
-    const puntosClusteados = clustersGenerados.reduce((s, c) => s + c.cantidad, 0);
-    window.dispatchEvent(new CustomEvent('clustersGenerados', {
-      detail: {
-        totalClusters: clustersGenerados.length,
-        totalPuntos: puntosValidos.length,
-        puntosClusteados,
-      },
-    }));
-  }, [visible, radioCluster, map, google, infoWindow, tiposIncidenciasCluster, queriesState]);
+      const puntosClusteados = clustersGenerados.reduce((s, c) => s + c.cantidad, 0);
+      window.dispatchEvent(new CustomEvent('clustersGenerados', {
+        detail: {
+          totalClusters: clustersGenerados.length,
+          totalPuntos: puntosValidos.length,
+          puntosClusteados,
+        },
+      }));
+    }).catch(err => {
+      if (cancelled || err?.name === 'AbortError') return;
+      logger.error('❌ Error en clustering:', err);
+    });
+
+    return () => { cancelled = true; };
+  }, [visible, radioCluster, map, google, infoWindow, tiposIncidenciasCluster, queriesState, clusterAsync]);
 
   if (!visible) return null;
 
@@ -270,4 +279,4 @@ const GoogleClusterIncidencias = ({ visible, map, google, filtros = null }) => {
   );
 };
 
-export default GoogleClusterIncidencias;
+export default React.memo(GoogleClusterIncidencias);

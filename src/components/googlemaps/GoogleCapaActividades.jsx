@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, memo } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -136,4 +136,4 @@ const GoogleCapaActividades = ({ visible, map, google }) => {
   return null;
 };
 
-export default GoogleCapaActividades;
+export default memo(GoogleCapaActividades);
