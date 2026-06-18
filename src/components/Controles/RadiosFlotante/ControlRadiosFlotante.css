@@ -1,0 +1,103 @@
+.cr-flotante {
+  position: fixed;
+  left: calc(70px + (100vw - 70px) / 2);
+  transform: translateX(-50%);
+  top: 14px;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-radius: 12px;
+  padding: 8px 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  user-select: none;
+}
+
+[data-theme="dark"] .cr-flotante {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+/* Botones de estado */
+.cr-flotante-estados {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cr-flotante-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 76px;
+  padding: 5px 0;
+  border: 1px solid var(--theme-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--theme-text-3);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.cr-flotante-btn:hover {
+  border-color: var(--estado-color, #6366f1);
+  color: var(--estado-color, #6366f1);
+  background: color-mix(in srgb, var(--estado-color, #6366f1) 10%, transparent);
+}
+
+.cr-flotante-btn.activo {
+  border-color: var(--estado-color, #6366f1);
+  color: var(--estado-color, #6366f1);
+  background: color-mix(in srgb, var(--estado-color, #6366f1) 12%, transparent);
+  font-weight: 700;
+}
+
+.cr-flotante-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--estado-color, #6366f1);
+  flex-shrink: 0;
+}
+
+/* Divisor */
+.cr-flotante-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--theme-border);
+  flex-shrink: 0;
+}
+
+/* Slider de límite */
+.cr-flotante-slider {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.cr-flotante-slider-label {
+  font-size: 11px;
+  color: var(--theme-text-3);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.cr-flotante-range {
+  width: 90px;
+  height: 4px;
+  accent-color: #6366f1;
+  cursor: pointer;
+}
+
+.cr-flotante-valor {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6366f1;
+  min-width: 28px;
+  text-align: left;
+}

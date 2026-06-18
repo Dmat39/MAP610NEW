@@ -1,17 +1,17 @@
 .control-radios {
-  position: fixed;
-  left: calc(var(--sidebar-width, 70px) + 15px);
-  top: var(--cr-top, 10px);
   width: 320px;
   background: var(--theme-surface);
   border-radius: 8px;
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-  z-index: 1000;
-  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid rgba(229,231,235,0.5);
+}
+
+[data-theme="dark"] .control-radios {
+  border-color: var(--theme-border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
 }
 
 .control-radios.google-mode {
@@ -28,6 +28,10 @@
   border-bottom: 1px solid var(--theme-border);
   cursor: pointer;
   user-select: none;
+}
+
+[data-theme="dark"] .control-radios-header {
+  background: linear-gradient(to right, #1e1b4b22, var(--theme-surface));
 }
 
 .control-radios-header .header-content {
@@ -194,6 +198,10 @@
   background: #eef2ff;
 }
 
+[data-theme="dark"] .cr-item:hover {
+  background: #1e1b4b33;
+}
+
 .cr-item-dot {
   width: 10px;
   height: 10px;
@@ -302,7 +310,7 @@
 }
 
 .collapse-btn-r:hover {
-  background-color: #f3f4f6;
+  background-color: var(--theme-surface-2);
   color: var(--theme-text);
 }
 
@@ -341,6 +349,10 @@
 .cr-tab:hover:not(.activo) {
   background: #e2e8f0;
   color: var(--theme-text-3);
+}
+
+[data-theme="dark"] .cr-tab:hover:not(.activo) {
+  background: var(--theme-surface-2);
 }
 .cr-tab:hover:not(.activo) svg { opacity: 0.9; }
 
@@ -763,6 +775,10 @@
   border-bottom: 1px solid var(--theme-border);
 }
 
+[data-theme="dark"] .cr-km-header {
+  background: var(--theme-surface-2);
+}
+
 .cr-km-row {
   display: grid;
   grid-template-columns: 1fr 1.2fr 0.8fr;
@@ -780,4 +796,57 @@
   background: #eff6ff;
   border-top: 2px solid #bfdbfe;
   font-size: 12px;
+}
+
+[data-theme="dark"] .cr-km-total {
+  background: #1e3a5f22;
+  border-top-color: var(--theme-border);
+}
+
+/* ── Límite de visibilidad en mapa ── */
+.cr-limit-slider {
+  padding: 8px 10px;
+  background: var(--theme-surface-2);
+  border: 1px solid var(--theme-border);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cr-limit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cr-limit-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--theme-text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cr-limit-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6366f1;
+  min-width: 32px;
+  text-align: right;
+}
+
+.cr-limit-range {
+  width: 100%;
+  height: 4px;
+  accent-color: #6366f1;
+  cursor: pointer;
+}
+
+.cr-limit-marks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--theme-text-4);
+  padding: 0 2px;
 }

@@ -14,7 +14,6 @@ const ControlCamaras = ({
   onLimpiarSeleccion,
   mapType = 'leaflet',
   isViewer = false,
-  topPosition = 10,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const panelRef = useRef(null);
@@ -356,13 +355,12 @@ const ControlCamaras = ({
     <div
       ref={panelRef}
       className={`control-camaras ${mapType}-mode ${isCollapsed ? 'collapsed' : ''}`}
-      style={{ '--cc-top': `${topPosition}px` }}
     >
       <div className="control-camaras-header" onClick={toggleCollapse}>
         <div className="header-content">
           <Camera size={20} style={{ color: '#16a34a', flexShrink: 0 }} />
           <h3>Búsqueda de Cámaras</h3>
-          <button className="collapse-btn">
+          <button className="collapse-btn-cc">
             {isCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
           </button>
         </div>
