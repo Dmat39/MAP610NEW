@@ -8,7 +8,6 @@ const ControlBodycams = ({
   onBodycamSeleccionada,
   onLimpiarSeleccion,
   mapType = 'leaflet',
-  topPosition = 10,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const panelRef = useRef(null);
@@ -81,13 +80,12 @@ const ControlBodycams = ({
     <div
       ref={panelRef}
       className={`control-bodycams ${mapType}-mode ${isCollapsed ? 'collapsed' : ''}`}
-      style={{ '--cc-top': `${topPosition}px` }}
     >
       <div className="control-bodycams-header" onClick={toggleCollapse}>
         <div className="header-content">
           <Video size={20} style={{ color: '#f97316', flexShrink: 0 }} />
           <h3>Búsqueda Bodycams</h3>
-          <button className="collapse-btn">
+          <button className="collapse-btn-bc">
             {isCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
           </button>
         </div>

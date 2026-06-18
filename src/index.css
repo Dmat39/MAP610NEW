@@ -75,11 +75,9 @@
   transform: translateZ(0);
 }
 
-/* ── Dark mode map icons: soften for night feel ── */
-
-/* ── Dark mode map icons: night glow ── */
+/* ── Dark mode map icons: night glow (single shadow — double drop-shadow causes GPU lag with many markers) ── */
 [data-theme="dark"] .leaflet-marker-pane .leaflet-marker-icon {
-  filter: drop-shadow(0 0 6px rgba(148,210,255,0.5)) drop-shadow(0 3px 6px rgba(0,0,0,0.8)) !important;
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.75)) !important;
 }
 
 /* ── Dark mode Leaflet UI elements ── */
@@ -156,7 +154,7 @@ html, body, #root {
 /* Main Content — offset fijo 70px: sidebar usa transform overlay, sin reflow */
 .main-content {
   position: fixed;
-  left: 70px;
+  left: var(--sidebar-width, 70px);
   top: 0;
   right: 0;
   bottom: 0;
@@ -164,6 +162,7 @@ html, body, #root {
   overflow: auto;
   z-index: 1;
   background-color: var(--theme-bg);
+  transition: left 0.25s ease;
 }
 
 /* When top header bar is visible — push content down */
@@ -175,11 +174,12 @@ html, body, #root {
 /* Inner map wrapper inside MapView — offset fijo, sin transición */
 .map-view-inner {
   position: fixed;
-  left: 70px;
+  left: var(--sidebar-width, 70px);
   top: 0;
   right: 0;
   bottom: 0;
   z-index: 1;
+  transition: left 0.25s ease;
 }
 
 /* ============================================

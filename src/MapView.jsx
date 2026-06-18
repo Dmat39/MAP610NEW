@@ -3,7 +3,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useTheme } from './context/ThemeContext';
 
 const TILE_LIGHT = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
 
 const GpsMapEvents = ({ seleccionandoPunto, onPuntoSeleccionado }) => {
   useMapEvents({
@@ -60,6 +60,7 @@ import ControlRutas from './components/Controles/Rutas_Moviles/ControlRutas';
 import CapaBodycams from './components/capas/Bodycams/CapaBodycams';
 import CapaRadios from './components/capas/Radios/CapaRadios';
 import ControlRadios from './components/Controles/Busqueda_Radios/ControlRadios';
+import ControlRadiosFlotante from './components/Controles/RadiosFlotante/ControlRadiosFlotante';
 import CapaPuntosCercanos from './components/capas/PuntosCercanos/CapaPuntosCercanos';
 import CapaCercosGPS from './components/capas/CercosGPS/CapaCercosGPS';
 import CapaRecorridoRadio from './components/capas/RecorridoRadio/CapaRecorridoRadio';
@@ -210,6 +211,8 @@ const MapView = () => {
   const [limpiarSeguimiento, setLimpiarSeguimiento] = useState(null);
   const [camaraConVision, setCamaraConVision] = useState(null); // Track camera with vision field active
   const [recorridoBodycam, setRecorridoBodycam] = useState(null);
+  const [maxVisibleRadios, setMaxVisibleRadios] = useState(50);
+  const [filtroEstadoRadios, setFiltroEstadoRadios] = useState('TODOS');
 
   const getDefaultFechasCombinado = () => {
     const today = new Date();
@@ -491,6 +494,13 @@ const MapView = () => {
             capas={capas}
             onToggle={handleToggle}
           />
+      <ControlRadiosFlotante
+        visible={capasVisibles.radios}
+        maxVisible={maxVisibleRadios}
+        onMaxVisibleChange={setMaxVisibleRadios}
+        filtroEstado={filtroEstadoRadios}
+        onFiltroEstadoChange={setFiltroEstadoRadios}
+      />
       <ControlBusqueda
         visible={capasVisibles.busquedaDirecciones}
         onBusquedaRealizada={handleBusquedaRealizada}
@@ -504,64 +514,62 @@ const MapView = () => {
         mapType={mapType}
         topPosition={capasVisibles.busquedaDirecciones ? 450 : 10}
       />
-      {canSeeCamaras && (
-        <ControlCamaras
-          visible={capasVisibles.camaras}
-          onCamaraSeleccionada={handleCamaraSeleccionada}
-          onFiltroAplicado={handleFiltrosCamaras}
-          onSeguimientoCamara={handleSeguimientoCamara}
-          onLimpiarSeguimiento={handleLimpiarSeguimiento}
-          onLimpiarSeleccion={handleLimpiarSeleccion}
-          mapType={mapType}
-          isViewer={isViewer}
-          topPosition={
-            (capasVisibles.busquedaDirecciones ? 450 : 0) +
-            (capasVisibles.rutas ? 280 : 0) +
-            10
-          }
-        />
-      )}
-      <ControlBodycams
-        visible={capasVisibles.bodycams}
-        onBodycamSeleccionada={setBodycamSeleccionada}
-        onLimpiarSeleccion={() => setBodycamSeleccionada(null)}
-        mapType={mapType}
-        topPosition={
-          (capasVisibles.busquedaDirecciones ? 450 : 0) +
-          (capasVisibles.rutas ? 280 : 0) +
-          (capasVisibles.camaras ? 100 : 0) +
-          10
-        }
-      />
+      {(canSeeCamaras && capasVisibles.camaras) || capasVisibles.bodycams || capasVisibles.radios ? (
+        <div style={{
+          position: 'fixed',
+          left: 'calc(var(--sidebar-width, 70px) + 15px)',
+          top: (capasVisibles.busquedaDirecciones ? 450 : 0) + (capasVisibles.rutas ? 280 : 0) + 10,
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+        }}>
+          {canSeeCamaras && capasVisibles.camaras && (
+            <ControlCamaras
+              visible={true}
+              onCamaraSeleccionada={handleCamaraSeleccionada}
+              onFiltroAplicado={handleFiltrosCamaras}
+              onSeguimientoCamara={handleSeguimientoCamara}
+              onLimpiarSeguimiento={handleLimpiarSeguimiento}
+              onLimpiarSeleccion={handleLimpiarSeleccion}
+              mapType={mapType}
+              isViewer={isViewer}
+            />
+          )}
+          {capasVisibles.bodycams && (
+            <ControlBodycams
+              visible={true}
+              onBodycamSeleccionada={setBodycamSeleccionada}
+              onLimpiarSeleccion={() => setBodycamSeleccionada(null)}
+              mapType={mapType}
+            />
+          )}
+          {capasVisibles.radios && (
+            <ControlRadios
+              visible={true}
+              onRadioSeleccionado={setRadioSeleccionado}
+              onLimpiarSeleccion={() => setRadioSeleccionado(null)}
+              mapType={mapType}
+              puntoSeleccionado={puntoSeleccionado}
+              seleccionandoPunto={seleccionandoPunto}
+              onActivarSeleccionPunto={() => setSeleccionandoPunto(p => !p)}
+              onLimpiarPunto={() => { setPuntoSeleccionado(null); setRadiosEncontrados([]); setSeleccionandoPunto(false); }}
+              onBusquedaCercanosChange={(radios, mt) => { setRadiosEncontrados(radios); setMetrosBusqueda(mt); }}
+              dibujandoCerco={dibujandoCerco}
+              puntosDibujo={puntosDibujo}
+              onIniciarDibujo={() => setDibujandoCerco(true)}
+              onCancelarDibujo={() => { setDibujandoCerco(false); setPuntosDibujo([]); }}
+              onZonasChange={setZonasCerco}
+              radiosFuera={radiosFuera}
+              onRecorridoChange={(puntos, issi) => { setRecorridoPuntos(puntos); setRecorridoIssi(issi); }}
+            />
+          )}
+        </div>
+      ) : null}
       <ControlRutasBodycams
         visible={capasVisibles.rutasBodycams}
         setVisible={(v) => setCapasVisibles(prev => ({ ...prev, rutasBodycams: v }))}
         onRutaEncontrada={setRecorridoBodycam}
-      />
-      <ControlRadios
-        visible={capasVisibles.radios}
-        onRadioSeleccionado={setRadioSeleccionado}
-        onLimpiarSeleccion={() => setRadioSeleccionado(null)}
-        mapType={mapType}
-        topPosition={
-          (capasVisibles.busquedaDirecciones ? 450 : 0) +
-          (capasVisibles.rutas ? 280 : 0) +
-          (capasVisibles.camaras ? 100 : 0) +
-          (capasVisibles.bodycams ? 100 : 0) +
-          10
-        }
-        puntoSeleccionado={puntoSeleccionado}
-        seleccionandoPunto={seleccionandoPunto}
-        onActivarSeleccionPunto={() => setSeleccionandoPunto(p => !p)}
-        onLimpiarPunto={() => { setPuntoSeleccionado(null); setRadiosEncontrados([]); setSeleccionandoPunto(false); }}
-        onBusquedaCercanosChange={(radios, mt) => { setRadiosEncontrados(radios); setMetrosBusqueda(mt); }}
-        dibujandoCerco={dibujandoCerco}
-        puntosDibujo={puntosDibujo}
-        onIniciarDibujo={() => setDibujandoCerco(true)}
-        onCancelarDibujo={() => { setDibujandoCerco(false); setPuntosDibujo([]); }}
-        onZonasChange={setZonasCerco}
-        radiosFuera={radiosFuera}
-        onRecorridoChange={(puntos, issi) => { setRecorridoPuntos(puntos); setRecorridoIssi(issi); }}
       />
       <ControlClusters
         visible={capasVisibles.clusters}
@@ -610,7 +618,7 @@ const MapView = () => {
             }
             updateWhenZooming={false}
             keepBuffer={4}
-            detectRetina={true}
+            detectRetina={!dark}
           />
           {/* Pane para incidencias: encima de polígonos (overlayPane=400) pero bajo marcadores (600) */}
           <Pane name="incidenciasPane" style={{ zIndex: 420 }} />
@@ -645,7 +653,7 @@ const MapView = () => {
           )}
           <CapaBodycams visible={capasVisibles.bodycams} bodycamSeleccionada={bodycamSeleccionada} />
           {capasVisibles.rutasBodycams && <CapaHistorialBodycams dataRecorrido={recorridoBodycam} />}
-          <CapaRadios visible={capasVisibles.radios} radioSeleccionado={radioSeleccionado} />
+          <CapaRadios visible={capasVisibles.radios} radioSeleccionado={radioSeleccionado} maxVisible={maxVisibleRadios} filtroEstado={filtroEstadoRadios} />
           <GpsMapEvents
             seleccionandoPunto={seleccionandoPunto}
             onPuntoSeleccionado={(p) => { setPuntoSeleccionado(p); setSeleccionandoPunto(false); }}

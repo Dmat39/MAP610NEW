@@ -1,8 +1,23 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Marker, Popup, LayerGroup } from 'react-leaflet';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { Marker, Popup, LayerGroup, useMapEvents } from 'react-leaflet';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { obtenerRadios } from '../../../services/radiosService';
+
+const COLOR_ESTADO = {
+  verde:    'OK',
+  amarillo: 'SIN GPS',
+  rojo:     'APAGADO',
+};
+
+const haversineM = (lat1, lon1, lat2, lon2) => {
+  const R = 6371000;
+  const toRad = x => x * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
 
 const svgRadio = `
 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#6366f1">
@@ -46,11 +61,21 @@ const crearIcono = (hexacolor) => {
   return icon;
 };
 
-const CapaRadios = ({ visible, radioSeleccionado }) => {
+const CapaRadios = ({ visible, radioSeleccionado, maxVisible, filtroEstado = 'TODOS' }) => {
   const [radios, setRadios] = useState([]);
   const [cargando, setCargando] = useState(false);
+  const [mapView, setMapView] = useState(null);
   const map = useMap();
   const markersRef = useRef({});
+
+  useMapEvents({
+    moveend: () => setMapView({ bounds: map.getBounds(), center: map.getCenter() }),
+    zoomend: () => setMapView({ bounds: map.getBounds(), center: map.getCenter() }),
+  });
+
+  useEffect(() => {
+    if (map) setMapView({ bounds: map.getBounds(), center: map.getCenter() });
+  }, [map]);
 
   useEffect(() => {
     if (!visible) return;
@@ -72,6 +97,26 @@ const CapaRadios = ({ visible, radioSeleccionado }) => {
     return () => clearInterval(interval);
   }, [visible]);
 
+  const visibleRadios = useMemo(() => {
+    if (!radios.length || !mapView) return radios;
+
+    const porEstado = filtroEstado === 'TODOS'
+      ? radios
+      : radios.filter(r => COLOR_ESTADO[r.color] === filtroEstado);
+
+    const inBounds = porEstado.filter(r =>
+      r.latitud != null && r.longitud != null &&
+      mapView.bounds.contains([r.latitud, r.longitud])
+    );
+
+    if (!maxVisible || inBounds.length <= maxVisible) return inBounds;
+
+    const { lat, lng } = mapView.center;
+    return [...inBounds]
+      .sort((a, b) => haversineM(lat, lng, a.latitud, a.longitud) - haversineM(lat, lng, b.latitud, b.longitud))
+      .slice(0, maxVisible);
+  }, [radios, mapView, maxVisible, filtroEstado]);
+
   useEffect(() => {
     if (radioSeleccionado && map) {
       const { latitud, longitud, issi } = radioSeleccionado;
@@ -91,7 +136,7 @@ const CapaRadios = ({ visible, radioSeleccionado }) => {
 
   return (
     <LayerGroup>
-      {radios.map((r) => {
+      {visibleRadios.map((r) => {
         const markerId = `radio-${r.issi}`;
         const icono = crearIcono(r.hexacolor);
         return (
