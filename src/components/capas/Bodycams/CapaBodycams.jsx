@@ -4,17 +4,17 @@ import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { obtenerBodycams } from '../../../services/bodycamService';
 
-// SVG Icono Bodycam (Naranja)
-const svgBodycam = `
-<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+// SVG Icono Bodycam dinámico
+const svgBodycam = (color) => `
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
   <circle cx="12" cy="14" r="4"></circle>
   <path d="M12 6h.01"></path>
 </svg>
 `;
 
-const iconoBodycam = new L.DivIcon({
-  html: `<div style="background: white; border-radius: 50%; padding: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">${svgBodycam}</div>`,
+const getIconoBodycam = (color) => new L.DivIcon({
+  html: `<div style="background: white; border-radius: 50%; padding: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">${svgBodycam(color)}</div>`,
   iconSize: [38, 38],
   iconAnchor: [19, 19],
   popupAnchor: [0, -19],
@@ -33,9 +33,9 @@ const CapaBodycams = ({ visible, bodycamSeleccionada }) => {
     const fetchBodycams = async () => {
       try {
         const data = await obtenerBodycams();
-        // Filtramos para asegurar que tengan lat y lng válidos
-        const activas = data.filter(bc => bc.activa && bc.latitud && bc.longitud);
-        setBodycams(activas);
+        // Filtramos para asegurar que tengan lat y lng válidos, sin importar si están activas o no
+        const conUbicacion = data.filter(bc => bc.latitud && bc.longitud);
+        setBodycams(conUbicacion);
       } catch (error) {
         console.error("Error fetching bodycams:", error);
       }
@@ -67,11 +67,27 @@ const CapaBodycams = ({ visible, bodycamSeleccionada }) => {
     <LayerGroup>
       {bodycams.map((bc, idx) => {
         const markerId = `bodycam-${bc.nombre}`;
+        
+        // Calcular estado por tiempo
+        const ahora = new Date();
+        const ultima = new Date(bc.ultima_ubicacion);
+        const diffMinutos = (ahora - ultima) / (1000 * 60);
+
+        let color = '#16a34a'; // Verde por defecto (Activa)
+        let estadoTexto = 'ACTIVA';
+        if (diffMinutos > 60) {
+          color = '#9ca3af'; // Gris (Desconectada)
+          estadoTexto = 'DESCONECTADA';
+        } else if (diffMinutos > 30) {
+          color = '#eab308'; // Amarillo (Inactiva)
+          estadoTexto = 'INACTIVA';
+        }
+
         return (
           <Marker
             key={markerId}
             position={[bc.latitud, bc.longitud]}
-            icon={iconoBodycam}
+            icon={getIconoBodycam(color)}
             zIndexOffset={1500}
             ref={ref => {
               if (ref) markersRef.current[markerId] = ref;
@@ -79,7 +95,8 @@ const CapaBodycams = ({ visible, bodycamSeleccionada }) => {
           >
             <Popup>
               <div style={{ fontSize: '13px', minWidth: '150px' }}>
-                <strong style={{ color: '#f97316' }}>📹 Bodycam: {bc.nombre}</strong><br />
+                <strong style={{ color }}>📹 Bodycam: {bc.nombre}</strong><br />
+                <strong>Estado:</strong> <span style={{ color, fontWeight: 'bold' }}>{estadoTexto}</span><br />
                 <strong>Código:</strong> {bc.codigo}<br />
                 <strong>Última act.:</strong> {new Date(bc.ultima_ubicacion).toLocaleString()}<br />
                 <strong>Lat:</strong> {bc.latitud}<br />
