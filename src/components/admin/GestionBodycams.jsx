@@ -137,6 +137,22 @@ const GestionBodycams = () => {
                 <tbody>
                   {currentItems.map((cam, index) => {
                     const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
+                    
+                    const ahora = new Date();
+                    const ultima = new Date(cam.ultima_ubicacion);
+                    const diffMinutos = (ahora - ultima) / (1000 * 60);
+
+                    let estadoClase = 'bodycams-badge-active';
+                    let estadoTexto = 'ACTIVA';
+                    
+                    if (diffMinutos > 60 || !cam.ultima_ubicacion) {
+                      estadoClase = 'bodycams-badge-disconnected';
+                      estadoTexto = 'DESCONECTADA';
+                    } else if (diffMinutos > 30) {
+                      estadoClase = 'bodycams-badge-inactive';
+                      estadoTexto = 'INACTIVA';
+                    }
+
                     return (
                       <tr key={cam.id || cam.codigo}>
                         <td>{globalIndex}</td>
@@ -147,8 +163,8 @@ const GestionBodycams = () => {
                           {cam.codigo}
                         </td>
                         <td>
-                          <span className={`bodycams-badge ${cam.activa ? 'bodycams-badge-brand' : 'bodycams-badge-mode'}`}>
-                            {cam.activa ? 'ACTIVA' : 'INACTIVA'}
+                          <span className={`bodycams-badge ${estadoClase}`}>
+                            {estadoTexto}
                           </span>
                         </td>
                         <td>

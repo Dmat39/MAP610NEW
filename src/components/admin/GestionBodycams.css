@@ -246,16 +246,22 @@
   font-weight: 600;
 }
 
-.bodycams-badge-brand {
-  background: #eff6ff;
-  color: #2563eb;
-  border: 1px solid #bfdbfe;
+.bodycams-badge-active {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
 }
 
-.bodycams-badge-mode {
-  background: #fff7ed;
-  color: #ea580c;
-  border: 1px solid #fed7aa;
+.bodycams-badge-inactive {
+  background: #fefce8;
+  color: #ca8a04;
+  border: 1px solid #fef08a;
+}
+
+.bodycams-badge-disconnected {
+  background: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
 }
 
 .bodycams-action-buttons {
