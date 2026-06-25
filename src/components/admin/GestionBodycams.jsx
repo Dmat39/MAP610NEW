@@ -16,7 +16,7 @@ const GestionBodycams = () => {
   
   // Paginación y búsqueda locales
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('TODAS');
+  const [statusFilter, setStatusFilter] = useState(['ACTIVA', 'INACTIVA', 'DESCONECTADA']);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
 
@@ -53,8 +53,10 @@ const GestionBodycams = () => {
       estadoTexto = 'DESCONECTADA';
     }
 
-    if (statusFilter !== 'TODAS' && estadoTexto !== statusFilter) {
-      return false;
+    if (Array.isArray(statusFilter)) {
+      if (!statusFilter.includes(estadoTexto)) return false;
+    } else {
+      if (statusFilter !== 'TODAS' && estadoTexto !== statusFilter) return false;
     }
 
     return termMatches;
@@ -122,16 +124,35 @@ const GestionBodycams = () => {
             />
           </div>
 
-          <select 
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-            className="bodycams-filter-select"
-          >
-            <option value="TODAS">Todos los estados</option>
-            <option value="ACTIVA">Activas</option>
-            <option value="INACTIVA">Inactivas</option>
-            <option value="DESCONECTADA">Desconectadas</option>
-          </select>
+          <div className="filtro-estados-modern" style={{ display: 'flex', gap: '6px' }}>
+            {['ACTIVA', 'INACTIVA', 'DESCONECTADA'].map(estado => {
+              const isActive = Array.isArray(statusFilter) && statusFilter.includes(estado);
+              let color = ''; let bg = ''; let label = '';
+              if (estado === 'ACTIVA') { color = '#16a34a'; bg = '#dcfce7'; label = 'Activas'; }
+              if (estado === 'INACTIVA') { color = '#ca8a04'; bg = '#fef08a'; label = 'Inactivas'; }
+              if (estado === 'DESCONECTADA') { color = '#4b5563'; bg = '#f3f4f6'; label = 'Desc.'; }
+
+              return (
+                <button 
+                  key={estado}
+                  onClick={() => {
+                    let nuevos = Array.isArray(statusFilter) ? [...statusFilter] : ['ACTIVA', 'INACTIVA', 'DESCONECTADA'];
+                    if (nuevos.includes(estado)) nuevos = nuevos.filter(f => f !== estado);
+                    else nuevos.push(estado);
+                    setStatusFilter(nuevos);
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    padding: '6px 12px', fontSize: '12px', fontWeight: 'bold', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
+                    border: `1px solid ${isActive ? color : '#d1d5db'}`,
+                    background: isActive ? bg : '#fff',
+                    color: isActive ? color : '#6b7280'
+                  }}>
+                  {isActive ? '✓ ' : ''}{label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="bodycams-toolbar-right">
