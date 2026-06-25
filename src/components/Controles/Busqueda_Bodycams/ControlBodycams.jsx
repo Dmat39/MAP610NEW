@@ -8,7 +8,7 @@ const ControlBodycams = ({
   onBodycamSeleccionada,
   onLimpiarSeleccion,
   mapType = 'leaflet',
-  filtroEstado = 'TODAS',
+  filtroEstado = ['ACTIVA', 'INACTIVA', 'DESCONECTADA'],
   onFiltroEstadoChange = () => {},
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
@@ -116,17 +116,38 @@ const ControlBodycams = ({
               <MapPin size={16} />
             </button>
           </div>
-          <div className="filtro-estado-container" style={{ marginTop: '10px' }}>
-            <select 
-              value={filtroEstado}
-              onChange={(e) => onFiltroEstadoChange(e.target.value)}
-              style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #d1d5db', outline: 'none', fontSize: '13px' }}
-            >
-              <option value="TODAS">Todos los estados</option>
-              <option value="ACTIVA">Activas</option>
-              <option value="INACTIVA">Inactivas</option>
-              <option value="DESCONECTADA">Desconectadas</option>
-            </select>
+          <div className="filtro-estados-modern" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px' }}>
+            {['ACTIVA', 'INACTIVA', 'DESCONECTADA'].map(estado => {
+              const isActive = Array.isArray(filtroEstado) && filtroEstado.includes(estado);
+              let color = '';
+              let bg = '';
+              let label = '';
+              if (estado === 'ACTIVA') { color = '#16a34a'; bg = '#dcfce7'; label = 'Activas'; }
+              if (estado === 'INACTIVA') { color = '#ca8a04'; bg = '#fef08a'; label = 'Inactivas'; }
+              if (estado === 'DESCONECTADA') { color = '#4b5563'; bg = '#f3f4f6'; label = 'Desc.'; }
+
+              return (
+                <button 
+                  key={estado}
+                  onClick={() => {
+                    let nuevos = Array.isArray(filtroEstado) ? [...filtroEstado] : ['ACTIVA', 'INACTIVA', 'DESCONECTADA'];
+                    if (nuevos.includes(estado)) {
+                      nuevos = nuevos.filter(f => f !== estado);
+                    } else {
+                      nuevos.push(estado);
+                    }
+                    onFiltroEstadoChange(nuevos);
+                  }}
+                  style={{
+                    flex: 1, padding: '4px 2px', fontSize: '11px', fontWeight: 'bold', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
+                    border: `1px solid ${isActive ? color : '#d1d5db'}`,
+                    background: isActive ? bg : '#fff',
+                    color: isActive ? color : '#6b7280'
+                  }}>
+                  {isActive ? '✓ ' : ''}{label}
+                </button>
+              );
+            })}
           </div>
         </div>
 

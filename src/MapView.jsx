@@ -213,7 +213,7 @@ const MapView = () => {
   const [recorridoBodycam, setRecorridoBodycam] = useState(null);
   const [maxVisibleRadios, setMaxVisibleRadios] = useState(50);
   const [filtroEstadoRadios, setFiltroEstadoRadios] = useState('TODOS');
-  const [filtroEstadoBodycams, setFiltroEstadoBodycams] = useState('TODAS');
+  const [filtroEstadoBodycams, setFiltroEstadoBodycams] = useState(['ACTIVA', 'INACTIVA', 'DESCONECTADA']);
 
   const getDefaultFechasCombinado = () => {
     const today = new Date();
