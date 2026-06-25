@@ -213,6 +213,7 @@ const MapView = () => {
   const [recorridoBodycam, setRecorridoBodycam] = useState(null);
   const [maxVisibleRadios, setMaxVisibleRadios] = useState(50);
   const [filtroEstadoRadios, setFiltroEstadoRadios] = useState('TODOS');
+  const [filtroEstadoBodycams, setFiltroEstadoBodycams] = useState('TODAS');
 
   const getDefaultFechasCombinado = () => {
     const today = new Date();
@@ -542,6 +543,8 @@ const MapView = () => {
               onBodycamSeleccionada={setBodycamSeleccionada}
               onLimpiarSeleccion={() => setBodycamSeleccionada(null)}
               mapType={mapType}
+              filtroEstado={filtroEstadoBodycams}
+              onFiltroEstadoChange={setFiltroEstadoBodycams}
             />
           )}
           {capasVisibles.radios && (
@@ -651,7 +654,7 @@ const MapView = () => {
           {canSeeCamarasVecinales && (
             <CapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
           )}
-          <CapaBodycams visible={capasVisibles.bodycams} bodycamSeleccionada={bodycamSeleccionada} />
+          <CapaBodycams visible={capasVisibles.bodycams} bodycamSeleccionada={bodycamSeleccionada} filtroEstado={filtroEstadoBodycams} />
           {capasVisibles.rutasBodycams && <CapaHistorialBodycams dataRecorrido={recorridoBodycam} />}
           <CapaRadios visible={capasVisibles.radios} radioSeleccionado={radioSeleccionado} maxVisible={maxVisibleRadios} filtroEstado={filtroEstadoRadios} />
           <GpsMapEvents
@@ -769,7 +772,7 @@ const MapView = () => {
           {canSeeCamarasVecinales && (
             <GoogleCapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
           )}
-          <GoogleCapaBodycams visible={capasVisibles.bodycams} bodycamSeleccionada={bodycamSeleccionada} />
+          <GoogleCapaBodycams visible={capasVisibles.bodycams} bodycamSeleccionada={bodycamSeleccionada} filtroEstado={filtroEstadoBodycams} />
           <GoogleCapaRobos visible={capasVisibles.robos} filtros={filtrosRobos} />
           <GoogleCapaExtorsion visible={capasVisibles.extorsiones} filtros={filtrosExtorsion} />
           <GoogleCapaHomicidios visible={capasVisibles.homicidios} filtros={filtrosHomicidios} />
