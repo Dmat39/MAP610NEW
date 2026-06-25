@@ -88,7 +88,7 @@ const GoogleCapaBodycams = ({ visible, bodycamSeleccionada, filtroEstado = 'TODA
 
         const encodedSvg = svgStr.replace(/#/g, '%23');
         const iconConfig = window.google && window.google.maps ? {
-          url: \`data:image/svg+xml;charset=UTF-8,\${encodedSvg}\`,
+          url: `data:image/svg+xml;charset=UTF-8,${encodedSvg}`,
           scaledSize: new window.google.maps.Size(size[0], size[1]),
           anchor: new window.google.maps.Point(anchor[0], anchor[1])
         } : null;
