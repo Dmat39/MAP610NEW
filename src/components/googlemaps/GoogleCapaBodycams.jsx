@@ -49,6 +49,8 @@ const GoogleCapaBodycams = ({ visible, bodycamSeleccionada, filtroEstado = 'TODA
 
   if (!visible) return null;
 
+  return (
+    <>
       {bodycams.map((bc) => {
         const ahora = new Date();
         const ultima = new Date(bc.ultima_ubicacion);
