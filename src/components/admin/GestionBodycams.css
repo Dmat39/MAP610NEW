@@ -292,6 +292,23 @@
 @keyframes slideInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Alertas */
+.bodycams-toolbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.bodycams-filter-select {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  background-color: white;
+  margin-left: 10px;
+  cursor: pointer;
+  color: #374151;
+}
+
 .bodycams-alert {
   display: flex;
   align-items: center;

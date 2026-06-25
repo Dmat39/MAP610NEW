@@ -16,6 +16,7 @@ const GestionBodycams = () => {
   
   // Paginación y búsqueda locales
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('TODAS');
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
 
@@ -37,10 +38,27 @@ const GestionBodycams = () => {
   };
 
   // Filtrado local
-  const filteredBodycams = bodycams.filter(b => 
-    (b.nombre || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (b.codigo || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredBodycams = bodycams.filter(b => {
+    // 1. Filtro por búsqueda
+    const termMatches = (b.nombre || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        (b.codigo || '').toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // 2. Filtro por estado calculado
+    let estadoTexto = 'ACTIVA';
+    if (b.ultima_ubicacion) {
+      const diffMinutos = (new Date() - new Date(b.ultima_ubicacion)) / (1000 * 60);
+      if (diffMinutos > 60) estadoTexto = 'DESCONECTADA';
+      else if (diffMinutos > 30) estadoTexto = 'INACTIVA';
+    } else {
+      estadoTexto = 'DESCONECTADA';
+    }
+
+    if (statusFilter !== 'TODAS' && estadoTexto !== statusFilter) {
+      return false;
+    }
+
+    return termMatches;
+  });
 
   const totalPages = Math.ceil(filteredBodycams.length / ITEMS_PER_PAGE);
   const currentItems = filteredBodycams.slice(
@@ -93,11 +111,27 @@ const GestionBodycams = () => {
       {/* Toolbar (Buscador y Contador) */}
       <div className="bodycams-toolbar">
         <div className="bodycams-toolbar-left">
-          <SearchInput 
-            value={searchTerm} 
-            onChange={(val) => { setSearchTerm(val); setCurrentPage(1); }}
-            placeholder="Buscar por nombre o código..." 
-          />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '240px', flexShrink: 0 }}>
+            <Search size={18} style={{ position: 'absolute', left: '12px', color: '#6b7280', pointerEvents: 'none' }} />
+            <input 
+              type="text"
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              placeholder="Buscar por nombre o código..."
+              style={{ width: '100%', padding: '8px 12px 8px 40px', border: '1px solid #d1d5db', borderRadius: '6px', outline: 'none', fontSize: '14px' }}
+            />
+          </div>
+
+          <select 
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+            className="bodycams-filter-select"
+          >
+            <option value="TODAS">Todos los estados</option>
+            <option value="ACTIVA">Activas</option>
+            <option value="INACTIVA">Inactivas</option>
+            <option value="DESCONECTADA">Desconectadas</option>
+          </select>
         </div>
 
         <div className="bodycams-toolbar-right">

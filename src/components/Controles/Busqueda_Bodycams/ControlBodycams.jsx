@@ -8,6 +8,8 @@ const ControlBodycams = ({
   onBodycamSeleccionada,
   onLimpiarSeleccion,
   mapType = 'leaflet',
+  filtroEstado = 'TODAS',
+  onFiltroEstadoChange = () => {},
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const panelRef = useRef(null);
@@ -113,6 +115,18 @@ const ControlBodycams = ({
             >
               <MapPin size={16} />
             </button>
+          </div>
+          <div className="filtro-estado-container" style={{ marginTop: '10px' }}>
+            <select 
+              value={filtroEstado}
+              onChange={(e) => onFiltroEstadoChange(e.target.value)}
+              style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #d1d5db', outline: 'none', fontSize: '13px' }}
+            >
+              <option value="TODAS">Todos los estados</option>
+              <option value="ACTIVA">Activas</option>
+              <option value="INACTIVA">Inactivas</option>
+              <option value="DESCONECTADA">Desconectadas</option>
+            </select>
           </div>
         </div>
 

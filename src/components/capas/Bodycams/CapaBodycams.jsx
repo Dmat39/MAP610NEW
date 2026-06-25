@@ -21,7 +21,7 @@ const getIconoBodycam = (color) => new L.DivIcon({
   className: ''
 });
 
-const CapaBodycams = ({ visible, bodycamSeleccionada }) => {
+const CapaBodycams = ({ visible, bodycamSeleccionada, filtroEstado = 'TODAS' }) => {
   const [bodycams, setBodycams] = useState([]);
   const map = useMap();
   const markersRef = useRef({});
@@ -81,6 +81,10 @@ const CapaBodycams = ({ visible, bodycamSeleccionada }) => {
         } else if (diffMinutos > 30) {
           color = '#eab308'; // Amarillo (Inactiva)
           estadoTexto = 'INACTIVA';
+        }
+
+        if (filtroEstado !== 'TODAS' && estadoTexto !== filtroEstado) {
+          return null;
         }
 
         return (
