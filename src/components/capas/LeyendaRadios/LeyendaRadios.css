@@ -1,9 +1,9 @@
-/* LeyendaCamarasMunicipales.css */
-.leyenda-camaras-municipales {
+/* LeyendaRadios.css */
+.leyenda-radios {
   position: fixed;
   background: var(--theme-surface);
   border: 1px solid var(--theme-border);
-  border-top: 4px solid #16a34a;
+  border-top: 4px solid #6366f1;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
   padding: 14px;
@@ -13,13 +13,13 @@
   transition: right 0.3s ease, bottom 0.3s ease;
 }
 
-.leyenda-municipales-header {
+.leyenda-radios-header {
   margin-bottom: 10px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--theme-border);
 }
 
-.leyenda-municipales-header h4 {
+.leyenda-radios-header h4 {
   margin: 0;
   font-size: 13.5px;
   font-weight: 700;
@@ -29,29 +29,13 @@
   gap: 7px;
 }
 
-.leyenda-municipales-header h4 svg {
-  color: #16a34a;
-}
-
-.leyenda-municipales-content {
+.leyenda-radios-content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
-.leyenda-municipales-section {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.leyenda-municipales-items {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.leyenda-municipales-item {
+.leyenda-radios-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -61,74 +45,51 @@
   transition: background 0.2s ease;
 }
 
-.leyenda-municipales-item:hover {
+.leyenda-radios-item:hover {
   background: var(--theme-bg);
 }
 
-.leyenda-municipales-icon {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-.leyenda-municipales-pin {
+.leyenda-radios-pin {
   flex-shrink: 0;
   display: block;
 }
 
-.leyenda-municipales-info {
+.leyenda-radios-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
   flex: 1;
 }
 
-.leyenda-municipales-tipo {
+.leyenda-radios-label {
   font-size: 12px;
   font-weight: 700;
-  color: var(--theme-text-2);
   line-height: 1.2;
 }
 
-.leyenda-municipales-desc {
+.leyenda-radios-desc {
   font-size: 10px;
   font-weight: 500;
   color: var(--theme-text-3);
   line-height: 1.2;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
-  .leyenda-camaras-municipales {
+  .leyenda-radios {
     right: 10px;
-    bottom: 80px;
     min-width: 180px;
     padding: 12px;
   }
 
-  .leyenda-camaras-municipales.stacked {
-    bottom: 260px;
-  }
-
-  .leyenda-camaras-municipales.panel-expanded {
-    right: 10px;
-  }
-
-  .leyenda-municipales-header h4 {
+  .leyenda-radios-header h4 {
     font-size: 12px;
   }
 
-  .leyenda-municipales-icon {
-    width: 24px;
-    height: 24px;
-  }
-
-  .leyenda-municipales-tipo {
+  .leyenda-radios-label {
     font-size: 11px;
   }
 
-  .leyenda-municipales-desc {
+  .leyenda-radios-desc {
     font-size: 9px;
   }
 }

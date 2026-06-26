@@ -86,6 +86,8 @@ import GoogleCapaBusquedaDirecciones from './components/googlemaps/GoogleCapaBus
 import GoogleCapaUbicadorPunto from './components/googlemaps/GoogleCapaUbicadorPuntos/GoogleCapaUbicadorPunto';
 import LeyendaCamaras from './components/capas/LeyendaCamaras/LeyendaCamaras';
 import LeyendaCamarasMunicipales from './components/capas/LeyendaCamarasMunicipales/LeyendaCamarasMunicipales';
+import LeyendaRadios from './components/capas/LeyendaRadios/LeyendaRadios';
+import LeyendaBodycams from './components/capas/LeyendaBodycams/LeyendaBodycams';
 import ClusterIncidencias from './components/capas/ClusterIncidencias/ClusterIncidencias';
 import GoogleClusterIncidencias from './components/googlemaps/GoogleClusterIncidencias';
 import GoogleCapaActividades from './components/googlemaps/GoogleCapaActividades';
@@ -840,6 +842,12 @@ const MapView = () => {
               vecinalesVisible={capasVisibles.camarasVecinales}
             />
           )}
+
+          {/* Leyenda de Radios GPS */}
+          <LeyendaRadios visible={capasVisibles.radios} />
+
+          {/* Leyenda de Bodycams */}
+          <LeyendaBodycams visible={capasVisibles.bodycams} />
         </div>
       </div>
   );
