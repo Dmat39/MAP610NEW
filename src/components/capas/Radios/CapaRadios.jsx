@@ -19,42 +19,28 @@ const haversineM = (lat1, lon1, lat2, lon2) => {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-const svgRadio = `
-<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#6366f1">
-  <!-- antena -->
-  <rect x="13" y="1" width="2" height="5" rx="1" fill="#6366f1"/>
-  <!-- cuerpo walkie-talkie -->
-  <rect x="6" y="5" width="12" height="17" rx="2" fill="#6366f1"/>
-  <!-- pantalla -->
-  <rect x="8" y="7" width="8" height="4" rx="1" fill="white" opacity="0.9"/>
-  <!-- botón PTT -->
-  <rect x="8" y="13" width="4" height="2" rx="1" fill="white" opacity="0.8"/>
-  <!-- altavoz líneas -->
-  <rect x="8" y="16.5" width="8" height="1" rx="0.5" fill="white" opacity="0.5"/>
-  <rect x="8" y="18"   width="6" height="1" rx="0.5" fill="white" opacity="0.5"/>
-</svg>
-`;
-
-const colorMap = {
-  verde:    '#22c55e',
-  rojo:     '#ef4444',
-  amarillo: '#eab308',
-  naranja:  '#f97316',
-  gris:     '#6b7280',
-};
-
 // Cache de iconos por color para evitar recrear DivIcon en cada polling update
 const _iconCacheRadios = new Map();
 
 const crearIcono = (hexacolor) => {
   const color = hexacolor || '#6366f1';
   if (_iconCacheRadios.has(color)) return _iconCacheRadios.get(color);
-  const svg = svgRadio.replaceAll('#6366f1', color);
   const icon = new L.DivIcon({
-    html: `<div style="background:white;border-radius:50%;padding:4px;box-shadow:0 2px 5px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">${svg}</div>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -18],
+    html: `<div>
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="28" viewBox="0 0 28 36" style="display:block; filter: drop-shadow(0px 3px 3px rgba(0,0,0,0.3));">
+        <path d="M14 0C6.27 0 0 6.27 0 14c0 9.75 14 22 14 22S28 23.75 28 14C28 6.27 21.73 0 14 0z" fill="white" stroke="${color}" stroke-width="2.5"/>
+        <circle cx="14" cy="13" r="9" fill="white" stroke="${color}" stroke-width="1.5"/>
+        <rect x="15.5" y="4.5" width="1.5" height="3.5" rx="0.75" fill="${color}"/>
+        <rect x="10" y="7.5" width="8" height="11" rx="1.5" fill="${color}"/>
+        <rect x="11.5" y="9" width="5" height="3" rx="0.5" fill="white" opacity="0.9"/>
+        <rect x="11.5" y="13.5" width="3" height="1.5" rx="0.5" fill="white" opacity="0.8"/>
+        <rect x="11.5" y="16" width="5" height="0.8" rx="0.4" fill="white" opacity="0.5"/>
+        <rect x="11.5" y="17.2" width="4" height="0.8" rx="0.4" fill="white" opacity="0.5"/>
+      </svg>
+    </div>`,
+    iconSize: [22, 28],
+    iconAnchor: [11, 28],
+    popupAnchor: [0, -28],
     className: '',
   });
   _iconCacheRadios.set(color, icon);

@@ -81,7 +81,7 @@ const CapaBodycams = ({ visible, bodycamSeleccionada, filtroEstado = ['ACTIVA', 
         const ultima = new Date(bc.ultima_ubicacion);
         const diffMinutos = (ahora - ultima) / (1000 * 60);
 
-        let color = '#16a34a'; // Verde por defecto (Activa)
+        let color = '#16a34a'; // Verde (Activa)
         let estadoTexto = 'ACTIVA';
         if (diffMinutos > 60) {
           color = '#9ca3af'; // Gris (Desconectada)

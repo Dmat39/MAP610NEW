@@ -1,5 +1,5 @@
 // LeyendaCamaras.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useMapContext } from '../../../context/MapContext';
 import { useMapLayout } from '../../../context/MapLayoutContext';
 import './LeyendaCamaras.css';
@@ -12,12 +12,17 @@ const BASE_RIGHT = 20;
 const LeyendaCamaras = ({ camarasVecinalesVisible }) => {
     const { marcasCamarasVisibles, handleToggleMarcaCamara, conteoCamarasVecinales } = useMapContext();
     const { registerPanel, unregisterPanel, getBottomOffset, rightOffset } = useMapLayout();
+    const containerRef = useRef(null);
 
     useEffect(() => {
-        if (camarasVecinalesVisible) {
-            registerPanel(PANEL_ID, { order: PANEL_ORDER, height: PANEL_HEIGHT });
-            return () => unregisterPanel(PANEL_ID);
-        }
+        if (!camarasVecinalesVisible) return;
+        const el = containerRef.current;
+        if (!el) return;
+        const update = () => registerPanel(PANEL_ID, { order: PANEL_ORDER, height: el.offsetHeight });
+        update();
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        return () => { ro.disconnect(); unregisterPanel(PANEL_ID); };
     }, [camarasVecinalesVisible, registerPanel, unregisterPanel]);
 
     if (!camarasVecinalesVisible) {
@@ -26,6 +31,7 @@ const LeyendaCamaras = ({ camarasVecinalesVisible }) => {
 
     return (
         <div
+            ref={containerRef}
             className="leyenda-camaras"
             style={{
                 bottom: getBottomOffset(PANEL_ID),
