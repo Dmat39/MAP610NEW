@@ -2,11 +2,18 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useClusterWorker } from '../../hooks/useClusterWorker';
 import ExcelJS from 'exceljs';
 import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  PieChart, Pie, Cell, Legend, AreaChart, Area,
+} from 'recharts';
+import {
   FileDown, Filter, RefreshCw, CalendarDays,
   ChevronDown, ChevronRight, BarChart2, AlertTriangle, ScatterChart, SlidersHorizontal,
+  Clock, MapPin, TrendingUp, Flame, Sunrise, Activity,
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL;
+
+const TIPO_COLORS = ['#1d4ed8','#7c3aed','#16a34a','#dc2626','#f97316','#0891b2','#a21caf','#854d0e','#15803d','#9333ea','#0369a1','#b45309','#be185d','#065f46','#1e40af'];
 
 // ── Diseño ────────────────────────────────────────────────────────────────────
 const PRIMARY    = '#1d4ed8';
@@ -133,6 +140,31 @@ const generarExcelIncidencias = async (data, filtroLabel, rangoLabel) => {
   data.forEach(({ registros }) => registros.forEach(r => { byJur[r.jurisdiccion||'Sin datos']=(byJur[r.jurisdiccion||'Sin datos']||0)+1; }));
   Object.entries(byJur).sort((a,b)=>b[1]-a[1]).forEach(([j,n]) => {
     const row=ws1.addRow([j,n,total>0?`${((n/total)*100).toFixed(1)}%`:'0%']);
+    row.getCell(2).alignment={horizontal:'center'}; row.getCell(3).alignment={horizontal:'center'};
+  });
+
+  // ── Resumen por Turno ──
+  ws1.addRow([]);
+  const hdrT = ws1.addRow(['Turno','Total','% del Total']);
+  hdrT.eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF7C3AED'}}; c.alignment={horizontal:'center'}; });
+  const byTurnoXls = {};
+  data.forEach(({ registros }) => registros.forEach(r => { const t=r.turno?.trim()||'Sin turno'; byTurnoXls[t]=(byTurnoXls[t]||0)+1; }));
+  const TURNO_ORDER = ['Mañana','Tarde','Noche'];
+  Object.entries(byTurnoXls).sort((a,b)=>{ const ai=TURNO_ORDER.indexOf(a[0]),bi=TURNO_ORDER.indexOf(b[0]); if(ai!==-1&&bi!==-1) return ai-bi; if(ai!==-1) return -1; if(bi!==-1) return 1; return b[1]-a[1]; }).forEach(([t,n])=>{
+    const row=ws1.addRow([t,n,total>0?`${((n/total)*100).toFixed(1)}%`:'0%']);
+    row.getCell(2).alignment={horizontal:'center'}; row.getCell(3).alignment={horizontal:'center'};
+  });
+  const totT=ws1.addRow(['TOTAL',total,'100%']);
+  totT.font={bold:true}; totT.eachCell(c=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF5F3FF'}}; c.alignment={horizontal:'center'}; });
+
+  // ── Incidencias por Hora ──
+  ws1.addRow([]);
+  const hdrH = ws1.addRow(['Hora','Total','% del Total']);
+  hdrH.eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF97316'}}; c.alignment={horizontal:'center'}; });
+  const byHoraXls = {};
+  data.forEach(({ registros }) => registros.forEach(r => { if(!r.hora) return; const h=String(r.hora).split(':')[0].padStart(2,'0'); byHoraXls[h]=(byHoraXls[h]||0)+1; }));
+  Object.entries(byHoraXls).sort((a,b)=>b[1]-a[1]).forEach(([h,n])=>{
+    const row=ws1.addRow([`${h}:00 – ${h}:59`,n,total>0?`${((n/total)*100).toFixed(1)}%`:'0%']);
     row.getCell(2).alignment={horizontal:'center'}; row.getCell(3).alignment={horizontal:'center'};
   });
 
@@ -293,6 +325,85 @@ const ReporteIncidencias = () => {
   }, [activeItems, range, jurisdiction]);
 
   const totalIncidencias = rawData?.reduce((s,r)=>s+r.registros.length, 0) ?? 0;
+
+  const byTurno = useMemo(() => {
+    if (!rawData) return [];
+    const counts = {};
+    rawData.forEach(({ registros }) => {
+      registros.forEach(r => {
+        const t = r.turno?.trim() || 'Sin turno';
+        counts[t] = (counts[t] || 0) + 1;
+      });
+    });
+    const ORDER = ['Mañana', 'Tarde', 'Noche'];
+    return Object.entries(counts).sort((a, b) => {
+      const ai = ORDER.indexOf(a[0]), bi = ORDER.indexOf(b[0]);
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
+      return b[1] - a[1];
+    });
+  }, [rawData]);
+
+  const byHora = useMemo(() => {
+    if (!rawData) return [];
+    const counts = {};
+    rawData.forEach(({ registros }) => {
+      registros.forEach(r => {
+        if (!r.hora) return;
+        const h = String(r.hora).split(':')[0].padStart(2, '0');
+        counts[h] = (counts[h] || 0) + 1;
+      });
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [rawData]);
+
+  const tipoChartData = useMemo(() =>
+    (rawData || []).filter(r => r.registros.length > 0)
+      .sort((a, b) => b.registros.length - a.registros.length)
+      .map(r => ({ name: r.label, value: r.registros.length }))
+  , [rawData]);
+
+  const byJur = useMemo(() => {
+    if (!rawData) return [];
+    const counts = {};
+    rawData.forEach(({ registros }) => registros.forEach(r => {
+      const j = r.jurisdiccion?.trim() || 'Sin datos';
+      counts[j] = (counts[j] || 0) + 1;
+    }));
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [rawData]);
+
+  const byFecha = useMemo(() => {
+    if (!rawData) return [];
+    const counts = {};
+    rawData.forEach(({ registros }) => registros.forEach(r => {
+      if (!r.fecha) return;
+      counts[r.fecha] = (counts[r.fecha] || 0) + 1;
+    }));
+    return Object.entries(counts).sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([fecha, value]) => ({ fecha, value, label: fecha.slice(5).split('-').reverse().join('/') }));
+  }, [rawData]);
+
+  const horaProfile = useMemo(() => {
+    const map = Object.fromEntries(byHora.map(([h, v]) => [h, v]));
+    const peak = byHora[0]?.[0];
+    return Array.from({ length: 24 }, (_, i) => {
+      const h = String(i).padStart(2, '0');
+      return { name: h, value: map[h] || 0, peak: h === peak };
+    });
+  }, [byHora]);
+
+  const insights = useMemo(() => {
+    const horaPico  = byHora[0]  ? { hora: byHora[0][0], count: byHora[0][1] } : null;
+    const turnoTop  = [...byTurno].sort((a, b) => b[1] - a[1])[0] || null;
+    const jurTop    = byJur[0] || null;
+    const tipoTop   = tipoChartData[0] || null;
+    const diaPico   = [...byFecha].sort((a, b) => b.value - a.value)[0] || null;
+    const numDias   = byFecha.length || 1;
+    return { horaPico, turnoTop, jurTop, tipoTop, diaPico, numDias, promedioDiario: totalIncidencias / numDias };
+  }, [byHora, byTurno, byJur, tipoChartData, byFecha, totalIncidencias]);
+
   const jurLabel = JURISDICCIONES.find(j=>j.id===jurisdiction)?.label ?? 'Todas';
   const tiposLabel = activeItems.length===ALL_ITEMS.length ? 'Todos los tipos' : activeItems.map(i=>i.label).join(', ');
   const rangoLabel = `${range.start} al ${range.end}`;
@@ -307,6 +418,8 @@ const ReporteIncidencias = () => {
     borderRadius:9, border:'none', background:bg, color:'white',
     cursor:'pointer', fontSize:13, fontWeight:700, transition:'opacity 0.15s',
   });
+  const tooltipStyle = { background:CARD, border:BORDER, borderRadius:8, fontSize:12, boxShadow:SHADOW, color:TEXT_DARK };
+  const panelSt = { background:'var(--theme-surface-2)', borderRadius:10, border:BORDER, padding:'16px 18px' };
 
   return (
     <div style={{ background:BG, minHeight:'100vh', padding:'28px 32px', fontFamily:"'Inter','Segoe UI',system-ui,sans-serif" }}>
@@ -475,6 +588,163 @@ const ReporteIncidencias = () => {
                 ))}
               </div>
 
+              {/* ── Dashboard de estadísticas visuales ── */}
+              <div style={{ background:CARD, borderRadius:RADIUS, border:BORDER, boxShadow:SHADOW, padding:'18px 20px' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:18 }}>
+                  <Activity size={16} color={PRIMARY}/>
+                  <span style={{ fontSize:15, fontWeight:800, color:TEXT_DARK }}>Estadísticas visuales</span>
+                </div>
+
+                {/* Insight cards */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:12, marginBottom:24 }}>
+                  {[
+                    { icon:<Clock size={15}/>,      label:'Hora pico',          value: insights.horaPico ? `${insights.horaPico.hora}:00 h` : '—',  sub: insights.horaPico ? `${insights.horaPico.count.toLocaleString('es-PE')} incidencias` : 'Sin datos', color:'#dc2626' },
+                    { icon:<Sunrise size={15}/>,    label:'Turno crítico',      value: insights.turnoTop ? insights.turnoTop[0] : '—',             sub: insights.turnoTop ? `${insights.turnoTop[1].toLocaleString('es-PE')} incidencias` : 'Sin datos', color:'#f59e0b' },
+                    { icon:<MapPin size={15}/>,     label:'Jurisdicción crítica', value: insights.jurTop ? insights.jurTop[0] : '—',              sub: insights.jurTop ? `${insights.jurTop[1].toLocaleString('es-PE')} incidencias` : 'Sin datos', color:'#7c3aed', small:true },
+                    { icon:<Flame size={15}/>,      label:'Tipo más frecuente', value: insights.tipoTop ? insights.tipoTop.name : '—',             sub: insights.tipoTop ? `${insights.tipoTop.value.toLocaleString('es-PE')} incidencias` : 'Sin datos', color:'#ea580c', small:true },
+                    { icon:<TrendingUp size={15}/>, label:'Promedio diario',    value: insights.promedioDiario.toFixed(1),                          sub: `en ${insights.numDias} día(s)`, color:'#16a34a' },
+                  ].map((c,i)=>(
+                    <div key={i} style={{ position:'relative', background:'var(--theme-surface-2)', borderRadius:10, border:BORDER, padding:'12px 14px 12px 16px', overflow:'hidden' }}>
+                      <div style={{ position:'absolute', top:0, left:0, width:4, height:'100%', background:c.color }}/>
+                      <div style={{ display:'flex', alignItems:'center', gap:6, color:c.color, marginBottom:6 }}>
+                        {c.icon}
+                        <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.04em' }}>{c.label}</span>
+                      </div>
+                      <div style={{ fontSize:c.small?15:21, fontWeight:800, color:TEXT_DARK, lineHeight:1.15, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{c.value}</div>
+                      <div style={{ fontSize:11, color:TEXT_LIGHT, marginTop:3 }}>{c.sub}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Tendencia temporal */}
+                {byFecha.length > 1 && (
+                  <div style={{ ...panelSt, marginBottom:18 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:TEXT_MID, marginBottom:12, textTransform:'uppercase', letterSpacing:'0.04em' }}>Tendencia en el tiempo</div>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <AreaChart data={byFecha} margin={{top:5,right:12,bottom:0,left:-12}}>
+                        <defs>
+                          <linearGradient id="gradTrend" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={PRIMARY} stopOpacity={0.4}/>
+                            <stop offset="100%" stopColor={PRIMARY} stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--theme-border-2)"/>
+                        <XAxis dataKey="label" tick={{fontSize:9,fill:TEXT_LIGHT}} tickLine={false} axisLine={false} minTickGap={24}/>
+                        <YAxis tick={{fontSize:9,fill:TEXT_LIGHT}} tickLine={false} axisLine={false} width={32} allowDecimals={false}/>
+                        <Tooltip contentStyle={tooltipStyle} formatter={(v)=>[v.toLocaleString('es-PE'),'Incidencias']} labelFormatter={(l)=>`Día ${l}`}/>
+                        <Area type="monotone" dataKey="value" stroke={PRIMARY} strokeWidth={2.5} fill="url(#gradTrend)" dot={false} activeDot={{r:4}}/>
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {/* Turno (donut) + Jurisdicción (barras) */}
+                <div style={{ display:'grid', gridTemplateColumns:'minmax(220px,1fr) 1.4fr', gap:18, marginBottom:18, alignItems:'stretch' }}>
+
+                  {/* Turno — Donut con total al centro */}
+                  <div style={panelSt}>
+                    <div style={{ fontSize:12, fontWeight:700, color:TEXT_MID, marginBottom:10, textAlign:'center', textTransform:'uppercase', letterSpacing:'0.04em' }}>Por turno</div>
+                    <div style={{ position:'relative' }}>
+                      <ResponsiveContainer width="100%" height={230}>
+                        <PieChart>
+                          <Pie
+                            data={byTurno.map(([name,value])=>({name,value}))}
+                            cx="50%" cy="44%" outerRadius={80} innerRadius={50}
+                            paddingAngle={2} dataKey="value"
+                            labelLine={false}
+                            label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                              if (percent < 0.05) return null;
+                              const RADIAN = Math.PI / 180;
+                              const r = innerRadius + (outerRadius - innerRadius) * 0.5;
+                              const x = cx + r * Math.cos(-midAngle * RADIAN);
+                              const y = cy + r * Math.sin(-midAngle * RADIAN);
+                              return (
+                                <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" style={{fontSize:12,fontWeight:700}}>
+                                  {`${(percent*100).toFixed(0)}%`}
+                                </text>
+                              );
+                            }}
+                          >
+                            {byTurno.map(([name],i)=>(
+                              <Cell key={i} fill={name==='Mañana'?'#f59e0b':name==='Tarde'?'#f97316':name==='Noche'?'#4f46e5':'#94a3b8'}/>
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={tooltipStyle} formatter={(v)=>[v.toLocaleString('es-PE'),'Incidencias']}/>
+                          <Legend iconType="circle" iconSize={8} wrapperStyle={{fontSize:11}}/>
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div style={{ position:'absolute', top:'44%', left:0, right:0, transform:'translateY(-50%)', textAlign:'center', pointerEvents:'none' }}>
+                        <div style={{ fontSize:24, fontWeight:800, color:TEXT_DARK, lineHeight:1 }}>{byTurno.reduce((s,[,v])=>s+v,0).toLocaleString('es-PE')}</div>
+                        <div style={{ fontSize:9, color:TEXT_LIGHT, textTransform:'uppercase', letterSpacing:'0.05em', marginTop:2 }}>Total</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Jurisdicción — barras horizontales */}
+                  <div style={panelSt}>
+                    <div style={{ fontSize:12, fontWeight:700, color:TEXT_MID, marginBottom:10, textTransform:'uppercase', letterSpacing:'0.04em' }}>Por jurisdicción</div>
+                    {byJur.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={Math.max(180, byJur.length * 30)}>
+                        <BarChart layout="vertical" data={byJur.map(([name,value])=>({name,value}))} margin={{top:0,right:40,bottom:0,left:8}}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--theme-border-2)"/>
+                          <XAxis type="number" tick={{fontSize:9,fill:TEXT_LIGHT}} tickLine={false} axisLine={false}/>
+                          <YAxis type="category" dataKey="name" tick={{fontSize:11,fill:TEXT_DARK}} tickLine={false} axisLine={false} width={108}/>
+                          <Tooltip contentStyle={tooltipStyle} formatter={(v)=>[v.toLocaleString('es-PE'),'Incidencias']} cursor={{fill:'var(--theme-surface-2)'}}/>
+                          <Bar dataKey="value" radius={[0,4,4,0]} label={{position:'right',fontSize:10,fontWeight:600,fill:TEXT_MID}}>
+                            {byJur.map((_,i)=>(<Cell key={i} fill={i===0?'#7c3aed':'#a78bfa'}/>))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div style={{ padding:30, textAlign:'center', color:TEXT_LIGHT, fontSize:12 }}>Sin datos de jurisdicción</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Perfil por hora — 24h con pico resaltado */}
+                <div style={{ ...panelSt, marginBottom:18 }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:TEXT_MID, textTransform:'uppercase', letterSpacing:'0.04em' }}>Perfil horario (24 h)</span>
+                    {insights.horaPico && (
+                      <span style={{ fontSize:11, color:'#dc2626', fontWeight:700, display:'flex', alignItems:'center', gap:4 }}>
+                        <Flame size={12}/> Pico: {insights.horaPico.hora}:00 h
+                      </span>
+                    )}
+                  </div>
+                  <ResponsiveContainer width="100%" height={210}>
+                    <BarChart data={horaProfile} margin={{top:8,right:8,bottom:0,left:-12}}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--theme-border-2)"/>
+                      <XAxis dataKey="name" tick={{fontSize:9,fill:TEXT_LIGHT}} tickLine={false} axisLine={false} interval={0}/>
+                      <YAxis tick={{fontSize:9,fill:TEXT_LIGHT}} tickLine={false} axisLine={false} width={32} allowDecimals={false}/>
+                      <Tooltip contentStyle={tooltipStyle} formatter={(v)=>[v.toLocaleString('es-PE'),'Incidencias']} labelFormatter={(l)=>`${l}:00 – ${l}:59`} cursor={{fill:'var(--theme-surface-2)'}}/>
+                      <Bar dataKey="value" radius={[3,3,0,0]}>
+                        {horaProfile.map((d,i)=>(<Cell key={i} fill={d.peak?'#dc2626':PRIMARY}/>))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Por tipo — barras horizontales */}
+                {tipoChartData.length > 0 && (
+                  <div style={panelSt}>
+                    <div style={{ fontSize:12, fontWeight:700, color:TEXT_MID, marginBottom:12, textTransform:'uppercase', letterSpacing:'0.04em' }}>Por tipo de incidencia</div>
+                    <ResponsiveContainer width="100%" height={Math.max(160, tipoChartData.length * 30)}>
+                      <BarChart layout="vertical" data={tipoChartData} margin={{top:0,right:48,bottom:0,left:130}}>
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--theme-border-2)"/>
+                        <XAxis type="number" tick={{fontSize:9,fill:TEXT_LIGHT}} tickLine={false} axisLine={false}/>
+                        <YAxis type="category" dataKey="name" tick={{fontSize:11,fill:TEXT_DARK}} tickLine={false} axisLine={false} width={130}/>
+                        <Tooltip contentStyle={tooltipStyle} formatter={(v)=>[v.toLocaleString('es-PE'),'Incidencias']} cursor={{fill:'var(--theme-surface-2)'}}/>
+                        <Bar dataKey="value" radius={[0,4,4,0]} label={{position:'right',fontSize:10,fontWeight:600,fill:TEXT_MID}}>
+                          {tipoChartData.map((_,i)=>(
+                            <Cell key={i} fill={TIPO_COLORS[i % TIPO_COLORS.length]}/>
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+
               <div style={{ background:CARD, borderRadius:RADIUS, border:BORDER, boxShadow:SHADOW, overflow:'hidden' }}>
                 <div style={{ padding:'14px 20px', borderBottom:'1px solid #f1f5f9', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                   <span style={{ fontSize:14, fontWeight:700, color:TEXT_DARK }}>Resumen por tipo</span>
@@ -505,6 +775,80 @@ const ReporteIncidencias = () => {
                     </tr>
                   </tbody>
                 </table>
+              </div>
+
+              {/* Resumen por Turno + Incidencias por Hora */}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+
+                {/* Turno */}
+                <div style={{ background:CARD, borderRadius:RADIUS, border:BORDER, boxShadow:SHADOW, overflow:'hidden' }}>
+                  <div style={{ padding:'14px 20px', borderBottom:'1px solid #f1f5f9' }}>
+                    <span style={{ fontSize:14, fontWeight:700, color:TEXT_DARK }}>Resumen por turno</span>
+                  </div>
+                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                    <thead><tr>
+                      {['Turno','Total','% del Total'].map(h=>(
+                        <th key={h} style={{ padding:'9px 16px', textAlign:h==='Turno'?'left':'center', fontWeight:600, fontSize:11, color:TEXT_LIGHT, textTransform:'uppercase', letterSpacing:'0.05em', borderBottom:'1px solid #f1f5f9' }}>{h}</th>
+                      ))}
+                    </tr></thead>
+                    <tbody>
+                      {byTurno.map(([turno,count],i)=>{
+                        const badge = turno==='Mañana'?{bg:'#fef9c3',tc:'#92400e'}:turno==='Tarde'?{bg:'#ffedd5',tc:'#9a3412'}:turno==='Noche'?{bg:'#e0e7ff',tc:'#3730a3'}:{bg:'#f1f5f9',tc:TEXT_MID};
+                        return (
+                          <tr key={i} style={{ borderBottom:'1px solid var(--theme-border-2)' }}
+                            onMouseEnter={e=>e.currentTarget.style.background='#f9fafb'}
+                            onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                            <td style={{ padding:'9px 16px' }}>
+                              <span style={{ background:badge.bg, color:badge.tc, borderRadius:20, padding:'2px 10px', fontSize:11, fontWeight:700 }}>{turno}</span>
+                            </td>
+                            <td style={{ padding:'9px 16px', textAlign:'center', fontWeight:700, color:PRIMARY }}>{count.toLocaleString('es-PE')}</td>
+                            <td style={{ padding:'9px 16px', textAlign:'center', color:TEXT_MID }}>{totalIncidencias>0?`${((count/totalIncidencias)*100).toFixed(1)}%`:'0%'}</td>
+                          </tr>
+                        );
+                      })}
+                      {byTurno.length===0 && (
+                        <tr><td colSpan={3} style={{ padding:20, textAlign:'center', color:TEXT_LIGHT }}>Sin datos de turno</td></tr>
+                      )}
+                      <tr style={{ background:'#eff6ff', fontWeight:700 }}>
+                        <td style={{ padding:'10px 16px', color:TEXT_DARK }}>TOTAL</td>
+                        <td style={{ padding:'10px 16px', textAlign:'center', color:PRIMARY }}>{totalIncidencias.toLocaleString('es-PE')}</td>
+                        <td style={{ padding:'10px 16px', textAlign:'center', color:TEXT_MID }}>100%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Hora */}
+                <div style={{ background:CARD, borderRadius:RADIUS, border:BORDER, boxShadow:SHADOW, overflow:'hidden' }}>
+                  <div style={{ padding:'14px 20px', borderBottom:'1px solid #f1f5f9' }}>
+                    <span style={{ fontSize:14, fontWeight:700, color:TEXT_DARK }}>Incidencias por hora</span>
+                    <span style={{ fontSize:12, color:TEXT_LIGHT, fontWeight:400, marginLeft:8 }}>(mayor a menor)</span>
+                  </div>
+                  <div style={{ maxHeight:300, overflowY:'auto' }}>
+                    <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                      <thead><tr>
+                        {['Hora','Total','% del Total'].map(h=>(
+                          <th key={h} style={{ padding:'9px 16px', textAlign:h==='Hora'?'left':'center', fontWeight:600, fontSize:11, color:TEXT_LIGHT, textTransform:'uppercase', letterSpacing:'0.05em', borderBottom:'1px solid #f1f5f9', position:'sticky', top:0, background:CARD, zIndex:1 }}>{h}</th>
+                        ))}
+                      </tr></thead>
+                      <tbody>
+                        {byHora.map(([hora,count],i)=>(
+                          <tr key={i} style={{ borderBottom:'1px solid var(--theme-border-2)' }}
+                            onMouseEnter={e=>e.currentTarget.style.background='#f9fafb'}
+                            onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                            <td style={{ padding:'9px 16px', color:TEXT_DARK, fontWeight:600 }}>{hora}:00 – {hora}:59</td>
+                            <td style={{ padding:'9px 16px', textAlign:'center', fontWeight:700, color:i===0?'#dc2626':PRIMARY }}>{count.toLocaleString('es-PE')}</td>
+                            <td style={{ padding:'9px 16px', textAlign:'center', color:TEXT_MID }}>{totalIncidencias>0?`${((count/totalIncidencias)*100).toFixed(1)}%`:'0%'}</td>
+                          </tr>
+                        ))}
+                        {byHora.length===0 && (
+                          <tr><td colSpan={3} style={{ padding:20, textAlign:'center', color:TEXT_LIGHT }}>Sin datos de hora</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
               </div>
 
               {/* Vista previa detalle */}
