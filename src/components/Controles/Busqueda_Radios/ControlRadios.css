@@ -112,6 +112,10 @@
 .cr-btn-buscar:hover:not(:disabled) { background: #4f46e5; }
 .cr-btn-buscar:disabled { background: #a5b4fc; cursor: not-allowed; }
 
+[data-theme="dark"] .cr-btn-buscar { background: #3730a3; }
+[data-theme="dark"] .cr-btn-buscar:hover:not(:disabled) { background: #4338ca; }
+[data-theme="dark"] .cr-btn-buscar:disabled { background: #2d2f5e; color: #64748b; }
+
 /* Filtro estado */
 .cr-select {
   width: 100%;
@@ -409,11 +413,28 @@
   transition: all 0.2s;
 }
 
+[data-theme="dark"] .cr-btn-seleccionar {
+  background: #1e293b;
+  color: #94a3b8;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .cr-btn-seleccionar:hover {
+  background: #273549;
+  color: #e2e8f0;
+  border-color: #475569;
+}
+
 .cr-btn-seleccionar.activo {
   background: #f59e0b;
   color: white;
   border-color: #f59e0b;
   animation: cr-pulse 1.5s ease-in-out infinite;
+}
+
+[data-theme="dark"] .cr-btn-seleccionar.activo {
+  background: #b45309;
+  border-color: #92400e;
 }
 
 @keyframes cr-pulse {
@@ -452,12 +473,21 @@
   border-radius: 6px;
 }
 
+[data-theme="dark"] .cr-filtros-fecha {
+  background: #1c2333;
+  border-color: #4a5568;
+}
+
 .cr-filtro-titulo {
   font-size: 11px;
   font-weight: 600;
   color: #92400e;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+[data-theme="dark"] .cr-filtro-titulo {
+  color: #94a3b8;
 }
 
 .cr-filtro-titulo span { font-weight: 400; text-transform: none; }
@@ -472,6 +502,11 @@
   box-sizing: border-box;
   color: var(--theme-text-2);
   background: var(--theme-surface);
+  color-scheme: light;
+}
+
+[data-theme="dark"] .cr-input-fecha {
+  color-scheme: dark;
 }
 
 .cr-input-fecha:focus { border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.2); }
