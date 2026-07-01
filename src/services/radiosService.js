@@ -14,7 +14,8 @@ export const obtenerRadiosCercanos = async (lat, lng, metros = 500, filtros = {}
   if (horaFin)     url += `&horaFin=${horaFin}`;
   const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   const json = await response.json();
-  return json.data ?? json;
+  if (!response.ok) throw new Error(json.message ?? 'Error al buscar radios cercanos');
+  return Array.isArray(json.data) ? json.data : [];
 };
 
 export const obtenerHistoricoRadio = async (issi, fechaInicio, horaInicio, fechaFin, horaFin) => {

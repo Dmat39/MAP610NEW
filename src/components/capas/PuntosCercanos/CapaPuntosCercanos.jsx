@@ -50,8 +50,10 @@ const CapaPuntosCercanos = ({ visible, puntoSeleccionado, radiosEncontrados, met
         pathOptions={{ color: '#f59e0b', fillColor: '#fef3c7', fillOpacity: 0.2, weight: 2, dashArray: '6 4' }}
       />
 
-      {/* Radios encontrados */}
-      {radiosEncontrados.map((r) => (
+      {/* Radios encontrados — solo los que tienen posición GPS actual dentro del radio */}
+      {Array.isArray(radiosEncontrados) && radiosEncontrados
+        .filter(r => r.latitud != null && r.longitud != null && (r.distancia_metros == null || r.distancia_metros <= metros))
+        .map((r) => (
         <Marker
           key={`cercano-${r.issi}`}
           position={[r.latitud, r.longitud]}
