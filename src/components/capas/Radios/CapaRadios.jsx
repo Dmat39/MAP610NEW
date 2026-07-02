@@ -23,16 +23,21 @@ const haversineM = (lat1, lon1, lat2, lon2) => {
 const _iconCacheRadios = new Map();
 
 // Mapa de colores frontend para diferenciar de las bodycams
-const mapRadioColor = (hexacolor) => {
-  const c = hexacolor?.toLowerCase() || '';
+const mapRadioColor = (r) => {
+  const cName = r?.color?.toLowerCase() || '';
+  if (cName === 'verde') return '#3b82f6'; // Azul
+  if (cName === 'amarillo') return '#f97316'; // Naranja
+  if (cName === 'rojo') return '#6b7280'; // Gris
+  
+  const c = r?.hexacolor?.toLowerCase() || '';
   if (c === '#16a34a' || c === '#22c55e' || c === 'green') return '#3b82f6'; // Verde -> Azul
   if (c === '#eab308' || c === '#facc15' || c === 'yellow') return '#f97316'; // Amarillo -> Naranja
   if (c === '#ef4444' || c === '#f87171' || c === 'red') return '#6b7280'; // Rojo -> Gris
-  return hexacolor || '#3b82f6';
+  return r?.hexacolor || '#3b82f6';
 };
 
-const crearIcono = (hexacolor) => {
-  const color = mapRadioColor(hexacolor);
+const crearIcono = (r) => {
+  const color = mapRadioColor(r);
   if (_iconCacheRadios.has(color)) return _iconCacheRadios.get(color);
   const icon = new L.DivIcon({
     html: `<div>
@@ -131,7 +136,7 @@ const CapaRadios = ({ visible, radioSeleccionado, maxVisible, filtroEstado = 'TO
     <LayerGroup>
       {visibleRadios.map((r) => {
         const markerId = `radio-${r.issi}`;
-        const icono = crearIcono(r.hexacolor);
+        const icono = crearIcono(r);
         return (
           <Marker
             key={markerId}
@@ -142,13 +147,13 @@ const CapaRadios = ({ visible, radioSeleccionado, maxVisible, filtroEstado = 'TO
           >
             <Popup>
               <div style={{ fontSize: '13px', minWidth: '170px' }}>
-                <strong style={{ color: mapRadioColor(r.hexacolor) }}>
+                <strong style={{ color: mapRadioColor(r) }}>
                   📡 Radio: {r.unicocodigo || r.issi}
                 </strong><br />
                 <strong>ISSI:</strong> {r.issi}<br />
                 <strong>Tipo:</strong> {r.tipo}<br />
                 <strong>Estado:</strong>{' '}
-                <span style={{ color: mapRadioColor(r.hexacolor) }}>{r.estado}</span><br />
+                <span style={{ color: mapRadioColor(r) }}>{r.estado}</span><br />
                 <strong>Velocidad:</strong> {r.velocidad} km/h<br />
                 <strong>Dirección:</strong> {r.direccion}<br />
                 <strong>Última act.:</strong> {r.fechaHora}<br />
