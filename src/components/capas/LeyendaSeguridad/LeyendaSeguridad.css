@@ -1,0 +1,206 @@
+/* LeyendaSeguridad.css — Leyenda unificada colapsable */
+
+/* ---- FAB (colapsada) ---- */
+.ls-fab {
+  position: fixed;
+  z-index: 1999;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1.5px solid var(--theme-border);
+  background: var(--theme-surface);
+  color: #16a34a;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, right 0.3s ease;
+  animation: lsFadeIn 0.25s ease-out;
+}
+
+.ls-fab:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 26px rgba(0, 0, 0, 0.24);
+}
+
+.ls-fab-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* ---- Panel (expandida) ---- */
+.ls-panel {
+  position: fixed;
+  z-index: 1999;
+  width: 240px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-top: 4px solid #16a34a;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.14);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  animation: lsSlideIn 0.24s ease-out;
+}
+
+.ls-panel-header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--theme-surface);
+  border-bottom: 1px solid var(--theme-border);
+  border-radius: 12px 12px 0 0;
+}
+
+.ls-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--theme-text);
+}
+
+.ls-panel-title svg {
+  color: #16a34a;
+}
+
+.ls-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--theme-text-3);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ls-close-btn:hover {
+  background: var(--theme-surface-2);
+  color: var(--theme-text);
+}
+
+.ls-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 14px 14px;
+}
+
+/* ---- Secciones ---- */
+.ls-section-title {
+  margin: 0 0 8px 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.ls-section + .ls-section {
+  border-top: 1px dashed var(--theme-border);
+  padding-top: 12px;
+}
+
+.ls-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ls-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 7px;
+  transition: background 0.12s ease;
+}
+
+.ls-item:hover {
+  background: var(--theme-surface-2);
+}
+
+.ls-item-check {
+  cursor: pointer;
+}
+
+.ls-checkbox {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: #16a34a;
+  flex-shrink: 0;
+}
+
+.ls-pin {
+  flex-shrink: 0;
+  display: block;
+}
+
+.ls-label {
+  font-size: 12.5px;
+  color: var(--theme-text-2);
+  font-weight: 500;
+}
+
+.ls-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.ls-info-label {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ls-info-desc {
+  font-size: 11px;
+  color: var(--theme-text-3);
+}
+
+/* ---- Animaciones ---- */
+@keyframes lsSlideIn {
+  from { transform: translateX(12px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes lsFadeIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+/* ---- Scrollbar ---- */
+.ls-panel::-webkit-scrollbar { width: 5px; }
+.ls-panel::-webkit-scrollbar-track { background: var(--theme-surface-2); border-radius: 3px; }
+.ls-panel::-webkit-scrollbar-thumb { background: var(--theme-scrollbar-thumb); border-radius: 3px; }
+.ls-panel::-webkit-scrollbar-thumb:hover { background: var(--theme-text-4); }
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .ls-panel {
+    right: 10px !important;
+    left: 10px;
+    width: auto;
+  }
+}

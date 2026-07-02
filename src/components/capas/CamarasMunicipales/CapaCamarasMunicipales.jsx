@@ -174,6 +174,7 @@ const CapaCamarasMunicipales = ({
   limpiarSeguimiento,
   camaraConVision,
   setCamaraConVision,
+  onDeseleccionarCamara,
 }) => {
   const [camaras, setCamaras] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -213,7 +214,7 @@ const CapaCamarasMunicipales = ({
     if (!map) return;
 
     const handleMapClick = e => {
-      // Solo si presiona Ctrl
+      // Ctrl+Click: copiar coordenadas de referencia (herramienta de ayuda)
       if (e.originalEvent.ctrlKey) {
         const { lat, lng } = e.latlng;
         logger.log('📍 Coordenadas para referencia:', `"${lat}, ${lng}"`);
@@ -223,7 +224,12 @@ const CapaCamarasMunicipales = ({
         navigator.clipboard.writeText(`"${lat}, ${lng}"`).then(() => {
           logger.log('✅ Coordenadas copiadas al portapapeles!');
         });
+        return;
       }
+
+      // Click en el mapa (fuera de cualquier cámara): deseleccionar la cámara buscada
+      setCamaraConVision(null);
+      if (typeof onDeseleccionarCamara === 'function') onDeseleccionarCamara();
     };
 
     map.on('click', handleMapClick);
@@ -231,7 +237,7 @@ const CapaCamarasMunicipales = ({
     return () => {
       map.off('click', handleMapClick);
     };
-  }, [map]);
+  }, [map, onDeseleccionarCamara, setCamaraConVision]);
 
   // Cargar cámaras desde el backend
   useEffect(() => {
@@ -659,6 +665,15 @@ const CapaCamarasMunicipales = ({
               eventHandlers={{
                 click: () => {
                   logger.log('📍 Click en cámara:', props.name);
+
+                  // Al elegir otra cámara, soltar la selección de búsqueda anterior
+                  if (
+                    typeof onDeseleccionarCamara === 'function' &&
+                    camaraSeleccionada &&
+                    camaraSeleccionada.name !== props.name
+                  ) {
+                    onDeseleccionarCamara();
+                  }
 
                   // Hacer zoom hacia la cámara con animación suave
                   map.flyTo([lat, lng], 18, {

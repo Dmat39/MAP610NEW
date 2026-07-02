@@ -1,0 +1,240 @@
+/* PanelFiltrosSeguridad.css — Caja unificada de filtros con pestañas */
+
+.pfs-container {
+  width: 360px;
+  max-height: calc(100vh - 20px);
+  display: flex;
+  flex-direction: column;
+  background: var(--theme-surface);
+  border: 1.5px solid var(--theme-border);
+  border-radius: 14px;
+  box-shadow: 0 6px 32px rgba(0, 0, 0, 0.13), 0 1px 4px rgba(0, 0, 0, 0.07);
+  overflow: hidden;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  animation: pfsFadeIn 0.28s ease;
+}
+
+/* La barra de pestañas, la jurisdicción y los totales no se encogen */
+.pfs-container > .pfs-tabs,
+.pfs-container > .pfs-juris,
+.pfs-container > .ts-block {
+  flex-shrink: 0;
+}
+
+/* ---- Filtro de jurisdicción global ---- */
+.pfs-juris {
+  border-bottom: 1px solid var(--theme-border);
+  background: var(--theme-surface);
+}
+
+.pfs-juris-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--theme-text);
+  font-size: 13px;
+  font-weight: 700;
+  transition: background 0.15s ease;
+}
+
+.pfs-juris-header:hover {
+  background: var(--theme-surface-2);
+}
+
+.pfs-juris-header svg {
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.pfs-juris-title {
+  flex: 1;
+  text-align: left;
+}
+
+.pfs-juris-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: #16a34a;
+  background: var(--theme-surface-2);
+  padding: 2px 9px;
+  border-radius: 10px;
+}
+
+.pfs-juris-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 10px 12px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.pfs-juris-clear {
+  align-self: flex-start;
+  margin: 0 4px 6px;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #16a34a;
+  background: none;
+  border: 1px solid var(--theme-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.pfs-juris-clear:hover {
+  background: var(--theme-surface-2);
+}
+
+.pfs-juris-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.pfs-juris-item:hover {
+  background: var(--theme-surface-2);
+}
+
+.pfs-juris-item input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.pfs-juris-check {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  border: 2px solid var(--theme-border);
+  border-radius: 5px;
+  position: relative;
+  transition: all 0.15s ease;
+}
+
+.pfs-juris-item input:checked + .pfs-juris-check {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+.pfs-juris-item input:checked + .pfs-juris-check::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 4px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.pfs-juris-name {
+  font-size: 12.5px;
+  color: var(--theme-text-2);
+  font-weight: 500;
+}
+
+/* ---- Barra de pestañas ---- */
+.pfs-tabs {
+  display: flex;
+  align-items: stretch;
+  background: var(--theme-surface-2);
+  border-bottom: 1px solid var(--theme-border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pfs-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.pfs-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 8px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  color: var(--theme-text-3);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.pfs-tab:hover {
+  background: var(--theme-surface);
+  color: var(--theme-text-2);
+}
+
+.pfs-tab.active {
+  background: var(--theme-surface);
+  font-weight: 700;
+}
+
+.pfs-tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pfs-tab svg {
+  flex-shrink: 0;
+}
+
+/* ---- Cuerpo: área de filtros con scroll propio ---- */
+.pfs-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Normaliza el aspecto de los controles embebidos */
+.pfs-body > .pfs-tab-pane > * {
+  width: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  overflow: visible !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+.pfs-body::-webkit-scrollbar { width: 6px; }
+.pfs-body::-webkit-scrollbar-track { background: var(--theme-surface); }
+.pfs-body::-webkit-scrollbar-thumb { background: var(--theme-scrollbar-thumb); border-radius: 3px; }
+
+@keyframes pfsFadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .pfs-container {
+    width: calc(100vw - var(--sidebar-width, 70px) - 30px);
+    max-width: 360px;
+  }
+  .pfs-tab-label {
+    display: none;
+  }
+  .pfs-tab {
+    padding: 11px 6px;
+  }
+}
