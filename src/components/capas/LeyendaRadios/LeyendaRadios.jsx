@@ -9,22 +9,20 @@ const PANEL_HEIGHT = 192;
 const BASE_RIGHT = 20;
 
 const PIN_RADIO = ({ color }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="26" viewBox="0 0 28 36" className="leyenda-radios-pin">
-    <path d="M14 0C6.27 0 0 6.27 0 14c0 9.75 14 22 14 22S28 23.75 28 14C28 6.27 21.73 0 14 0z" fill="white" stroke={color} strokeWidth="2.5"/>
-    <circle cx="14" cy="13" r="9" fill="white" stroke={color} strokeWidth="1.5"/>
-    <rect x="15.5" y="4.5" width="1.5" height="3.5" rx="0.75" fill={color}/>
-    <rect x="10" y="7.5" width="8" height="11" rx="1.5" fill={color}/>
-    <rect x="11.5" y="9" width="5" height="3" rx="0.5" fill="white" opacity="0.9"/>
-    <rect x="11.5" y="13.5" width="3" height="1.5" rx="0.5" fill="white" opacity="0.8"/>
-    <rect x="11.5" y="16" width="5" height="0.8" rx="0.4" fill="white" opacity="0.5"/>
-    <rect x="11.5" y="17.2" width="4" height="0.8" rx="0.4" fill="white" opacity="0.5"/>
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 26 26" className="leyenda-radios-pin">
+    <rect x="2" y="2" width="22" height="22" rx="6" fill="white" stroke={color} strokeWidth="2.5"/>
+    <rect x="14.5" y="5.5" width="1.5" height="4" rx="0.75" fill={color}/>
+    <rect x="9" y="8" width="8" height="12" rx="1.5" fill={color}/>
+    <rect x="10.5" y="9.5" width="5" height="3.5" rx="0.5" fill="white" opacity="0.9"/>
+    <circle cx="13" cy="16" r="1.5" fill="white"/>
+    <rect x="11" y="18.5" width="4" height="0.6" rx="0.3" fill="white" opacity="0.6"/>
   </svg>
 );
 
 const ESTADOS = [
-  { color: '#22c55e', label: 'OK',       desc: 'Radio activo con GPS' },
-  { color: '#eab308', label: 'SIN GPS',  desc: 'Encendido sin señal GPS' },
-  { color: '#ef4444', label: 'APAGADO',  desc: 'Radio desconectado' },
+  { color: '#3b82f6', label: 'OK',       desc: 'Radio activo con GPS' },
+  { color: '#f97316', label: 'SIN GPS',  desc: 'Encendido sin señal GPS' },
+  { color: '#6b7280', label: 'APAGADO',  desc: 'Radio desconectado' },
 ];
 
 const LeyendaRadios = ({ visible }) => {

@@ -201,9 +201,9 @@ const ToolbarRadios = ({ radios, loading, onRecargar, filtros, setFiltros }) => 
           <span className="rgps-stat-chip-num">{radios.length}</span> radios
         </span>
         {[
-          { key:'OK',      num: totales.ok,      dot:'#16a34a', cls:'ok' },
-          { key:'SIN GPS', num: totales.sinGps,  dot:'#a16207', cls:'singps' },
-          { key:'APAGADO', num: totales.apagado, dot:'#dc2626', cls:'apagado' },
+          { key:'OK',      num: totales.ok,      dot:'#3b82f6', cls:'ok' },
+          { key:'SIN GPS', num: totales.sinGps,  dot:'#f97316', cls:'warning' },
+          { key:'APAGADO', num: totales.apagado, dot:'#6b7280', cls:'danger' },
         ].map(({ key, num, dot, cls }) => (
           <button key={key}
             className={`rgps-stat-chip ${cls}${filtroEstado === key ? ' activo' : ''}`}
