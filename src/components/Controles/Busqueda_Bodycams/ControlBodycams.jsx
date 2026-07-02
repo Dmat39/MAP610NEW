@@ -29,7 +29,7 @@ const ControlBodycams = ({
     setError(null);
     try {
       const data = await obtenerBodycams();
-      setBodycams(data.filter(bc => bc.activa && bc.latitud && bc.longitud));
+      setBodycams(data.filter(bc => bc.latitud && bc.longitud));
     } catch (err) {
       setError('Error al cargar las bodycams.');
       console.error(err);
@@ -168,8 +168,18 @@ const ControlBodycams = ({
         {!cargando && !error && (
           <div className="stats-compactas">
             <div className="stat-item activo">
-              <span className="stat-numero">{bodycams.length}</span>
-              <span className="stat-label">Bodycams Activas</span>
+              <span className="stat-numero">
+                {bodycams.filter(bc => {
+                  const ahora = new Date();
+                  const ultima = new Date(bc.ultima_ubicacion);
+                  const diffMinutos = (ahora - ultima) / (1000 * 60);
+                  let estadoTexto = 'ACTIVA';
+                  if (diffMinutos > 60) estadoTexto = 'DESCONECTADA';
+                  else if (diffMinutos > 30) estadoTexto = 'INACTIVA';
+                  return Array.isArray(filtroEstado) ? filtroEstado.includes(estadoTexto) : true;
+                }).length}
+              </span>
+              <span className="stat-label">Bodycams Visibles</span>
             </div>
           </div>
         )}

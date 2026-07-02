@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Calendar, Clock, MapPin, X, Video } from 'lucide-react';
+import { ChevronUp, ChevronDown, Calendar, Clock, MapPin, X, Video, Search } from 'lucide-react';
 import './ControlRutasBodycams.css';
 import { obtenerBodycams, obtenerHistorialBodycam } from '../../../services/bodycamService';
 
@@ -111,20 +111,23 @@ const ControlRutasBodycams = ({ visible, setVisible, onRutaEncontrada }) => {
         <div className="crb-body">
           <div className="crb-form-group" style={{ position: 'relative' }}>
             <label><Video size={14} /> Seleccionar Bodycam</label>
-            <input 
-              type="text"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setShowDropdown(true);
-                if (e.target.value === '') setSelectedBodycam('');
-              }}
-              onFocus={() => setShowDropdown(true)}
-              onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-              placeholder="Escribe para buscar..."
-              className="crb-select"
-              style={{ width: '100%' }}
-            />
+            <div style={{ position: 'relative' }}>
+              <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+              <input 
+                type="text"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setShowDropdown(true);
+                  if (e.target.value === '') setSelectedBodycam('');
+                }}
+                onFocus={() => setShowDropdown(true)}
+                onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                placeholder="Escribe para buscar..."
+                className="crb-select crb-search-input"
+                style={{ width: '100%', paddingLeft: '32px' }}
+              />
+            </div>
             {showDropdown && (
               <div style={{
                 position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
