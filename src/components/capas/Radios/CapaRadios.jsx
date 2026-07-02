@@ -22,25 +22,32 @@ const haversineM = (lat1, lon1, lat2, lon2) => {
 // Cache de iconos por color para evitar recrear DivIcon en cada polling update
 const _iconCacheRadios = new Map();
 
+// Mapa de colores frontend para diferenciar de las bodycams
+const mapRadioColor = (hexacolor) => {
+  const c = hexacolor?.toLowerCase() || '';
+  if (c === '#16a34a' || c === '#22c55e' || c === 'green') return '#3b82f6'; // Verde -> Azul
+  if (c === '#eab308' || c === '#facc15' || c === 'yellow') return '#f97316'; // Amarillo -> Naranja
+  if (c === '#ef4444' || c === '#f87171' || c === 'red') return '#6b7280'; // Rojo -> Gris
+  return hexacolor || '#3b82f6';
+};
+
 const crearIcono = (hexacolor) => {
-  const color = hexacolor || '#6366f1';
+  const color = mapRadioColor(hexacolor);
   if (_iconCacheRadios.has(color)) return _iconCacheRadios.get(color);
   const icon = new L.DivIcon({
     html: `<div>
-      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="28" viewBox="0 0 28 36" style="display:block; filter: drop-shadow(0px 3px 3px rgba(0,0,0,0.3));">
-        <path d="M14 0C6.27 0 0 6.27 0 14c0 9.75 14 22 14 22S28 23.75 28 14C28 6.27 21.73 0 14 0z" fill="white" stroke="${color}" stroke-width="2.5"/>
-        <circle cx="14" cy="13" r="9" fill="white" stroke="${color}" stroke-width="1.5"/>
-        <rect x="15.5" y="4.5" width="1.5" height="3.5" rx="0.75" fill="${color}"/>
-        <rect x="10" y="7.5" width="8" height="11" rx="1.5" fill="${color}"/>
-        <rect x="11.5" y="9" width="5" height="3" rx="0.5" fill="white" opacity="0.9"/>
-        <rect x="11.5" y="13.5" width="3" height="1.5" rx="0.5" fill="white" opacity="0.8"/>
-        <rect x="11.5" y="16" width="5" height="0.8" rx="0.4" fill="white" opacity="0.5"/>
-        <rect x="11.5" y="17.2" width="4" height="0.8" rx="0.4" fill="white" opacity="0.5"/>
+      <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26" style="display:block; filter: drop-shadow(0px 3px 3px rgba(0,0,0,0.3));">
+        <rect x="2" y="2" width="22" height="22" rx="6" fill="white" stroke="${color}" stroke-width="2.5"/>
+        <rect x="14.5" y="5.5" width="1.5" height="4" rx="0.75" fill="${color}"/>
+        <rect x="9" y="8" width="8" height="12" rx="1.5" fill="${color}"/>
+        <rect x="10.5" y="9.5" width="5" height="3.5" rx="0.5" fill="white" opacity="0.9"/>
+        <circle cx="13" cy="16" r="1.5" fill="white"/>
+        <rect x="11" y="18.5" width="4" height="0.6" rx="0.3" fill="white" opacity="0.6"/>
       </svg>
     </div>`,
-    iconSize: [22, 28],
-    iconAnchor: [11, 28],
-    popupAnchor: [0, -28],
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+    popupAnchor: [0, -13],
     className: '',
   });
   _iconCacheRadios.set(color, icon);
@@ -135,13 +142,13 @@ const CapaRadios = ({ visible, radioSeleccionado, maxVisible, filtroEstado = 'TO
           >
             <Popup>
               <div style={{ fontSize: '13px', minWidth: '170px' }}>
-                <strong style={{ color: r.hexacolor || '#6366f1' }}>
+                <strong style={{ color: mapRadioColor(r.hexacolor) }}>
                   📡 Radio: {r.unicocodigo || r.issi}
                 </strong><br />
                 <strong>ISSI:</strong> {r.issi}<br />
                 <strong>Tipo:</strong> {r.tipo}<br />
                 <strong>Estado:</strong>{' '}
-                <span style={{ color: r.hexacolor || '#6366f1' }}>{r.estado}</span><br />
+                <span style={{ color: mapRadioColor(r.hexacolor) }}>{r.estado}</span><br />
                 <strong>Velocidad:</strong> {r.velocidad} km/h<br />
                 <strong>Dirección:</strong> {r.direccion}<br />
                 <strong>Última act.:</strong> {r.fechaHora}<br />

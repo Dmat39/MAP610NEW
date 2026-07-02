@@ -327,9 +327,9 @@ const ControlRadios = ({
   };
 
   const BADGE_COLOR = {
-    verde:    { label: 'OK',          bg: '#dcfce7', color: '#16a34a', cat: 'ok'         },
-    amarillo: { label: 'SIN GPS',     bg: '#fef9c3', color: '#a16207', cat: 'singps'     },
-    rojo:     { label: 'APAGADO', bg: '#fee2e2', color: '#dc2626', cat: 'malapagado' },
+    verde:    { label: 'OK',          bg: '#eff6ff', color: '#3b82f6', cat: 'ok'         },
+    amarillo: { label: 'SIN GPS',     bg: '#ffedd5', color: '#f97316', cat: 'warning'    },
+    rojo:     { label: 'APAGADO',     bg: '#f3f4f6', color: '#6b7280', cat: 'danger'     },
   };
   const badgeRadio = (r) => BADGE_COLOR[r.color] ?? { label: r.color || '—', bg: '#f3f4f6', color: '#6b7280', cat: 'otro' };
 
@@ -430,7 +430,7 @@ const ControlRadios = ({
 
             {!cargando && !error && (
               <div className="cr-stats">
-                <div className="cr-stat"><span className="cr-stat-num" style={{ color: '#16a34a' }}>{totalOk}</span><span className="cr-stat-label">OK</span></div>
+                <div className="cr-stat"><span className="cr-stat-num" style={{ color: '#3b82f6' }}>{totalOk}</span><span className="cr-stat-label">OK</span></div>
                 <div className="cr-stat"><span className="cr-stat-num" style={{ color: '#a16207' }}>{totalSinGps}</span><span className="cr-stat-label">Sin GPS</span></div>
                 <div className="cr-stat"><span className="cr-stat-num" style={{ color: '#dc2626' }}>{totalMalApagado}</span><span className="cr-stat-label">Apagado</span></div>
               </div>
