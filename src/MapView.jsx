@@ -517,7 +517,7 @@ const MapView = () => {
         mapType={mapType}
         topPosition={capasVisibles.busquedaDirecciones ? 450 : 10}
       />
-      {(canSeeCamaras && capasVisibles.camaras) || capasVisibles.bodycams || capasVisibles.radios ? (
+      {(canSeeCamaras && capasVisibles.camaras) || capasVisibles.bodycams || capasVisibles.radios || capasVisibles.rutasBodycams ? (
         <div style={{
           position: 'fixed',
           left: 'calc(var(--sidebar-width, 70px) + 15px)',
@@ -569,13 +569,16 @@ const MapView = () => {
               onRecorridoChange={(puntos, issi) => { setRecorridoPuntos(puntos); setRecorridoIssi(issi); }}
             />
           )}
+          {capasVisibles.rutasBodycams && (
+            <ControlRutasBodycams
+              visible={true}
+              setVisible={(v) => setCapasVisibles(prev => ({ ...prev, rutasBodycams: v }))}
+              onRutaEncontrada={setRecorridoBodycam}
+            />
+          )}
         </div>
       ) : null}
-      <ControlRutasBodycams
-        visible={capasVisibles.rutasBodycams}
-        setVisible={(v) => setCapasVisibles(prev => ({ ...prev, rutasBodycams: v }))}
-        onRutaEncontrada={setRecorridoBodycam}
-      />
+
       <ControlClusters
         visible={capasVisibles.clusters}
         mapType={mapType}
