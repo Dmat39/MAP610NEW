@@ -10,6 +10,8 @@ const ControlRutasBodycams = ({ visible, setVisible, onRutaEncontrada }) => {
   const [error, setError] = useState(null);
 
   const [selectedBodycam, setSelectedBodycam] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
   
   // Por defecto buscamos el día de hoy
   const hoy = new Date().toISOString().split('T')[0];
@@ -69,8 +71,14 @@ const ControlRutasBodycams = ({ visible, setVisible, onRutaEncontrada }) => {
   const handleLimpiar = () => {
     onRutaEncontrada(null);
     setSelectedBodycam('');
+    setSearchTerm('');
     setError(null);
   };
+
+  const filteredBodycams = bodycams.filter(bc => 
+    (bc.nombre || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (bc.codigo || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (!visible) return null;
 
@@ -101,20 +109,48 @@ const ControlRutasBodycams = ({ visible, setVisible, onRutaEncontrada }) => {
 
       {isExpanded && (
         <div className="crb-body">
-          <div className="crb-form-group">
+          <div className="crb-form-group" style={{ position: 'relative' }}>
             <label><Video size={14} /> Seleccionar Bodycam</label>
-            <select 
-              value={selectedBodycam} 
-              onChange={(e) => setSelectedBodycam(e.target.value)}
+            <input 
+              type="text"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setShowDropdown(true);
+                if (e.target.value === '') setSelectedBodycam('');
+              }}
+              onFocus={() => setShowDropdown(true)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+              placeholder="Escribe para buscar..."
               className="crb-select"
-            >
-              <option value="">-- Seleccione Bodycam --</option>
-              {bodycams.map(bc => (
-                <option key={bc.codigo} value={bc.codigo}>
-                  {bc.nombre} ({bc.codigo})
-                </option>
-              ))}
-            </select>
+              style={{ width: '100%' }}
+            />
+            {showDropdown && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                background: 'white', border: '1px solid #ccc', borderRadius: '4px',
+                maxHeight: '150px', overflowY: 'auto', boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                marginTop: '4px'
+              }}>
+                {filteredBodycams.map(bc => (
+                  <div 
+                    key={bc.codigo}
+                    style={{ padding: '8px 10px', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', fontSize: '13px', color: '#374151' }}
+                    onMouseDown={(e) => {
+                      e.preventDefault(); // Evita que el onBlur dispare antes
+                      setSelectedBodycam(bc.codigo);
+                      setSearchTerm(`${bc.nombre} (${bc.codigo})`);
+                      setShowDropdown(false);
+                    }}
+                  >
+                    <strong>{bc.nombre || 'Sin nombre'}</strong> <span style={{color: '#9ca3af'}}>({bc.codigo})</span>
+                  </div>
+                ))}
+                {filteredBodycams.length === 0 && (
+                  <div style={{ padding: '8px 10px', fontSize: '13px', color: '#9ca3af' }}>No se encontraron coincidencias.</div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="crb-row">

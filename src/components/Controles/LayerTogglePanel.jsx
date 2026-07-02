@@ -31,7 +31,7 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
     
     cameras: {
       title: 'Cámaras de Seguridad',
-      layers: ['camaras', 'camarasVecinales', 'bodycams', 'radios'],
+      layers: ['camaras', 'camarasVecinales', 'bodycams', 'rutasBodycams', 'radios'],
     },
     zonas: {
       title: 'Zonas Geográficas',
@@ -69,7 +69,7 @@ const LayerTogglePanel = ({ capas, onToggle }) => {
     },
     tools: {
       title: 'Herramientas',
-      layers: ['clusters', 'clusterCombinado', 'clusterPNP', 'busquedaDirecciones', 'ubicadorPunto', 'rutas', 'rutasBodycams'],
+      layers: ['clusters', 'clusterCombinado', 'clusterPNP', 'busquedaDirecciones', 'ubicadorPunto', 'rutas'],
     },
     
   };
