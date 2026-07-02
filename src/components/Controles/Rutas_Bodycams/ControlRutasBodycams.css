@@ -1,14 +1,11 @@
 .control-rutas-bodycams {
-  position: fixed;
-  left: calc(var(--sidebar-width, 70px) + 15px);
-  top: 10px;
   width: 340px;
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   z-index: 1000;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .crb-header {
