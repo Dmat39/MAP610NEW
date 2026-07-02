@@ -1,21 +1,26 @@
 // LeyendaCamarasMunicipales.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useMapLayout } from '../../../context/MapLayoutContext';
 import './LeyendaCamarasMunicipales.css';
 
 const PANEL_ID = 'leyendaMunicipales';
 const PANEL_ORDER = 1;
-const PANEL_HEIGHT = 130;
+const PANEL_HEIGHT = 189;
 const BASE_RIGHT = 20;
 
 const LeyendaCamarasMunicipales = ({ visible }) => {
     const { registerPanel, unregisterPanel, getBottomOffset, rightOffset } = useMapLayout();
+    const containerRef = useRef(null);
 
     useEffect(() => {
-        if (visible) {
-            registerPanel(PANEL_ID, { order: PANEL_ORDER, height: PANEL_HEIGHT });
-            return () => unregisterPanel(PANEL_ID);
-        }
+        if (!visible) return;
+        const el = containerRef.current;
+        if (!el) return;
+        const update = () => registerPanel(PANEL_ID, { order: PANEL_ORDER, height: el.offsetHeight });
+        update();
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        return () => { ro.disconnect(); unregisterPanel(PANEL_ID); };
     }, [visible, registerPanel, unregisterPanel]);
 
     if (!visible) {
@@ -24,6 +29,7 @@ const LeyendaCamarasMunicipales = ({ visible }) => {
 
     return (
         <div
+            ref={containerRef}
             className="leyenda-camaras-municipales"
             style={{
                 bottom: getBottomOffset(PANEL_ID),

@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useCallback, useMemo } from 'react
 const MapLayoutContext = createContext(null);
 
 const BASE_BOTTOM = 20;
-const GAP = 10;
+const GAP = 12;
 
 export const MapLayoutProvider = ({ children }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);

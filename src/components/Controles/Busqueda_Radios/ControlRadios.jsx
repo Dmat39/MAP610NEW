@@ -51,6 +51,8 @@ const ControlRadios = ({
   const [cargandoCercanos, setCargandoCercanos] = useState(false);
   const [buscadoCercanos, setBuscadoCercanos] = useState(false);
   const [errorCercanos, setErrorCercanos] = useState(null);
+  const [cercanosRecorridoIssi, setCercanosRecorridoIssi] = useState(null);
+  const [cercanosRecorridoCargando, setCercanosRecorridoCargando] = useState(false);
 
   // Cercos state
   const [subTabCercos, setSubTabCercos] = useState('zonas');
@@ -67,6 +69,7 @@ const ControlRadios = ({
 
   // Recorrido state
   const [recorridoIssi, setRecorridoIssi] = useState('');
+  const [recorridoBusqueda, setRecorridoBusqueda] = useState('');
   const [recorridoFechaInicio, setRecorridoFechaInicio] = useState('');
   const [recorridoHoraInicio, setRecorridoHoraInicio] = useState('00:00');
   const [recorridoFechaFin, setRecorridoFechaFin] = useState('');
@@ -78,6 +81,7 @@ const ControlRadios = ({
 
   // Kilometraje state
   const [kmIssi, setKmIssi] = useState('');
+  const [kmBusqueda, setKmBusqueda] = useState('');
   const [kmFechaInicio, setKmFechaInicio] = useState('');
   const [kmFechaFin, setKmFechaFin] = useState('');
   const [kmDatos, setKmDatos] = useState([]);
@@ -153,7 +157,35 @@ const ControlRadios = ({
     setRadiosCercanos([]);
     setBuscadoCercanos(false);
     setErrorCercanos(null);
+    setCercanosRecorridoIssi(null);
     if (onBusquedaCercanosChange) onBusquedaCercanosChange([], metros);
+    if (onRecorridoChange) onRecorridoChange([], '');
+  };
+
+  const verRecorridoCercano = async (radio) => {
+    if (cercanosRecorridoCargando) return;
+    // Toggle: si ya está seleccionado, limpiar
+    if (cercanosRecorridoIssi === radio.issi) {
+      setCercanosRecorridoIssi(null);
+      if (onRecorridoChange) onRecorridoChange([], '');
+      return;
+    }
+    setCercanosRecorridoIssi(radio.issi);
+    setCercanosRecorridoCargando(true);
+    try {
+      const data = await obtenerHistoricoRadio(
+        radio.issi,
+        fechaInicio,
+        horaInicio || '00:00',
+        fechaFin || fechaInicio,
+        horaFin || '23:59',
+      );
+      if (onRecorridoChange) onRecorridoChange(Array.isArray(data) ? data : [], radio.issi);
+    } catch {
+      setCercanosRecorridoIssi(null);
+    } finally {
+      setCercanosRecorridoCargando(false);
+    }
   };
 
   const exportarXLS = () => {
@@ -521,16 +553,32 @@ const ControlRadios = ({
                   <div className="cr-lista">
                     {radiosCercanos.map(r => {
                       const esNormal = r.estado?.toUpperCase().includes('NORMAL');
+                      const seleccionado = cercanosRecorridoIssi === r.issi;
+                      const cargandoEste = cercanosRecorridoCargando && seleccionado;
+                      const tieneFechas = !!(fechaInicio || fechaFin);
                       return (
-                        <div key={r.issi} className="cr-item">
+                        <div
+                          key={r.issi}
+                          className="cr-item"
+                          style={{ cursor: tieneFechas ? 'pointer' : 'default', background: seleccionado ? 'rgba(99,102,241,0.12)' : undefined, borderRadius: 6 }}
+                          onClick={() => tieneFechas && verRecorridoCercano(r)}
+                          title={tieneFechas ? 'Ver recorrido en el mapa' : ''}
+                        >
                           <div className="cr-item-dot" style={{ background: r.hexacolor || '#6366f1' }} />
                           <div className="cr-item-info">
-                            <div className="cr-item-nombre">{r.unicocodigo || `ISSI: ${r.issi}`}</div>
+                            <div className="cr-item-nombre">ISSI: {r.issi}{r.unicocodigo ? ` · ${r.unicocodigo}` : ''}</div>
                             <div className="cr-item-detalle">{r.tipo} · {r.velocidad} km/h</div>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                            <span style={{ fontSize: 11, fontWeight: 600, color: '#f59e0b' }}>{r.distancia_metros}m</span>
-                            <span style={{ fontSize: 10, color: esNormal ? '#16a34a' : '#dc2626' }}>●</span>
+                            {r.distancia_metros != null && (
+                              <span style={{ fontSize: 11, fontWeight: 600, color: '#f59e0b' }}>{r.distancia_metros}m</span>
+                            )}
+                            {tieneFechas && (
+                              cargandoEste
+                                ? <div className="cr-spinner" style={{ width: 10, height: 10, borderWidth: 2, borderTopColor: '#6366f1' }} />
+                                : <Route size={11} color={seleccionado ? '#6366f1' : '#94a3b8'} />
+                            )}
+                            {!tieneFechas && <span style={{ fontSize: 10, color: esNormal ? '#16a34a' : '#dc2626' }}>●</span>}
                           </div>
                         </div>
                       );
@@ -564,11 +612,26 @@ const ControlRadios = ({
           <>
             <div className="cr-field-group">
               <label className="cr-label">Radio (ISSI)</label>
+              <div className="cr-input-container" style={{ marginBottom: 4 }}>
+                <Search size={14} className="cr-search-icon" />
+                <input
+                  type="text"
+                  className="cr-input"
+                  placeholder="Buscar ISSI o código..."
+                  value={recorridoBusqueda}
+                  onChange={e => setRecorridoBusqueda(e.target.value)}
+                />
+              </div>
               <select className="cr-select" value={recorridoIssi} onChange={e => { setRecorridoIssi(e.target.value); limpiarRecorrido(); }}>
                 <option value="">— Seleccionar radio —</option>
-                {radios.map(r => (
-                  <option key={r.issi} value={r.issi}>{r.unicocodigo || r.issi} ({r.issi})</option>
-                ))}
+                {radios
+                  .filter(r => {
+                    const t = recorridoBusqueda.toLowerCase().trim();
+                    return !t || String(r.issi).includes(t) || String(r.unicocodigo || '').toLowerCase().includes(t);
+                  })
+                  .map(r => (
+                    <option key={r.issi} value={r.issi}>{r.unicocodigo || r.issi} ({r.issi})</option>
+                  ))}
               </select>
             </div>
 
@@ -666,11 +729,26 @@ const ControlRadios = ({
           <>
             <div className="cr-field-group">
               <label className="cr-label">Radio (ISSI)</label>
+              <div className="cr-input-container" style={{ marginBottom: 4 }}>
+                <Search size={14} className="cr-search-icon" />
+                <input
+                  type="text"
+                  className="cr-input"
+                  placeholder="Buscar ISSI o código..."
+                  value={kmBusqueda}
+                  onChange={e => setKmBusqueda(e.target.value)}
+                />
+              </div>
               <select className="cr-select" value={kmIssi} onChange={e => { setKmIssi(e.target.value); setKmDatos([]); setKmBuscado(false); }}>
                 <option value="">— Seleccionar radio —</option>
-                {radios.map(r => (
-                  <option key={r.issi} value={r.issi}>{r.unicocodigo || r.issi} ({r.issi})</option>
-                ))}
+                {radios
+                  .filter(r => {
+                    const t = kmBusqueda.toLowerCase().trim();
+                    return !t || String(r.issi).includes(t) || String(r.unicocodigo || '').toLowerCase().includes(t);
+                  })
+                  .map(r => (
+                    <option key={r.issi} value={r.issi}>{r.unicocodigo || r.issi} ({r.issi})</option>
+                  ))}
               </select>
             </div>
 
