@@ -126,12 +126,19 @@ const PNP_TIPOS = [
 
 const MapView = () => {
   const { dark } = useTheme();
-  const { user, hasLayerAccess, isAdmin } = useAuth();
+  const { user, hasLayerAccess, isAdmin, getVisibleFields } = useAuth();
   const userRole = user?.role;
   const isViewer = userRole === 'VIEWER';
 
   const canSeeCamaras = hasLayerAccess('camaras');
   const canSeeCamarasVecinales = hasLayerAccess('camarasVecinales');
+
+  // Permisos de campos de Cámaras Municipales ([]/null = ver todos).
+  const camposCamaras = getVisibleFields('camaras-municipales');
+  const puedeVerCampoCamara = (campo) =>
+    !camposCamaras || camposCamaras.length === 0 || camposCamaras.includes(campo);
+  const puedeFiltrarMegafono = puedeVerCampoCamara('megaphone');
+  const puedeFiltrarBoton = puedeVerCampoCamara('buttom');
 
   const [mapType, setMapType] = useState('leaflet'); // 'leaflet' o 'google'
   const [capasVisibles, setCapasVisibles] = useState({
@@ -548,7 +555,7 @@ const MapView = () => {
         onJurisdiccionesChange={setJurisdiccionesSeleccionadas}
         footer={
           <TotalesSeguridad
-            municipalesVisible={canSeeCamaras && !isViewer && capasVisibles.camaras}
+            municipalesVisible={canSeeCamaras && capasVisibles.camaras}
             vecinalesVisible={canSeeCamarasVecinales && capasVisibles.camarasVecinales}
             bodycamsVisible={capasVisibles.bodycams}
             radiosVisible={capasVisibles.radios}
@@ -577,6 +584,8 @@ const MapView = () => {
                 onLimpiarSeleccion={handleLimpiarSeleccion}
                 mapType={mapType}
                 isViewer={isViewer}
+                puedeFiltrarMegafono={puedeFiltrarMegafono}
+                puedeFiltrarBoton={puedeFiltrarBoton}
                 jurisdiccionesSeleccionadas={jurisdiccionesSeleccionadas}
                 onConteoChange={setConteoMunicipales}
               />
@@ -904,7 +913,7 @@ const MapView = () => {
           {/* Leyenda flotante de capas de seguridad (ícono en la esquina) */}
           <LeyendaSeguridad
             vecinalesVisible={canSeeCamarasVecinales && capasVisibles.camarasVecinales}
-            municipalesVisible={canSeeCamaras && !isViewer && capasVisibles.camaras}
+            municipalesVisible={canSeeCamaras && capasVisibles.camaras}
             radiosVisible={capasVisibles.radios}
             bodycamsVisible={capasVisibles.bodycams}
           />
