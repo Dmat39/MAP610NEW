@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronUp, ChevronDown, Search, Radio, MapPin, X, PenTool, Check, AlertTriangle, Eye, EyeOff, Trash2, FileSpreadsheet, Map, Route, BarChart2 } from 'lucide-react';
 import './ControlRadios.css';
 import { obtenerRadios, obtenerRadiosCercanos, obtenerHistoricoRadio, obtenerKmDias } from '../../../services/radiosService';
 import { obtenerZonas, crearZona, actualizarZona, eliminarZona } from '../../../services/zonaService';
+import { computeJurisdiccion, pasaFiltroJurisdiccion } from '../../../utils/jurisdicciones';
 
 const ESTADOS = ['TODOS', 'OK', 'SIN GPS', 'APAGADO'];
 const OPCIONES_METROS = [100, 250, 500, 1000, 2000, 5000];
@@ -29,6 +30,11 @@ const ControlRadios = ({
   radiosFuera = [],
   // Recorrido
   onRecorridoChange,
+  embedded = false,
+  // Jurisdicción global
+  jurisdiccionesSeleccionadas = [],
+  jurisdiccionesGeoJSON = null,
+  onConteoChange,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [tabPrincipal, setTabPrincipal] = useState('radios');
@@ -334,7 +340,27 @@ const ControlRadios = ({
   const badgeRadio = (r) => BADGE_COLOR[r.color] ?? { label: r.color || '—', bg: '#f3f4f6', color: '#6b7280', cat: 'otro' };
 
   const tiposUnicos = ['TODOS', ...new Set(radios.map(r => r.tipo).filter(Boolean))];
-  const radiosFiltrados = radios.filter(r => {
+  // Jurisdicción de cada radio (para que conteos y lista respeten la zona global elegida).
+  const jurisdiccionPorRadio = useMemo(() => {
+    const mapa = {};
+    if (!jurisdiccionesGeoJSON) return mapa;
+    radios.forEach(r => { mapa[r.issi] = computeJurisdiccion(r.latitud, r.longitud, jurisdiccionesGeoJSON); });
+    return mapa;
+  }, [radios, jurisdiccionesGeoJSON]);
+
+  const radiosEnZona = useMemo(
+    () => radios.filter(r => pasaFiltroJurisdiccion(jurisdiccionPorRadio[r.issi], jurisdiccionesSeleccionadas)),
+    [radios, jurisdiccionPorRadio, jurisdiccionesSeleccionadas]
+  );
+
+  // Reportar solo los radios OK en la jurisdicción (para los totales del panel).
+  useEffect(() => {
+    if (typeof onConteoChange !== 'function') return;
+    const ok = radiosEnZona.filter(r => badgeRadio(r).cat === 'ok').length;
+    onConteoChange(ok);
+  }, [radiosEnZona, onConteoChange]);
+
+  const radiosFiltrados = radiosEnZona.filter(r => {
     const term = busqueda.toLowerCase().trim();
     const b = badgeRadio(r);
     const matchEstado = filtroEstado === 'TODOS' || b.label === filtroEstado;
@@ -344,31 +370,35 @@ const ControlRadios = ({
       (filtroTipo === 'TODOS' || r.tipo === filtroTipo)
     );
   });
-  const totalOk         = radios.filter(r => badgeRadio(r).cat === 'ok').length;
-  const totalSinGps     = radios.filter(r => badgeRadio(r).cat === 'singps').length;
-  const totalMalApagado = radios.filter(r => badgeRadio(r).cat === 'malapagado').length;
+  const totalOk         = radiosEnZona.filter(r => badgeRadio(r).cat === 'ok').length;
+  const totalSinGps     = radiosEnZona.filter(r => badgeRadio(r).cat === 'warning').length;
+  const totalMalApagado = radiosEnZona.filter(r => badgeRadio(r).cat === 'danger').length;
 
   if (!visible) return null;
 
+  const contentCollapsed = isCollapsed && !embedded;
+
   return (
     <div
-      className={`control-radios ${mapType}-mode ${isCollapsed ? 'collapsed' : ''}`}
+      className={`control-radios ${mapType}-mode ${contentCollapsed ? 'collapsed' : ''}`}
       style={{ '--cr-top': `${topPosition}px` }}
     >
-      <div className="control-radios-header" onClick={() => setIsCollapsed(p => !p)}>
-        <div className="header-content">
-          <Radio size={20} style={{ color: '#6366f1', flexShrink: 0 }} />
-          <h3>Radios GPS</h3>
-          {radiosFuera.length > 0 && (
-            <span className="cr-badge-alerta">{radiosFuera.length}</span>
-          )}
-          <button className="collapse-btn-r">
-            {isCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
-          </button>
+      {!embedded && (
+        <div className="control-radios-header" onClick={() => setIsCollapsed(p => !p)}>
+          <div className="header-content">
+            <Radio size={20} style={{ color: '#6366f1', flexShrink: 0 }} />
+            <h3>Radios GPS</h3>
+            {radiosFuera.length > 0 && (
+              <span className="cr-badge-alerta">{radiosFuera.length}</span>
+            )}
+            <button className="collapse-btn-r">
+              {isCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className={`control-radios-content ${isCollapsed ? 'hidden' : ''}`}>
+      <div className={`control-radios-content ${contentCollapsed ? 'hidden' : ''}`}>
         {/* Tabs principales */}
         <div className="cr-tabs">
           <button className={`cr-tab ${tabPrincipal === 'radios' ? 'activo' : ''}`} onClick={() => setTabPrincipal('radios')} title="Lista de Radios">

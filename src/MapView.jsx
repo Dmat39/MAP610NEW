@@ -1,5 +1,5 @@
 import { MapContainer, TileLayer, Pane, useMapEvents } from 'react-leaflet';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useTheme } from './context/ThemeContext';
 
 const TILE_LIGHT = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -67,6 +67,10 @@ import CapaRecorridoRadio from './components/capas/RecorridoRadio/CapaRecorridoR
 import GoogleCapaBodycams from './components/googlemaps/GoogleCapaBodycams';
 import ControlBodycams from './components/Controles/Busqueda_Bodycams/ControlBodycams';
 import ControlRutasBodycams from './components/Controles/Rutas_Bodycams/ControlRutasBodycams';
+import PanelFiltrosSeguridad from './components/Controles/Panel_Filtros_Seguridad/PanelFiltrosSeguridad';
+import TotalesSeguridad from './components/Controles/Panel_Filtros_Seguridad/TotalesSeguridad';
+import { JURISDICCIONES_DISPONIBLES } from './utils/jurisdicciones';
+import { Camera, Video, Radio, Route } from 'lucide-react';
 import CapaHistorialBodycams from './components/capas/Bodycams/CapaHistorialBodycams';
 import GoogleMapWrapper from './components/googlemaps/GoogleMapContainer';
 import GoogleRoutesCalculator from './components/googlemaps/GoogleRoutesCalculator';
@@ -84,10 +88,7 @@ import GoogleCapaBarras from './components/googlemaps/GoogleCapaBarras';
 import GoogleCapaResiduos from './components/googlemaps/GoogleCapaResiduos';
 import GoogleCapaBusquedaDirecciones from './components/googlemaps/GoogleCapaBusquedaDirecciones';
 import GoogleCapaUbicadorPunto from './components/googlemaps/GoogleCapaUbicadorPuntos/GoogleCapaUbicadorPunto';
-import LeyendaCamaras from './components/capas/LeyendaCamaras/LeyendaCamaras';
-import LeyendaCamarasMunicipales from './components/capas/LeyendaCamarasMunicipales/LeyendaCamarasMunicipales';
-import LeyendaRadios from './components/capas/LeyendaRadios/LeyendaRadios';
-import LeyendaBodycams from './components/capas/LeyendaBodycams/LeyendaBodycams';
+import LeyendaSeguridad from './components/capas/LeyendaSeguridad/LeyendaSeguridad';
 import ClusterIncidencias from './components/capas/ClusterIncidencias/ClusterIncidencias';
 import GoogleClusterIncidencias from './components/googlemaps/GoogleClusterIncidencias';
 import GoogleCapaActividades from './components/googlemaps/GoogleCapaActividades';
@@ -214,8 +215,25 @@ const MapView = () => {
   const [camaraConVision, setCamaraConVision] = useState(null); // Track camera with vision field active
   const [recorridoBodycam, setRecorridoBodycam] = useState(null);
   const [maxVisibleRadios, setMaxVisibleRadios] = useState(50);
-  const [filtroEstadoRadios, setFiltroEstadoRadios] = useState('TODOS');
-  const [filtroEstadoBodycams, setFiltroEstadoBodycams] = useState(['ACTIVA', 'INACTIVA', 'DESCONECTADA']);
+  // Por defecto solo se muestran radios OK y bodycams activas; los demás estados se activan por pestaña.
+  const [filtroEstadoRadios, setFiltroEstadoRadios] = useState('OK');
+  const [filtroEstadoBodycams, setFiltroEstadoBodycams] = useState(['ACTIVA']);
+
+  // Filtro de jurisdicción global (compartido por cámaras, bodycams y radios). Vacío = todas.
+  const [jurisdiccionesSeleccionadas, setJurisdiccionesSeleccionadas] = useState([]);
+  const [jurisdiccionesGeoJSON, setJurisdiccionesGeoJSON] = useState(null);
+
+  // Totales por capa (respetando la jurisdicción), reportados por cada control.
+  const [conteoMunicipales, setConteoMunicipales] = useState(undefined);
+  const [conteoBodycamsTotal, setConteoBodycamsTotal] = useState(undefined);
+  const [conteoRadiosTotal, setConteoRadiosTotal] = useState(undefined);
+
+  useEffect(() => {
+    fetch('/data/juridiccion.geojson')
+      .then(res => res.json())
+      .then(setJurisdiccionesGeoJSON)
+      .catch(err => console.error('Error cargando jurisdicciones (global):', err));
+  }, []);
 
   const getDefaultFechasCombinado = () => {
     const today = new Date();
@@ -328,6 +346,11 @@ const MapView = () => {
     setCamaraSeleccionada(null);
     setCamarasFiltradas([]);
     setFiltrosCamaras(null);
+  }, []);
+
+  // Solo suelta la cámara buscada/resaltada (sin tocar filtros ni jurisdicción).
+  const handleDeseleccionarCamara = useCallback(() => {
+    setCamaraSeleccionada(null);
   }, []);
 
   // Definir todas las capas (memoizado: antes se recreaba en cada render del componente,
@@ -517,67 +540,114 @@ const MapView = () => {
         mapType={mapType}
         topPosition={capasVisibles.busquedaDirecciones ? 450 : 10}
       />
-      {(canSeeCamaras && capasVisibles.camaras) || capasVisibles.bodycams || capasVisibles.radios || capasVisibles.rutasBodycams ? (
-        <div style={{
-          position: 'fixed',
-          left: 'calc(var(--sidebar-width, 70px) + 15px)',
-          top: (capasVisibles.busquedaDirecciones ? 450 : 0) + (capasVisibles.rutas ? 280 : 0) + 10,
-          zIndex: 1000,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-        }}>
-          {canSeeCamaras && capasVisibles.camaras && (
-            <ControlCamaras
-              visible={true}
-              onCamaraSeleccionada={handleCamaraSeleccionada}
-              onFiltroAplicado={handleFiltrosCamaras}
-              onSeguimientoCamara={handleSeguimientoCamara}
-              onLimpiarSeguimiento={handleLimpiarSeguimiento}
-              onLimpiarSeleccion={handleLimpiarSeleccion}
-              mapType={mapType}
-              isViewer={isViewer}
-            />
-          )}
-          {capasVisibles.bodycams && (
-            <ControlBodycams
-              visible={true}
-              onBodycamSeleccionada={setBodycamSeleccionada}
-              onLimpiarSeleccion={() => setBodycamSeleccionada(null)}
-              mapType={mapType}
-              filtroEstado={filtroEstadoBodycams}
-              onFiltroEstadoChange={setFiltroEstadoBodycams}
-            />
-          )}
-          {capasVisibles.radios && (
-            <ControlRadios
-              visible={true}
-              onRadioSeleccionado={setRadioSeleccionado}
-              onLimpiarSeleccion={() => setRadioSeleccionado(null)}
-              mapType={mapType}
-              puntoSeleccionado={puntoSeleccionado}
-              seleccionandoPunto={seleccionandoPunto}
-              onActivarSeleccionPunto={() => setSeleccionandoPunto(p => !p)}
-              onLimpiarPunto={() => { setPuntoSeleccionado(null); setRadiosEncontrados([]); setSeleccionandoPunto(false); }}
-              onBusquedaCercanosChange={(radios, mt) => { setRadiosEncontrados(radios); setMetrosBusqueda(mt); }}
-              dibujandoCerco={dibujandoCerco}
-              puntosDibujo={puntosDibujo}
-              onIniciarDibujo={() => setDibujandoCerco(true)}
-              onCancelarDibujo={() => { setDibujandoCerco(false); setPuntosDibujo([]); }}
-              onZonasChange={setZonasCerco}
-              radiosFuera={radiosFuera}
-              onRecorridoChange={(puntos, issi) => { setRecorridoPuntos(puntos); setRecorridoIssi(issi); }}
-            />
-          )}
-          {capasVisibles.rutasBodycams && (
-            <ControlRutasBodycams
-              visible={true}
-              setVisible={(v) => setCapasVisibles(prev => ({ ...prev, rutasBodycams: v }))}
-              onRutaEncontrada={setRecorridoBodycam}
-            />
-          )}
-        </div>
-      ) : null}
+      <PanelFiltrosSeguridad
+        mapType={mapType}
+        top={(capasVisibles.busquedaDirecciones ? 450 : 0) + (capasVisibles.rutas ? 280 : 0) + 10}
+        jurisdicciones={JURISDICCIONES_DISPONIBLES}
+        jurisdiccionesSeleccionadas={jurisdiccionesSeleccionadas}
+        onJurisdiccionesChange={setJurisdiccionesSeleccionadas}
+        footer={
+          <TotalesSeguridad
+            municipalesVisible={canSeeCamaras && !isViewer && capasVisibles.camaras}
+            vecinalesVisible={canSeeCamarasVecinales && capasVisibles.camarasVecinales}
+            bodycamsVisible={capasVisibles.bodycams}
+            radiosVisible={capasVisibles.radios}
+            conteos={{
+              municipales: conteoMunicipales,
+              bodycams: conteoBodycamsTotal,
+              radios: conteoRadiosTotal,
+            }}
+            jurisdiccionesSeleccionadas={jurisdiccionesSeleccionadas}
+          />
+        }
+        tabs={[
+          canSeeCamaras && capasVisibles.camaras && {
+            id: 'camaras',
+            label: 'Cámaras',
+            icon: Camera,
+            color: '#16a34a',
+            render: () => (
+              <ControlCamaras
+                visible={true}
+                embedded={true}
+                onCamaraSeleccionada={handleCamaraSeleccionada}
+                onFiltroAplicado={handleFiltrosCamaras}
+                onSeguimientoCamara={handleSeguimientoCamara}
+                onLimpiarSeguimiento={handleLimpiarSeguimiento}
+                onLimpiarSeleccion={handleLimpiarSeleccion}
+                mapType={mapType}
+                isViewer={isViewer}
+                jurisdiccionesSeleccionadas={jurisdiccionesSeleccionadas}
+                onConteoChange={setConteoMunicipales}
+              />
+            ),
+          },
+          capasVisibles.bodycams && {
+            id: 'bodycams',
+            label: 'Bodycams',
+            icon: Video,
+            color: '#f97316',
+            render: () => (
+              <ControlBodycams
+                visible={true}
+                embedded={true}
+                onBodycamSeleccionada={setBodycamSeleccionada}
+                onLimpiarSeleccion={() => setBodycamSeleccionada(null)}
+                mapType={mapType}
+                filtroEstado={filtroEstadoBodycams}
+                onFiltroEstadoChange={setFiltroEstadoBodycams}
+                jurisdiccionesSeleccionadas={jurisdiccionesSeleccionadas}
+                jurisdiccionesGeoJSON={jurisdiccionesGeoJSON}
+                onConteoChange={setConteoBodycamsTotal}
+              />
+            ),
+          },
+          capasVisibles.radios && {
+            id: 'radios',
+            label: 'Radios',
+            icon: Radio,
+            color: '#6366f1',
+            render: () => (
+              <ControlRadios
+                visible={true}
+                embedded={true}
+                onRadioSeleccionado={setRadioSeleccionado}
+                onLimpiarSeleccion={() => setRadioSeleccionado(null)}
+                mapType={mapType}
+                puntoSeleccionado={puntoSeleccionado}
+                seleccionandoPunto={seleccionandoPunto}
+                onActivarSeleccionPunto={() => setSeleccionandoPunto(p => !p)}
+                onLimpiarPunto={() => { setPuntoSeleccionado(null); setRadiosEncontrados([]); setSeleccionandoPunto(false); }}
+                onBusquedaCercanosChange={(radios, mt) => { setRadiosEncontrados(radios); setMetrosBusqueda(mt); }}
+                dibujandoCerco={dibujandoCerco}
+                puntosDibujo={puntosDibujo}
+                onIniciarDibujo={() => setDibujandoCerco(true)}
+                onCancelarDibujo={() => { setDibujandoCerco(false); setPuntosDibujo([]); }}
+                onZonasChange={setZonasCerco}
+                radiosFuera={radiosFuera}
+                onRecorridoChange={(puntos, issi) => { setRecorridoPuntos(puntos); setRecorridoIssi(issi); }}
+                jurisdiccionesSeleccionadas={jurisdiccionesSeleccionadas}
+                jurisdiccionesGeoJSON={jurisdiccionesGeoJSON}
+                onConteoChange={setConteoRadiosTotal}
+              />
+            ),
+          },
+          capasVisibles.rutasBodycams && {
+            id: 'rutasBodycams',
+            label: 'Rutas',
+            icon: Route,
+            color: '#f97316',
+            render: () => (
+              <ControlRutasBodycams
+                visible={true}
+                embedded={true}
+                setVisible={(v) => setCapasVisibles(prev => ({ ...prev, rutasBodycams: v }))}
+                onRutaEncontrada={setRecorridoBodycam}
+              />
+            ),
+          },
+        ]}
+      />
 
       <ControlClusters
         visible={capasVisibles.clusters}
@@ -653,15 +723,16 @@ const MapView = () => {
               limpiarSeguimiento={limpiarSeguimiento}
               camaraConVision={camaraConVision}
               setCamaraConVision={setCamaraConVision}
+              onDeseleccionarCamara={handleDeseleccionarCamara}
               isViewer={isViewer}
             />
           )}
           {canSeeCamarasVecinales && (
-            <CapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
+            <CapaCamarasVecinales visible={capasVisibles.camarasVecinales} filtroJurisdicciones={jurisdiccionesSeleccionadas} jurisdiccionesGeoJSON={jurisdiccionesGeoJSON} />
           )}
-          <CapaBodycams visible={capasVisibles.bodycams} bodycamSeleccionada={bodycamSeleccionada} filtroEstado={filtroEstadoBodycams} />
+          <CapaBodycams visible={capasVisibles.bodycams} bodycamSeleccionada={bodycamSeleccionada} filtroEstado={filtroEstadoBodycams} filtroJurisdicciones={jurisdiccionesSeleccionadas} jurisdiccionesGeoJSON={jurisdiccionesGeoJSON} />
           {capasVisibles.rutasBodycams && <CapaHistorialBodycams dataRecorrido={recorridoBodycam} />}
-          <CapaRadios visible={capasVisibles.radios} radioSeleccionado={radioSeleccionado} maxVisible={maxVisibleRadios} filtroEstado={filtroEstadoRadios} />
+          <CapaRadios visible={capasVisibles.radios} radioSeleccionado={radioSeleccionado} maxVisible={maxVisibleRadios} filtroEstado={filtroEstadoRadios} filtroJurisdicciones={jurisdiccionesSeleccionadas} jurisdiccionesGeoJSON={jurisdiccionesGeoJSON} />
           <GpsMapEvents
             seleccionandoPunto={seleccionandoPunto}
             onPuntoSeleccionado={(p) => { setPuntoSeleccionado(p); setSeleccionandoPunto(false); }}
@@ -771,13 +842,14 @@ const MapView = () => {
               limpiarSeguimiento={limpiarSeguimiento}
               camaraConVision={camaraConVision}
               setCamaraConVision={setCamaraConVision}
+              onDeseleccionarCamara={handleDeseleccionarCamara}
               isViewer={isViewer}
             />
           )}
           {canSeeCamarasVecinales && (
-            <GoogleCapaCamarasVecinales visible={capasVisibles.camarasVecinales} />
+            <GoogleCapaCamarasVecinales visible={capasVisibles.camarasVecinales} filtroJurisdicciones={jurisdiccionesSeleccionadas} jurisdiccionesGeoJSON={jurisdiccionesGeoJSON} />
           )}
-          <GoogleCapaBodycams visible={capasVisibles.bodycams} bodycamSeleccionada={bodycamSeleccionada} filtroEstado={filtroEstadoBodycams} />
+          <GoogleCapaBodycams visible={capasVisibles.bodycams} bodycamSeleccionada={bodycamSeleccionada} filtroEstado={filtroEstadoBodycams} filtroJurisdicciones={jurisdiccionesSeleccionadas} jurisdiccionesGeoJSON={jurisdiccionesGeoJSON} />
           <GoogleCapaRobos visible={capasVisibles.robos} filtros={filtrosRobos} />
           <GoogleCapaExtorsion visible={capasVisibles.extorsiones} filtros={filtrosExtorsion} />
           <GoogleCapaHomicidios visible={capasVisibles.homicidios} filtros={filtrosHomicidios} />
@@ -829,28 +901,13 @@ const MapView = () => {
         </GoogleMapWrapper>
       )}
 
-          {/* Leyenda de Cámaras Vecinales */}
-          {canSeeCamarasVecinales && (
-            <LeyendaCamaras
-              camarasVecinalesVisible={capasVisibles.camarasVecinales}
-              isPanelExpanded={false}
-            />
-          )}
-
-          {/* Leyenda de Cámaras Municipales */}
-          {canSeeCamaras && !isViewer && (
-            <LeyendaCamarasMunicipales
-              visible={capasVisibles.camaras}
-              isPanelExpanded={false}
-              vecinalesVisible={capasVisibles.camarasVecinales}
-            />
-          )}
-
-          {/* Leyenda de Radios GPS */}
-          <LeyendaRadios visible={capasVisibles.radios} />
-
-          {/* Leyenda de Bodycams */}
-          <LeyendaBodycams visible={capasVisibles.bodycams} />
+          {/* Leyenda flotante de capas de seguridad (ícono en la esquina) */}
+          <LeyendaSeguridad
+            vecinalesVisible={canSeeCamarasVecinales && capasVisibles.camarasVecinales}
+            municipalesVisible={canSeeCamaras && !isViewer && capasVisibles.camaras}
+            radiosVisible={capasVisibles.radios}
+            bodycamsVisible={capasVisibles.bodycams}
+          />
         </div>
       </div>
   );

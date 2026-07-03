@@ -3,6 +3,7 @@ import { Marker, Popup, LayerGroup, useMapEvents } from 'react-leaflet';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { obtenerRadios } from '../../../services/radiosService';
+import { computeJurisdiccion, pasaFiltroJurisdiccion } from '../../../utils/jurisdicciones';
 
 const COLOR_ESTADO = {
   verde:    'OK',
@@ -59,12 +60,29 @@ const crearIcono = (r) => {
   return icon;
 };
 
-const CapaRadios = ({ visible, radioSeleccionado, maxVisible, filtroEstado = 'TODOS' }) => {
+const CapaRadios = ({
+  visible,
+  radioSeleccionado,
+  maxVisible,
+  filtroEstado = 'TODOS',
+  filtroJurisdicciones = [],
+  jurisdiccionesGeoJSON = null,
+}) => {
   const [radios, setRadios] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [mapView, setMapView] = useState(null);
   const map = useMap();
   const markersRef = useRef({});
+
+  // Precalcular la jurisdicción de cada radio una sola vez (por issi).
+  const jurisdiccionPorRadio = useMemo(() => {
+    const mapa = {};
+    if (!jurisdiccionesGeoJSON) return mapa;
+    radios.forEach(r => {
+      mapa[r.issi] = computeJurisdiccion(r.latitud, r.longitud, jurisdiccionesGeoJSON);
+    });
+    return mapa;
+  }, [radios, jurisdiccionesGeoJSON]);
 
   useMapEvents({
     moveend: () => setMapView({ bounds: map.getBounds(), center: map.getCenter() }),
@@ -102,7 +120,11 @@ const CapaRadios = ({ visible, radioSeleccionado, maxVisible, filtroEstado = 'TO
       ? radios
       : radios.filter(r => COLOR_ESTADO[r.color] === filtroEstado);
 
-    const inBounds = porEstado.filter(r =>
+    const porJurisdiccion = porEstado.filter(r =>
+      pasaFiltroJurisdiccion(jurisdiccionPorRadio[r.issi], filtroJurisdicciones)
+    );
+
+    const inBounds = porJurisdiccion.filter(r =>
       r.latitud != null && r.longitud != null &&
       mapView.bounds.contains([r.latitud, r.longitud])
     );
@@ -113,7 +135,7 @@ const CapaRadios = ({ visible, radioSeleccionado, maxVisible, filtroEstado = 'TO
     return [...inBounds]
       .sort((a, b) => haversineM(lat, lng, a.latitud, a.longitud) - haversineM(lat, lng, b.latitud, b.longitud))
       .slice(0, maxVisible);
-  }, [radios, mapView, maxVisible, filtroEstado]);
+  }, [radios, mapView, maxVisible, filtroEstado, filtroJurisdicciones, jurisdiccionPorRadio]);
 
   useEffect(() => {
     if (radioSeleccionado && map) {

@@ -127,6 +127,7 @@ const GoogleCapaCamarasMunicipales = ({
   limpiarSeguimiento,
   camaraConVision,
   setCamaraConVision,
+  onDeseleccionarCamara,
   isViewer = false,
 }) => {
   const [camaras, setCamaras] = useState([]);
@@ -884,6 +885,8 @@ const GoogleCapaCamarasMunicipales = ({
       infoWindow.addListener('closeclick', () => {
         marker.infoWindowOpen = false;
         setCamaraConVision(null);
+        // Al cerrar el globo, soltar la selección de búsqueda para que no quede resaltada
+        if (typeof onDeseleccionarCamara === 'function') onDeseleccionarCamara();
       });
 
       marker.addListener("click", (event) => {
@@ -924,6 +927,15 @@ const GoogleCapaCamarasMunicipales = ({
 
         // Comportamiento normal: toggle del InfoWindow
         const isCurrentlyOpen = marker.infoWindowOpen;
+
+        // Al elegir otra cámara, soltar la selección de búsqueda anterior
+        if (
+          typeof onDeseleccionarCamara === 'function' &&
+          camaraSeleccionada &&
+          camaraSeleccionada.name !== props.name
+        ) {
+          onDeseleccionarCamara();
+        }
 
         // Cerrar todos los InfoWindows abiertos
         newMarkers.forEach(otherMarker => {

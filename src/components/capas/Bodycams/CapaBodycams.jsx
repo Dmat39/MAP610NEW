@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Marker, Popup, LayerGroup } from 'react-leaflet';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { obtenerBodycams } from '../../../services/bodycamService';
+import { computeJurisdiccion, pasaFiltroJurisdiccion } from '../../../utils/jurisdicciones';
 
 const _iconCacheBodycam = new Map();
 
@@ -29,10 +30,25 @@ const crearIconoBodycamModerno = (color) => {
   return icon;
 };
 
-const CapaBodycams = ({ visible, bodycamSeleccionada, filtroEstado = ['ACTIVA', 'INACTIVA', 'DESCONECTADA'] }) => {
+const CapaBodycams = ({
+  visible,
+  bodycamSeleccionada,
+  filtroEstado = ['ACTIVA', 'INACTIVA', 'DESCONECTADA'],
+  filtroJurisdicciones = [],
+  jurisdiccionesGeoJSON = null,
+}) => {
   const [bodycams, setBodycams] = useState([]);
   const map = useMap();
   const markersRef = useRef({});
+
+  // Precalcular la jurisdicción de cada bodycam una sola vez (por referencia, para
+  // no colisionar cuando hay nombres repetidos o vacíos).
+  const jurisdiccionPorBodycam = useMemo(() => {
+    const mapa = new Map();
+    if (!jurisdiccionesGeoJSON) return mapa;
+    bodycams.forEach(bc => mapa.set(bc, computeJurisdiccion(bc.latitud, bc.longitud, jurisdiccionesGeoJSON)));
+    return mapa;
+  }, [bodycams, jurisdiccionesGeoJSON]);
 
   // Fetch initial data and set interval
   useEffect(() => {
@@ -74,16 +90,15 @@ const CapaBodycams = ({ visible, bodycamSeleccionada, filtroEstado = ['ACTIVA', 
   return (
     <LayerGroup>
       {bodycams.map((bc, idx) => {
-        const markerId = `bodycam-${bc.nombre}`;
-        
-        // Calcular estado por tiempo
-        const ahora = new Date();
-        const ultima = new Date(bc.ultima_ubicacion);
-        const diffMinutos = (ahora - ultima) / (1000 * 60);
+        const refKey = `bodycam-${bc.nombre}`;        // para abrir popup de la buscada
+        const markerId = `${refKey}-${idx}`;          // key única de React (evita colisión)
+
+        // Calcular estado por tiempo (fecha inválida/ausente => DESCONECTADA)
+        const diffMinutos = (Date.now() - new Date(bc.ultima_ubicacion).getTime()) / (1000 * 60);
 
         let color = '#16a34a'; // Verde (Activa)
         let estadoTexto = 'ACTIVA';
-        if (diffMinutos > 60) {
+        if (!Number.isFinite(diffMinutos) || diffMinutos > 60) {
           color = '#9ca3af'; // Gris (Desconectada)
           estadoTexto = 'DESCONECTADA';
         } else if (diffMinutos > 30) {
@@ -98,6 +113,11 @@ const CapaBodycams = ({ visible, bodycamSeleccionada, filtroEstado = ['ACTIVA', 
           if (filtroEstado !== 'TODAS' && estadoTexto !== filtroEstado) return null;
         }
 
+        // Filtro por jurisdicción global (selección vacía = todas)
+        if (!pasaFiltroJurisdiccion(jurisdiccionPorBodycam.get(bc), filtroJurisdicciones)) {
+          return null;
+        }
+
         return (
           <Marker
             key={markerId}
@@ -105,7 +125,7 @@ const CapaBodycams = ({ visible, bodycamSeleccionada, filtroEstado = ['ACTIVA', 
             icon={crearIconoBodycamModerno(color)}
             zIndexOffset={1500}
             ref={ref => {
-              if (ref) markersRef.current[markerId] = ref;
+              if (ref) markersRef.current[refKey] = ref;
             }}
           >
             <Popup>
