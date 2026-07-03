@@ -371,8 +371,8 @@ const ControlRadios = ({
     );
   });
   const totalOk         = radiosEnZona.filter(r => badgeRadio(r).cat === 'ok').length;
-  const totalSinGps     = radiosEnZona.filter(r => badgeRadio(r).cat === 'singps').length;
-  const totalMalApagado = radiosEnZona.filter(r => badgeRadio(r).cat === 'malapagado').length;
+  const totalSinGps     = radiosEnZona.filter(r => badgeRadio(r).cat === 'warning').length;
+  const totalMalApagado = radiosEnZona.filter(r => badgeRadio(r).cat === 'danger').length;
 
   if (!visible) return null;
 
