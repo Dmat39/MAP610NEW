@@ -30,7 +30,6 @@ const ControlRadios = ({
   // Recorrido
   onRecorridoChange,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(true);
   const [tabPrincipal, setTabPrincipal] = useState('radios');
 
   // Radios state
@@ -352,23 +351,9 @@ const ControlRadios = ({
 
   return (
     <div
-      className={`control-radios ${mapType}-mode ${isCollapsed ? 'collapsed' : ''}`}
-      style={{ '--cr-top': `${topPosition}px` }}
+      className={`control-radios ${mapType}-mode`}
     >
-      <div className="control-radios-header" onClick={() => setIsCollapsed(p => !p)}>
-        <div className="header-content">
-          <Radio size={20} style={{ color: '#6366f1', flexShrink: 0 }} />
-          <h3>Radios GPS</h3>
-          {radiosFuera.length > 0 && (
-            <span className="cr-badge-alerta">{radiosFuera.length}</span>
-          )}
-          <button className="collapse-btn-r">
-            {isCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
-          </button>
-        </div>
-      </div>
-
-      <div className={`control-radios-content ${isCollapsed ? 'hidden' : ''}`}>
+      <div className={`control-radios-content`}>
         {/* Tabs principales */}
         <div className="cr-tabs">
           <button className={`cr-tab ${tabPrincipal === 'radios' ? 'activo' : ''}`} onClick={() => setTabPrincipal('radios')} title="Lista de Radios">

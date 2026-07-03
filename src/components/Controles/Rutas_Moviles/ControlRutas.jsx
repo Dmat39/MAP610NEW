@@ -7,15 +7,7 @@ const ControlRutas = ({ visible, rutaInfo, onLimpiarRuta, mapType, topPosition =
     return (
         <div
             className={`control-rutas ${mapType === 'google' ? 'google-mode' : ''}`}
-            style={{ top: `${topPosition}px` }}
         >
-            <div className="control-rutas-header">
-                <div className="header-content">
-                    <Route size={16} color="#16a34a" style={{ flexShrink: 0 }} />
-                    <h3>Calculador de Rutas</h3>
-                </div>
-            </div>
-
             <div className="control-rutas-content">
                 {mapType === 'google' ? (
                     <p>Utiliza la API de Directions de Google Maps para calcular rutas óptimas con información de tráfico en tiempo real.</p>

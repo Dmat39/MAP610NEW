@@ -68,6 +68,7 @@ import GoogleCapaBodycams from './components/googlemaps/GoogleCapaBodycams';
 import ControlBodycams from './components/Controles/Busqueda_Bodycams/ControlBodycams';
 import ControlRutasBodycams from './components/Controles/Rutas_Bodycams/ControlRutasBodycams';
 import CapaHistorialBodycams from './components/capas/Bodycams/CapaHistorialBodycams';
+import PanelRecursos from './components/Controles/PanelRecursos/PanelRecursos';
 import GoogleMapWrapper from './components/googlemaps/GoogleMapContainer';
 import GoogleRoutesCalculator from './components/googlemaps/GoogleRoutesCalculator';
 import GoogleCapaJurisdiccion from './components/googlemaps/GoogleCapaJurisdiccion';
@@ -510,74 +511,88 @@ const MapView = () => {
         mapType={mapType}
         topPosition={10}
       />
-      <ControlRutas
-        visible={capasVisibles.rutas}
-        onLimpiarRuta={handleLimpiarRuta}
-        rutaInfo={rutaInfo}
-        mapType={mapType}
-        topPosition={capasVisibles.busquedaDirecciones ? 450 : 10}
-      />
-      {(canSeeCamaras && capasVisibles.camaras) || capasVisibles.bodycams || capasVisibles.radios || capasVisibles.rutasBodycams ? (
+
+      {((canSeeCamaras && capasVisibles.camaras) || capasVisibles.bodycams || capasVisibles.radios || capasVisibles.rutas || capasVisibles.rutasBodycams) && (
         <div style={{
           position: 'fixed',
           left: 'calc(var(--sidebar-width, 70px) + 15px)',
-          top: (capasVisibles.busquedaDirecciones ? 450 : 0) + (capasVisibles.rutas ? 280 : 0) + 10,
+          top: (capasVisibles.busquedaDirecciones ? 450 : 0) + 10,
           zIndex: 1000,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
         }}>
-          {canSeeCamaras && capasVisibles.camaras && (
-            <ControlCamaras
-              visible={true}
-              onCamaraSeleccionada={handleCamaraSeleccionada}
-              onFiltroAplicado={handleFiltrosCamaras}
-              onSeguimientoCamara={handleSeguimientoCamara}
-              onLimpiarSeguimiento={handleLimpiarSeguimiento}
-              onLimpiarSeleccion={handleLimpiarSeleccion}
-              mapType={mapType}
-              isViewer={isViewer}
-            />
-          )}
-          {capasVisibles.bodycams && (
-            <ControlBodycams
-              visible={true}
-              onBodycamSeleccionada={setBodycamSeleccionada}
-              onLimpiarSeleccion={() => setBodycamSeleccionada(null)}
-              mapType={mapType}
-              filtroEstado={filtroEstadoBodycams}
-              onFiltroEstadoChange={setFiltroEstadoBodycams}
-            />
-          )}
-          {capasVisibles.radios && (
-            <ControlRadios
-              visible={true}
-              onRadioSeleccionado={setRadioSeleccionado}
-              onLimpiarSeleccion={() => setRadioSeleccionado(null)}
-              mapType={mapType}
-              puntoSeleccionado={puntoSeleccionado}
-              seleccionandoPunto={seleccionandoPunto}
-              onActivarSeleccionPunto={() => setSeleccionandoPunto(p => !p)}
-              onLimpiarPunto={() => { setPuntoSeleccionado(null); setRadiosEncontrados([]); setSeleccionandoPunto(false); }}
-              onBusquedaCercanosChange={(radios, mt) => { setRadiosEncontrados(radios); setMetrosBusqueda(mt); }}
-              dibujandoCerco={dibujandoCerco}
-              puntosDibujo={puntosDibujo}
-              onIniciarDibujo={() => setDibujandoCerco(true)}
-              onCancelarDibujo={() => { setDibujandoCerco(false); setPuntosDibujo([]); }}
-              onZonasChange={setZonasCerco}
-              radiosFuera={radiosFuera}
-              onRecorridoChange={(puntos, issi) => { setRecorridoPuntos(puntos); setRecorridoIssi(issi); }}
-            />
-          )}
-          {capasVisibles.rutasBodycams && (
-            <ControlRutasBodycams
-              visible={true}
-              setVisible={(v) => setCapasVisibles(prev => ({ ...prev, rutasBodycams: v }))}
-              onRutaEncontrada={setRecorridoBodycam}
-            />
-          )}
+          <PanelRecursos
+            capasVisibles={capasVisibles}
+            mapType={mapType}
+            childrenCamaras={
+              canSeeCamaras && capasVisibles.camaras && (
+                <ControlCamaras
+                  visible={true}
+                  onCamaraSeleccionada={handleCamaraSeleccionada}
+                  onFiltroAplicado={handleFiltrosCamaras}
+                  onSeguimientoCamara={handleSeguimientoCamara}
+                  onLimpiarSeguimiento={handleLimpiarSeguimiento}
+                  onLimpiarSeleccion={handleLimpiarSeleccion}
+                  mapType={mapType}
+                  isViewer={isViewer}
+                />
+              )
+            }
+            childrenBodycams={
+              capasVisibles.bodycams && (
+                <ControlBodycams
+                  visible={true}
+                  onBodycamSeleccionada={setBodycamSeleccionada}
+                  onLimpiarSeleccion={() => setBodycamSeleccionada(null)}
+                  mapType={mapType}
+                  filtroEstado={filtroEstadoBodycams}
+                  onFiltroEstadoChange={setFiltroEstadoBodycams}
+                />
+              )
+            }
+            childrenRadios={
+              capasVisibles.radios && (
+                <ControlRadios
+                  visible={true}
+                  onRadioSeleccionado={setRadioSeleccionado}
+                  onLimpiarSeleccion={() => setRadioSeleccionado(null)}
+                  mapType={mapType}
+                  puntoSeleccionado={puntoSeleccionado}
+                  seleccionandoPunto={seleccionandoPunto}
+                  onActivarSeleccionPunto={() => setSeleccionandoPunto(p => !p)}
+                  onLimpiarPunto={() => { setPuntoSeleccionado(null); setRadiosEncontrados([]); setSeleccionandoPunto(false); }}
+                  onBusquedaCercanosChange={(radios, mt) => { setRadiosEncontrados(radios); setMetrosBusqueda(mt); }}
+                  dibujandoCerco={dibujandoCerco}
+                  puntosDibujo={puntosDibujo}
+                  onIniciarDibujo={() => setDibujandoCerco(true)}
+                  onCancelarDibujo={() => { setDibujandoCerco(false); setPuntosDibujo([]); }}
+                  onZonasChange={setZonasCerco}
+                  radiosFuera={radiosFuera}
+                  onRecorridoChange={(puntos, issi) => { setRecorridoPuntos(puntos); setRecorridoIssi(issi); }}
+                />
+              )
+            }
+            childrenRutasVehiculos={
+              capasVisibles.rutas && (
+                <ControlRutas
+                  visible={true}
+                  onLimpiarRuta={handleLimpiarRuta}
+                  rutaInfo={rutaInfo}
+                  mapType={mapType}
+                  topPosition={0}
+                />
+              )
+            }
+            childrenRutasBodycams={
+              capasVisibles.rutasBodycams && (
+                <ControlRutasBodycams
+                  visible={true}
+                  setVisible={(v) => setCapasVisibles(prev => ({ ...prev, rutasBodycams: v }))}
+                  onRutaEncontrada={setRecorridoBodycam}
+                />
+              )
+            }
+          />
         </div>
-      ) : null}
+      )}
 
       <ControlClusters
         visible={capasVisibles.clusters}

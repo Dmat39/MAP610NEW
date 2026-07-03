@@ -84,30 +84,6 @@ const ControlRutasBodycams = ({ visible, setVisible, onRutaEncontrada }) => {
 
   return (
     <div className="control-rutas-bodycams">
-      <div 
-        className="crb-header"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="crb-title">
-          <MapPin size={18} color="#f97316" />
-          <span>Historial Recorridos Bodycams</span>
-        </div>
-        <div className="crb-actions">
-          {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-          <button 
-            className="crb-close-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              setVisible(false);
-              onRutaEncontrada(null);
-            }}
-          >
-            <X size={16} />
-          </button>
-        </div>
-      </div>
-
-      {isExpanded && (
         <div className="crb-body">
           <div className="crb-form-group" style={{ position: 'relative' }}>
             <label><Video size={14} /> Seleccionar Bodycam</label>
@@ -213,7 +189,6 @@ const ControlRutasBodycams = ({ visible, setVisible, onRutaEncontrada }) => {
             </button>
           </div>
         </div>
-      )}
     </div>
   );
 };

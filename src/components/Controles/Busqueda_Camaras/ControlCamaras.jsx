@@ -15,7 +15,7 @@ const ControlCamaras = ({
   mapType = 'leaflet',
   isViewer = false,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const panelRef = useRef(null);
   const [busqueda, setBusqueda] = useState('');
   const [camaras, setCamaras] = useState([]);
@@ -354,19 +354,9 @@ const ControlCamaras = ({
   return (
     <div
       ref={panelRef}
-      className={`control-camaras ${mapType}-mode ${isCollapsed ? 'collapsed' : ''}`}
+      className={`control-camaras ${mapType}-mode`}
     >
-      <div className="control-camaras-header" onClick={toggleCollapse}>
-        <div className="header-content">
-          <Camera size={20} style={{ color: '#16a34a', flexShrink: 0 }} />
-          <h3>Búsqueda de Cámaras</h3>
-          <button className="collapse-btn-cc">
-            {isCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
-          </button>
-        </div>
-      </div>
-
-      <div className={`control-camaras-content ${isCollapsed ? 'hidden' : ''}`}>
+      <div className={`control-camaras-content`}>
         {/* Barra de búsqueda principal */}
         <div className="busqueda-principal">
           <div className="input-group">
