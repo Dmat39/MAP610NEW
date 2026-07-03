@@ -1,5 +1,5 @@
 // CapaCamarasVecinales.jsx
-import { useEffect, useState, memo } from "react";
+import { useEffect, useState, useMemo, memo } from "react";
 import { Marker, Popup, Tooltip, LayerGroup, useMap } from "react-leaflet";
 import { useAuth } from "../../../context/AuthContext";
 import L from "leaflet";
@@ -7,6 +7,7 @@ import { useMapLocationCopy } from "../../../hooks/useMapLocationCopy";
 import { useMapContext } from "../../../context/MapContext";
 import { logger } from "../../../utils/logger.js";
 import camarasVecinalesService from "../../../services/camarasVecinalesService";
+import { computeJurisdiccion, pasaFiltroJurisdiccion } from "../../../utils/jurisdicciones";
 import "../../../components/capas/CamarasMunicipales/LocationCopyPopup.css";
 import "./CapaCamarasVecinales.css";
 
@@ -360,7 +361,7 @@ const crearIconoVecinal = (marca, modo) => {
   });
 };
 
-const CapaCamarasVecinales = ({ visible }) => {
+const CapaCamarasVecinales = ({ visible, filtroJurisdicciones = [], jurisdiccionesGeoJSON = null }) => {
   const [camaras, setCamaras] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
@@ -369,6 +370,14 @@ const CapaCamarasVecinales = ({ visible }) => {
 
   // Obtener el filtro de marcas del contexto
   const { marcasCamarasVisibles, setConteoCamarasVecinales } = useMapContext();
+
+  // Precalcular la jurisdicción de cada cámara vecinal una sola vez.
+  const jurisPorCamara = useMemo(() => {
+    const mapa = new Map();
+    if (!jurisdiccionesGeoJSON) return mapa;
+    camaras.forEach(c => mapa.set(c, computeJurisdiccion(c.latitude, c.longitude, jurisdiccionesGeoJSON)));
+    return mapa;
+  }, [camaras, jurisdiccionesGeoJSON]);
 
   const { getVisibleFields } = useAuth();
   const visibleFields = getVisibleFields('camaras-vecinales');
@@ -417,9 +426,10 @@ const CapaCamarasVecinales = ({ visible }) => {
     cargarCamaras();
   }, []);
 
-  // Calcular y actualizar el conteo de cámaras por marca
+  // Calcular y actualizar el conteo de cámaras por marca (respetando la jurisdicción)
   useEffect(() => {
     const conteo = camaras.reduce((acc, camara) => {
+      if (!pasaFiltroJurisdiccion(jurisPorCamara.get(camara), filtroJurisdicciones)) return acc;
       if (camara.brand === 'HIKVISION') {
         acc.HIKVISION++;
       } else if (camara.brand === 'DAHUA') {
@@ -429,7 +439,7 @@ const CapaCamarasVecinales = ({ visible }) => {
     }, { HIKVISION: 0, DAHUA: 0 });
 
     setConteoCamarasVecinales(conteo);
-  }, [camaras, setConteoCamarasVecinales]);
+  }, [camaras, jurisPorCamara, filtroJurisdicciones, setConteoCamarasVecinales]);
 
   if (!visible) return null;
 
@@ -438,11 +448,11 @@ const CapaCamarasVecinales = ({ visible }) => {
     return <LayerGroup />;
   }
 
-  // Filtrar cámaras por marca
-  const camarasFiltradas = camaras.filter(camara => {
-    // Si la marca de la cámara está visible en el filtro, mostrarla
-    return marcasCamarasVisibles[camara.brand];
-  });
+  // Filtrar cámaras por marca y por jurisdicción global
+  const camarasFiltradas = camaras.filter(camara =>
+    marcasCamarasVisibles[camara.brand] &&
+    pasaFiltroJurisdiccion(jurisPorCamara.get(camara), filtroJurisdicciones)
+  );
 
   return (
     <LayerGroup>

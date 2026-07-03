@@ -1,8 +1,9 @@
-import { useEffect, useState, memo } from "react";
+import { useEffect, useState, useMemo, memo } from "react";
 import { useMapContext } from "../../context/MapContext";
 import camarasVecinalesService from "../../services/camarasVecinalesService";
+import { computeJurisdiccion, pasaFiltroJurisdiccion } from "../../utils/jurisdicciones";
 
-const GoogleCapaCamarasVecinales = ({ visible, map, google }) => {
+const GoogleCapaCamarasVecinales = ({ visible, map, google, filtroJurisdicciones = [], jurisdiccionesGeoJSON = null }) => {
   const [camaras, setCamaras] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState(null);
@@ -10,6 +11,14 @@ const GoogleCapaCamarasVecinales = ({ visible, map, google }) => {
 
   // Obtener el filtro de marcas del contexto
   const { marcasCamarasVisibles } = useMapContext();
+
+  // Precalcular la jurisdicción de cada cámara vecinal una sola vez.
+  const jurisPorCamara = useMemo(() => {
+    const mapa = new Map();
+    if (!jurisdiccionesGeoJSON) return mapa;
+    camaras.forEach(c => mapa.set(c, computeJurisdiccion(c.latitude, c.longitude, jurisdiccionesGeoJSON)));
+    return mapa;
+  }, [camaras, jurisdiccionesGeoJSON]);
 
   // Cargar cámaras desde el backend
   useEffect(() => {
@@ -49,10 +58,11 @@ const GoogleCapaCamarasVecinales = ({ visible, map, google }) => {
     // Limpiar markers anteriores
     markers.forEach(marker => marker.setMap(null));
 
-    // Filtrar cámaras por marca
-    const camarasFiltradas = camaras.filter(camara => {
-      return marcasCamarasVisibles[camara.brand];
-    });
+    // Filtrar cámaras por marca y por jurisdicción global
+    const camarasFiltradas = camaras.filter(camara =>
+      marcasCamarasVisibles[camara.brand] &&
+      pasaFiltroJurisdiccion(jurisPorCamara.get(camara), filtroJurisdicciones)
+    );
 
     const newMarkers = [];
 
@@ -177,7 +187,7 @@ const GoogleCapaCamarasVecinales = ({ visible, map, google }) => {
     return () => {
       newMarkers.forEach(marker => marker.setMap(null));
     };
-  }, [map, google, visible, camaras, marcasCamarasVisibles]);
+  }, [map, google, visible, camaras, marcasCamarasVisibles, jurisPorCamara, filtroJurisdicciones]);
 
   return null; // Este componente no renderiza JSX
 };

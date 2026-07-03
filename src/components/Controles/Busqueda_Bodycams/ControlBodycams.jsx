@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ChevronUp, ChevronDown, Search, MapPin, Video, X } from 'lucide-react';
 import './ControlBodycams.css';
 import { obtenerBodycams } from '../../../services/bodycamService';
+import { computeJurisdiccion, pasaFiltroJurisdiccion } from '../../../utils/jurisdicciones';
 
 const ControlBodycams = ({
   visible,
@@ -10,6 +11,10 @@ const ControlBodycams = ({
   mapType = 'leaflet',
   filtroEstado = ['ACTIVA', 'INACTIVA', 'DESCONECTADA'],
   onFiltroEstadoChange = () => {},
+  embedded = false,
+  jurisdiccionesSeleccionadas = [],
+  jurisdiccionesGeoJSON = null,
+  onConteoChange,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const panelRef = useRef(null);
@@ -17,6 +22,30 @@ const ControlBodycams = ({
   const [bodycams, setBodycams] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+
+  // Jurisdicción de cada bodycam (por referencia, para no colisionar por nombres repetidos).
+  const jurisdiccionPorBodycam = useMemo(() => {
+    const mapa = new Map();
+    if (!jurisdiccionesGeoJSON) return mapa;
+    bodycams.forEach(bc => mapa.set(bc, computeJurisdiccion(bc.latitud, bc.longitud, jurisdiccionesGeoJSON)));
+    return mapa;
+  }, [bodycams, jurisdiccionesGeoJSON]);
+
+  // Bodycams dentro de la jurisdicción global seleccionada.
+  const bodycamsEnZona = useMemo(
+    () => bodycams.filter(bc => pasaFiltroJurisdiccion(jurisdiccionPorBodycam.get(bc), jurisdiccionesSeleccionadas)),
+    [bodycams, jurisdiccionPorBodycam, jurisdiccionesSeleccionadas]
+  );
+
+  // Reportar solo las bodycams ACTIVAS en la jurisdicción (fecha inválida => no activa).
+  useEffect(() => {
+    if (typeof onConteoChange !== 'function') return;
+    const activas = bodycamsEnZona.filter(bc => {
+      const diffMin = (Date.now() - new Date(bc.ultima_ubicacion).getTime()) / (1000 * 60);
+      return Number.isFinite(diffMin) && diffMin <= 30; // ACTIVA
+    }).length;
+    onConteoChange(activas);
+  }, [bodycamsEnZona, onConteoChange]);
 
   useEffect(() => {
     if (visible) {
@@ -78,12 +107,26 @@ const ControlBodycams = ({
 
   if (!visible) return null;
 
+  const contentCollapsed = isCollapsed && !embedded;
+
   return (
     <div
       ref={panelRef}
-      className={`control-bodycams ${mapType}-mode`}
+      className={`control-bodycams ${mapType}-mode ${contentCollapsed ? 'collapsed' : ''}`}
     >
-      <div className={`control-bodycams-content`}>
+      {!embedded && (
+        <div className="control-bodycams-header" onClick={toggleCollapse}>
+          <div className="header-content">
+            <Video size={20} style={{ color: '#f97316', flexShrink: 0 }} />
+            <h3>Búsqueda Bodycams</h3>
+            <button className="collapse-btn-bc">
+              {isCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className={`control-bodycams-content ${contentCollapsed ? 'hidden' : ''}`}>
         <div className="busqueda-principal">
           <div className="input-group">
             <div className="input-container">
@@ -159,17 +202,20 @@ const ControlBodycams = ({
           <div className="stats-compactas">
             <div className="stat-item activo">
               <span className="stat-numero">
-                {bodycams.filter(bc => {
-                  const ahora = new Date();
-                  const ultima = new Date(bc.ultima_ubicacion);
-                  const diffMinutos = (ahora - ultima) / (1000 * 60);
+                {bodycamsEnZona.filter(bc => {
+                  const diffMinutos = (Date.now() - new Date(bc.ultima_ubicacion).getTime()) / (1000 * 60);
                   let estadoTexto = 'ACTIVA';
-                  if (diffMinutos > 60) estadoTexto = 'DESCONECTADA';
+                  if (!Number.isFinite(diffMinutos) || diffMinutos > 60) estadoTexto = 'DESCONECTADA';
                   else if (diffMinutos > 30) estadoTexto = 'INACTIVA';
                   return Array.isArray(filtroEstado) ? filtroEstado.includes(estadoTexto) : true;
                 }).length}
               </span>
-              <span className="stat-label">Bodycams Visibles</span>
+              <span className="stat-label">
+                Bodycams Visibles
+                {Array.isArray(jurisdiccionesSeleccionadas) && jurisdiccionesSeleccionadas.length > 0
+                  ? ` · ${jurisdiccionesSeleccionadas.length === 1 ? jurisdiccionesSeleccionadas[0] : `${jurisdiccionesSeleccionadas.length} zonas`}`
+                  : ''}
+              </span>
             </div>
           </div>
         )}

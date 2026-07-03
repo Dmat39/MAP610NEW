@@ -14,6 +14,11 @@ const ControlCamaras = ({
   onLimpiarSeleccion,
   mapType = 'leaflet',
   isViewer = false,
+  embedded = false,
+  // Jurisdicción global (controlada desde el panel). Selección vacía = todas.
+  jurisdiccionesSeleccionadas = [],
+  // Reporta el total de cámaras dentro de la jurisdicción (para los totales del panel).
+  onConteoChange,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const panelRef = useRef(null);
@@ -23,12 +28,10 @@ const ControlCamaras = ({
     megafono: false,
     boton: false,
     lpr: false,
-    jurisdicciones: [],
   });
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [ultimaBusqueda, setUltimaBusqueda] = useState('');
-  const [jurisdiccionesCollapsed, setJurisdiccionesCollapsed] = useState(false);
   const [jurisdiccionesGeoJSON, setJurisdiccionesGeoJSON] = useState(null);
 
   // Helpers de búsqueda robusta
@@ -107,18 +110,6 @@ const ControlCamaras = ({
     return null;
   };
 
-  // Lista de jurisdicciones disponibles
-  const jurisdiccionesDisponibles = [
-    '10 de Octubre',
-    'Zarate',
-    'Mariscal Caceres',
-    'Bayovar',
-    'Santa Elizabeth',
-    'Canto Rey',
-    'Huayrona',
-    'Caja de Agua',
-  ];
-
   // Cargar datos de jurisdicciones al montar el componente
   useEffect(() => {
     fetch('/data/juridiccion.geojson')
@@ -137,10 +128,10 @@ const ControlCamaras = ({
     }
   }, [visible, jurisdiccionesGeoJSON]);
 
-  // Aplicar filtros cuando cambien los filtros
+  // Aplicar filtros cuando cambien los filtros o la jurisdicción global
   useEffect(() => {
     aplicarFiltros();
-  }, [camaras, filtros]);
+  }, [camaras, filtros, jurisdiccionesSeleccionadas]);
 
   const cargarCamaras = async () => {
     setCargando(true);
@@ -231,13 +222,18 @@ const ControlCamaras = ({
       });
     }
 
-    // Filtro por jurisdicciones: AND con características (acota por zona)
-    if (filtros.jurisdicciones.length > 0) {
-      resultado = resultado.filter(camara => filtros.jurisdicciones.includes(camara.jurisdiccion));
+    // Filtro por jurisdicciones (global): AND con características (acota por zona)
+    if (Array.isArray(jurisdiccionesSeleccionadas) && jurisdiccionesSeleccionadas.length > 0) {
+      resultado = resultado.filter(camara => jurisdiccionesSeleccionadas.includes(camara.jurisdiccion));
     }
 
     if (onFiltroAplicado) {
-      onFiltroAplicado(resultado, filtros);
+      onFiltroAplicado(resultado, { ...filtros, jurisdicciones: jurisdiccionesSeleccionadas });
+    }
+
+    // El total del panel refleja lo realmente mostrado (jurisdicción + filtro rápido)
+    if (typeof onConteoChange === 'function') {
+      onConteoChange(resultado.length);
     }
   };
 
@@ -273,7 +269,7 @@ const ControlCamaras = ({
     setBusqueda('');
     setUltimaBusqueda('');
     setError(null);
-    setFiltros({ megafono: false, boton: false, lpr: false, jurisdicciones: [] });
+    setFiltros({ megafono: false, boton: false, lpr: false });
 
     // Limpiar la cámara seleccionada
     if (onLimpiarSeleccion) {
@@ -307,24 +303,12 @@ const ControlCamaras = ({
     }));
   };
 
-  const handleJurisdiccionChange = e => {
-    const value = e.target.value;
-    const isChecked = e.target.checked;
-
-    setFiltros(prev => ({
-      ...prev,
-      jurisdicciones: isChecked
-        ? [...prev.jurisdicciones, value]
-        : prev.jurisdicciones.filter(j => j !== value),
-    }));
-  };
-
   // Limpia toda la búsqueda, filtros y selección del mapa
   const limpiarTodo = () => {
     setBusqueda('');
     setUltimaBusqueda('');
     setError(null);
-    setFiltros({ megafono: false, boton: false, lpr: false, jurisdicciones: [] });
+    setFiltros({ megafono: false, boton: false, lpr: false });
     if (onLimpiarSeleccion) onLimpiarSeleccion();
     if (onLimpiarSeguimiento) onLimpiarSeguimiento();
   };
@@ -334,12 +318,9 @@ const ControlCamaras = ({
     setIsCollapsed(prev => !prev);
   };
 
-  const toggleJurisdiccionesCollapse = () => {
-    setJurisdiccionesCollapsed(!jurisdiccionesCollapsed);
-  };
-
   // Click fuera del panel: solo colapsar, sin limpiar filtros (el usuario puede tener cámaras filtradas y hacer clic en el mapa)
   useEffect(() => {
+    if (embedded) return; // En modo embebido (pestañas) el panel no se colapsa solo
     const handleClickOutside = (e) => {
       if (panelRef.current && !panelRef.current.contains(e.target) && !isCollapsed) {
         setIsCollapsed(true);
@@ -347,16 +328,30 @@ const ControlCamaras = ({
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isCollapsed, onLimpiarSeleccion, onLimpiarSeguimiento]);
+  }, [isCollapsed, embedded, onLimpiarSeleccion, onLimpiarSeguimiento]);
 
   if (!visible) return null;
+
+  const contentCollapsed = isCollapsed && !embedded;
 
   return (
     <div
       ref={panelRef}
-      className={`control-camaras ${mapType}-mode`}
+      className={`control-camaras ${mapType}-mode ${contentCollapsed ? 'collapsed' : ''}`}
     >
-      <div className={`control-camaras-content`}>
+      {!embedded && (
+        <div className="control-camaras-header" onClick={toggleCollapse}>
+          <div className="header-content">
+            <Camera size={20} style={{ color: '#16a34a', flexShrink: 0 }} />
+            <h3>Búsqueda de Cámaras</h3>
+            <button className="collapse-btn-cc">
+              {isCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className={`control-camaras-content ${contentCollapsed ? 'hidden' : ''}`}>
         {/* Barra de búsqueda principal */}
         <div className="busqueda-principal">
           <div className="input-group">
@@ -443,45 +438,6 @@ const ControlCamaras = ({
           </div>
         )}
 
-        {/* Filtro por Jurisdicciones */}
-        <div className={`filtro-jurisdicciones ${jurisdiccionesCollapsed ? 'collapsed' : ''}`}>
-          <div className="filtros-titulo">
-            <div className="titulo-left">
-              <MapPin size={14} />
-              <span>Jurisdicciones</span>
-              {filtros.jurisdicciones.length > 0 && (
-                <span className="filtro-count">{filtros.jurisdicciones.length}</span>
-              )}
-            </div>
-            <button
-              className="collapse-jurisdicciones-btn"
-              onClick={toggleJurisdiccionesCollapse}
-              title={
-                jurisdiccionesCollapsed ? 'Expandir jurisdicciones' : 'Colapsar jurisdicciones'
-              }
-            >
-              {jurisdiccionesCollapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            </button>
-          </div>
-          <div className={`jurisdicciones-container ${jurisdiccionesCollapsed ? 'hidden' : ''}`}>
-            {jurisdiccionesDisponibles.map(jurisdiccion => (
-              <label key={jurisdiccion} className="jurisdiccion-checkbox">
-                <input
-                  type="checkbox"
-                  value={jurisdiccion}
-                  checked={filtros.jurisdicciones.includes(jurisdiccion)}
-                  onChange={handleJurisdiccionChange}
-                />
-                <span className="checkbox-custom"></span>
-                <span className="jurisdiccion-nombre">{jurisdiccion}</span>
-                <span className="jurisdiccion-count">
-                  ({camaras.filter(c => c.jurisdiccion === jurisdiccion).length})
-                </span>
-              </label>
-            ))}
-          </div>
-        </div>
-
         {/* Estado de carga */}
         {cargando && (
           <div className="estado-carga">
@@ -498,41 +454,12 @@ const ControlCamaras = ({
           </div>
         )}
 
-        {/* Estadísticas compactas */}
-        {!cargando && !error && (
-          <div className="stats-compactas">
-            <div className="stat-item">
-              <span className="stat-numero">{camaras.length}</span>
-              <span className="stat-label">Total</span>
-            </div>
-            {filtros.megafono && (
-              <div className="stat-item activo">
-                <span className="stat-numero">{camaras.filter(c => c.megafono).length}</span>
-                <span className="stat-label">Megáfono</span>
-              </div>
-            )}
-            {filtros.boton && (
-              <div className="stat-item activo">
-                <span className="stat-numero">{camaras.filter(c => c.boton).length}</span>
-                <span className="stat-label">Botón</span>
-              </div>
-            )}
-            {filtros.lpr && (
-              <div className="stat-item activo">
-                <span className="stat-numero">{camaras.filter(c => c.tipo === 'TIPO III').length}</span>
-                <span className="stat-label">LPR</span>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Botones de acción */}
         {(busqueda ||
           ultimaBusqueda ||
           filtros.megafono ||
           filtros.boton ||
-          filtros.lpr ||
-          filtros.jurisdicciones.length > 0) && (
+          filtros.lpr) && (
           <div className="acciones-container">
             <button onClick={limpiarTodo} className="btn-limpiar-todo">
               <X size={14} /> Limpiar
