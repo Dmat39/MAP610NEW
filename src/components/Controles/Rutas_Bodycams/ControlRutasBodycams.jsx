@@ -217,6 +217,7 @@ const ControlRutasBodycams = ({ visible, setVisible, onRutaEncontrada, embedded 
             </button>
           </div>
         </div>
+      )}
     </div>
   );
 };
