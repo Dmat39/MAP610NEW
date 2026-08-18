@@ -2,22 +2,14 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_BODYCAM_API_URL || 'https://gps-bodycam.munisjl.gob.pe:8087';
 
+const API_TOKEN = import.meta.env.VITE_BODYCAM_API_TOKEN || 'cecom2026';
+
 const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${API_TOKEN}`
   }
-});
-
-// Inyectar el Token JWT del usuario dinámicamente en cada petición
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers['Authorization'] = `Bearer ${token}`;
-  }
-  return config;
-}, (error) => {
-  return Promise.reject(error);
 });
 
 export const obtenerBodycams = async () => {
