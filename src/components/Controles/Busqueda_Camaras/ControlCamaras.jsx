@@ -15,6 +15,9 @@ const ControlCamaras = ({
   mapType = 'leaflet',
   isViewer = false,
   embedded = false,
+  // Permisos de campos: controlan qué filtros rápidos se muestran (según el rol).
+  puedeFiltrarMegafono = true,
+  puedeFiltrarBoton = true,
   // Jurisdicción global (controlada desde el panel). Selección vacía = todas.
   jurisdiccionesSeleccionadas = [],
   // Reporta el total de cámaras dentro de la jurisdicción (para los totales del panel).
@@ -391,14 +394,14 @@ const ControlCamaras = ({
           )}
         </div>
 
-        {/* Filtros compactos */}
-        {!isViewer && (
-          <div className="filtros-compactos">
-            <div className="filtros-titulo">
-              <Filter size={14} />
-              <span>Filtros rápidos</span>
-            </div>
-            <div className="filtros-botones">
+        {/* Filtros rápidos (cada botón según el permiso de campo del rol; LPR siempre) */}
+        <div className="filtros-compactos">
+          <div className="filtros-titulo">
+            <Filter size={14} />
+            <span>Filtros rápidos</span>
+          </div>
+          <div className="filtros-botones">
+            {puedeFiltrarMegafono && (
               <button
                 className={`filtro-btn ${filtros.megafono ? 'activo' : ''}`}
                 onClick={() => toggleFiltro('megafono')}
@@ -410,7 +413,9 @@ const ControlCamaras = ({
                   <span className="filtro-count">{camaras.filter(c => c.megafono).length}</span>
                 )}
               </button>
+            )}
 
+            {puedeFiltrarBoton && (
               <button
                 className={`filtro-btn ${filtros.boton ? 'activo' : ''}`}
                 onClick={() => toggleFiltro('boton')}
@@ -422,21 +427,21 @@ const ControlCamaras = ({
                   <span className="filtro-count">{camaras.filter(c => c.boton).length}</span>
                 )}
               </button>
+            )}
 
-              <button
-                className={`filtro-btn ${filtros.lpr ? 'activo' : ''}`}
-                onClick={() => toggleFiltro('lpr')}
-                title="Mostrar solo cámaras LPR (Tipo III)"
-              >
-                <Camera size={14} />
-                <span>LPR</span>
-                {filtros.lpr && (
-                  <span className="filtro-count">{camaras.filter(c => c.tipo === 'TIPO III').length}</span>
-                )}
-              </button>
-            </div>
+            <button
+              className={`filtro-btn ${filtros.lpr ? 'activo' : ''}`}
+              onClick={() => toggleFiltro('lpr')}
+              title="Mostrar solo cámaras LPR (Tipo III)"
+            >
+              <Camera size={14} />
+              <span>LPR</span>
+              {filtros.lpr && (
+                <span className="filtro-count">{camaras.filter(c => c.tipo === 'TIPO III').length}</span>
+              )}
+            </button>
           </div>
-        )}
+        </div>
 
         {/* Estado de carga */}
         {cargando && (
