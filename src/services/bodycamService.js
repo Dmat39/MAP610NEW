@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_BODYCAM_API_URL || 'https://gps-bodycam.munisjl.gob.pe:8087';
+const API_URL = import.meta.env.VITE_BODYCAM_API_URL || 'https://gps-bodycam.munisjl.gob.pe';
 
 const API_TOKEN = import.meta.env.VITE_BODYCAM_API_TOKEN || 'cecom2026';
 
