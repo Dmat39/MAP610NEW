@@ -36,7 +36,6 @@ const ControlRadios = ({
   jurisdiccionesGeoJSON = null,
   onConteoChange,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(true);
   const [tabPrincipal, setTabPrincipal] = useState('radios');
 
   // Radios state

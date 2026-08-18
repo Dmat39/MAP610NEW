@@ -16,7 +16,7 @@ const ControlBodycams = ({
   jurisdiccionesGeoJSON = null,
   onConteoChange,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const panelRef = useRef(null);
   const [busqueda, setBusqueda] = useState('');
   const [bodycams, setBodycams] = useState([]);

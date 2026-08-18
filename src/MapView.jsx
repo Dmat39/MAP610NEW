@@ -72,6 +72,7 @@ import TotalesSeguridad from './components/Controles/Panel_Filtros_Seguridad/Tot
 import { JURISDICCIONES_DISPONIBLES } from './utils/jurisdicciones';
 import { Camera, Video, Radio, Route } from 'lucide-react';
 import CapaHistorialBodycams from './components/capas/Bodycams/CapaHistorialBodycams';
+import PanelRecursos from './components/Controles/PanelRecursos/PanelRecursos';
 import GoogleMapWrapper from './components/googlemaps/GoogleMapContainer';
 import GoogleRoutesCalculator from './components/googlemaps/GoogleRoutesCalculator';
 import GoogleCapaJurisdiccion from './components/googlemaps/GoogleCapaJurisdiccion';

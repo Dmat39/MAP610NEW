@@ -23,7 +23,7 @@ const ControlCamaras = ({
   // Reporta el total de cámaras dentro de la jurisdicción (para los totales del panel).
   onConteoChange,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const panelRef = useRef(null);
   const [busqueda, setBusqueda] = useState('');
   const [camaras, setCamaras] = useState([]);
