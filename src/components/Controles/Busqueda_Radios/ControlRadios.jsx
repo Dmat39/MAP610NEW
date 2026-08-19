@@ -37,6 +37,7 @@ const ControlRadios = ({
   onConteoChange,
 }) => {
   const [tabPrincipal, setTabPrincipal] = useState('radios');
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Radios state
   const [busqueda, setBusqueda] = useState('');
