@@ -70,7 +70,7 @@ import ControlRutasBodycams from './components/Controles/Rutas_Bodycams/ControlR
 import PanelFiltrosSeguridad from './components/Controles/Panel_Filtros_Seguridad/PanelFiltrosSeguridad';
 import TotalesSeguridad from './components/Controles/Panel_Filtros_Seguridad/TotalesSeguridad';
 import { JURISDICCIONES_DISPONIBLES } from './utils/jurisdicciones';
-import { Camera, Video, Radio, Route } from 'lucide-react';
+import { Camera, Video, Radio, Route, Layers } from 'lucide-react';
 import CapaHistorialBodycams from './components/capas/Bodycams/CapaHistorialBodycams';
 
 import GoogleMapWrapper from './components/googlemaps/GoogleMapContainer';
@@ -243,6 +243,17 @@ const MapView = () => {
       .catch(err => console.error('Error cargando jurisdicciones (global):', err));
   }, []);
 
+  // Monitorear cambios de tamaño de ventana para panel
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth <= 768;
+      // En mobile, panel oculto por defecto; en desktop, visible
+      setIsPanelVisible(!isMobile);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const getDefaultFechasCombinado = () => {
     const today = new Date();
     const hace30 = new Date();
@@ -251,9 +262,14 @@ const MapView = () => {
     return { fechaInicio: fmt(hace30), fechaFin: fmt(today) };
   };
   const [radioClusterCombinado, setRadioClusterCombinado] = useState(50);
-  const [fechasClusterCombinado, setFechasClusterCombinado] = useState(getDefaultFechasCombinado);
+  const [fechasClusterCombinado, setFechasClusterCombinado] = useState(getDefaultFechasCombinado());
   const [radioClusterPNP, setRadioClusterPNP]     = useState(50);
-  const [fechasClusterPNP, setFechasClusterPNP]   = useState(getDefaultFechasCombinado);
+  const [fechasClusterPNP, setFechasClusterPNP]   = useState(getDefaultFechasCombinado());
+
+  // Control de visibilidad del panel en mobile
+  const [isPanelVisible, setIsPanelVisible] = useState(
+    typeof window !== 'undefined' && window.innerWidth > 768
+  );
 
   const handleFiltrar = useCallback(payload => {
     setPayloadFiltros(payload);
@@ -548,13 +564,28 @@ const MapView = () => {
         mapType={mapType}
         topPosition={capasVisibles.busquedaDirecciones ? 450 : 10}
       />
-      <PanelFiltrosSeguridad
-        mapType={mapType}
-        top={(capasVisibles.busquedaDirecciones ? 450 : 0) + (capasVisibles.rutas ? 280 : 0) + 10}
-        jurisdicciones={JURISDICCIONES_DISPONIBLES}
-        jurisdiccionesSeleccionadas={jurisdiccionesSeleccionadas}
-        onJurisdiccionesChange={setJurisdiccionesSeleccionadas}
-        footer={
+
+      {/* Botón abajo para mostrar filtros (mobile) */}
+      {typeof window !== 'undefined' && window.innerWidth <= 768 && !isPanelVisible && (
+        <button
+          onClick={() => setIsPanelVisible(!isPanelVisible)}
+          className="panel-toggle-btn-mobile"
+          title="Mostrar filtros"
+        >
+          ▲
+        </button>
+      )}
+
+      {/* Panel principal - oculto en mobile si isPanelVisible es false */}
+      {isPanelVisible && (
+        <PanelFiltrosSeguridad
+          mapType={mapType}
+          top={(capasVisibles.busquedaDirecciones ? 450 : 0) + (capasVisibles.rutas ? 280 : 0) + 10}
+          jurisdicciones={JURISDICCIONES_DISPONIBLES}
+          jurisdiccionesSeleccionadas={jurisdiccionesSeleccionadas}
+          onJurisdiccionesChange={setJurisdiccionesSeleccionadas}
+          onClose={() => setIsPanelVisible(false)}
+          footer={
           <TotalesSeguridad
             municipalesVisible={canSeeCamaras && capasVisibles.camaras}
             vecinalesVisible={canSeeCamarasVecinales && capasVisibles.camarasVecinales}
@@ -658,6 +689,7 @@ const MapView = () => {
           },
         ]}
       />
+      )}
 
       <ControlClusters
         visible={capasVisibles.clusters}
@@ -917,6 +949,7 @@ const MapView = () => {
             municipalesVisible={canSeeCamaras && capasVisibles.camaras}
             radiosVisible={capasVisibles.radios}
             bodycamsVisible={capasVisibles.bodycams}
+            panelFiltersVisible={isPanelVisible}
           />
         </div>
       </div>

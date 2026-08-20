@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { CircleMarker, Polygon, Popup, Tooltip, LayerGroup } from 'react-leaflet';
 import { Filter, RotateCcw, ChevronUp, ChevronDown } from 'lucide-react';
 import { logger } from '../../../utils/logger.js';
+import { useMapLayout } from '../../../context/MapLayoutContext';
 import './CapaPuntosCampana.css';
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -224,6 +225,7 @@ const FiltroPuntosCampana = ({ puntos, filterCat, setFilterCat, mostrarAreas, se
 // ── Componente principal ──────────────────────────────────────────────────────
 
 const CapaPuntosCampana = ({ visible }) => {
+  const { drawerOpen } = useMapLayout();
   const [puntos, setPuntos]           = useState([]);
   const [selectedId, setSelectedId]   = useState(null);
   const [filterCat, setFilterCat]     = useState('');
@@ -260,7 +262,7 @@ const CapaPuntosCampana = ({ visible }) => {
     return puntos.filter(p => p.category === filterCat);
   }, [puntos, filterCat]);
 
-  if (!visible) return null;
+  if (!visible || drawerOpen) return null;
 
   const isMobile   = window.innerWidth < 480;
   const popupWidth = isMobile ? window.innerWidth * 0.82 : 320;

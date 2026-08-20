@@ -266,7 +266,7 @@ const _download = async (wb, filename) => {
 // ── Componente ────────────────────────────────────────────────────────────────
 const ReporteIncidencias = () => {
   const [modo, setModo]           = useState('incidencias'); // 'incidencias' | 'clusters'
-  const [range, setRange]         = useState(getDefault);
+  const [range, setRange]         = useState(getDefault());
   const [jurisdiction, setJur]    = useState('');
   const [selected, setSelected]   = useState(() => Object.fromEntries(ALL_ITEMS.map(i=>[i.key,true])));
   const [expanded, setExpanded]   = useState({ robos:false, hurtos:false });

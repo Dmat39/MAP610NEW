@@ -496,6 +496,54 @@ input::placeholder, textarea::placeholder { color: var(--theme-text-4); }
   .municipales-table tbody tr:hover { background: var(--theme-tr-hover) !important; }
 
   .pnp-table tr:hover td { background: var(--theme-tr-hover) !important; }
+}
+
+/* ── Botón de panel en parte inferior izquierda (mobile) ── */
+.panel-toggle-btn-mobile {
+  position: fixed;
+  bottom: 20px;
+  left: calc(var(--sidebar-width, 70px) + 15px);
+  z-index: 1500;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--theme-surface);
+  border: 1.5px solid var(--theme-border);
+  color: #16a34a;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.panel-toggle-btn-mobile:active {
+  transform: scale(0.95);
+  background: var(--theme-surface-2);
+}
+
+.panel-toggle-btn-mobile:hover {
+  background: var(--theme-surface-2);
+  border-color: #16a34a;
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.2);
+}
+
+@media (max-width: 768px) {
+  .panel-toggle-btn-mobile {
+    display: flex !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .panel-toggle-btn-mobile {
+    display: none !important;
+  }
+}
 
   .gestion-municipales-container .municipales-table tbody tr:hover { background: rgba(99,102,241,0.08) !important; }
 

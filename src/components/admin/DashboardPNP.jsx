@@ -135,7 +135,7 @@ const DashboardPNP = () => {
   const [incidents, setIncidents]     = useState([]);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState(null);
-  const [range, setRange]             = useState(getDefault);
+  const [range, setRange]             = useState(getDefault());
   const [activeQ, setActiveQ]         = useState('30 días');
   const [lastUpdated, setLastUpdated] = useState(null);
 

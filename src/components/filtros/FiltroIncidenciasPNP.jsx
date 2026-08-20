@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { RotateCcw, Shield, ChevronUp, ChevronDown, Calendar, Filter } from 'lucide-react';
 import { DateRange } from 'react-date-range';
+import { useMapLayout } from '../../context/MapLayoutContext';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import incidenceTypeService     from '../../services/incidenceTypeService';
@@ -71,7 +72,16 @@ const DATE_PRESETS = [
 ];
 
 const FiltroIncidenciasPNP = ({ onFiltrar, onLimpiar }) => {
+  const { drawerOpen } = useMapLayout();
   const defaultRange = getDefaultRange();
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [filtros, setFiltros] = useState({
     shift: '', jurisdiction: '', horario: '',
     start: fmt(defaultRange.startDate),
@@ -117,7 +127,9 @@ const FiltroIncidenciasPNP = ({ onFiltrar, onLimpiar }) => {
     incidenceTypeService.getAll({ limit: 100 }).then(res => setTipos(res.data)).catch(() => {});
   }, []);
 
-  useEffect(() => { onFiltrar(filtros); }, [filtros]);
+  useEffect(() => { onFiltrar(filtros); }, [filtros, onFiltrar]);
+
+  if (drawerOpen) return null;
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -241,7 +253,7 @@ const FiltroIncidenciasPNP = ({ onFiltrar, onLimpiar }) => {
 
           {/* Contadores por tipo */}
           <div style={{ background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', padding: 12 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6, marginBottom: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(4, 1fr)' : 'repeat(5, 1fr)', gap: 6, marginBottom: 10 }}>
               {TIPO_CONFIG.map(t => (
                 <div key={t.event} style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',

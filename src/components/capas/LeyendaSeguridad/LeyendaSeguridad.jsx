@@ -77,6 +77,7 @@ const LeyendaSeguridad = ({
   municipalesVisible = false,
   radiosVisible = false,
   bodycamsVisible = false,
+  panelFiltersVisible = false,
 }) => {
   const { marcasCamarasVisibles, handleToggleMarcaCamara, conteoCamarasVecinales } = useMapContext();
   const { rightOffset } = useMapLayout();
@@ -102,7 +103,7 @@ const LeyendaSeguridad = ({
     return (
       <button
         className="ls-fab"
-        style={posStyle}
+        style={{ ...posStyle, display: panelFiltersVisible ? 'none' : 'flex' }}
         onClick={() => setExpanded(true)}
         title="Mostrar leyenda de cámaras"
         aria-label="Mostrar leyenda de cámaras"
@@ -115,7 +116,7 @@ const LeyendaSeguridad = ({
 
   // Expandida: panel con secciones.
   return (
-    <div className="ls-panel" style={posStyle}>
+    <div className="ls-panel" style={{ ...posStyle, display: panelFiltersVisible ? 'none' : 'block' }}>
       <div className="ls-panel-header">
         <div className="ls-panel-title">
           <Camera size={16} />
