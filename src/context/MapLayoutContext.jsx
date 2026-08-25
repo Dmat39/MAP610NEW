@@ -41,12 +41,13 @@ export const MapLayoutProvider = ({ children }) => {
   );
 
   const value = useMemo(() => ({
+    drawerOpen,
     rightOffset,
     setDrawerOpen,
     registerPanel,
     unregisterPanel,
     getBottomOffset,
-  }), [rightOffset, registerPanel, unregisterPanel, getBottomOffset]);
+  }), [drawerOpen, rightOffset, registerPanel, unregisterPanel, getBottomOffset]);
 
   return (
     <MapLayoutContext.Provider value={value}>

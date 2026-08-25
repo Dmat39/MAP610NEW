@@ -13,6 +13,47 @@
   padding: 8px 16px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.15);
   user-select: none;
+  max-width: calc(100vw - 160px);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .cr-flotante {
+    top: 60px;
+    padding: 5px 8px;
+    font-size: 10px;
+    gap: 4px;
+    max-width: calc(100vw - 100px);
+    left: 50vw;
+  }
+
+  .cr-flotante-estados {
+    gap: 2px;
+  }
+
+  .cr-flotante-btn {
+    width: 50px;
+    padding: 3px 0;
+    font-size: 9px;
+  }
+
+  .cr-flotante-range {
+    width: 50px;
+  }
+
+  .cr-flotante-slider-label {
+    font-size: 9px;
+  }
+
+  .cr-flotante-valor {
+    font-size: 11px;
+    min-width: 20px;
+  }
+
+  .cr-flotante-divider {
+    height: 16px;
+  }
 }
 
 [data-theme="dark"] .cr-flotante {

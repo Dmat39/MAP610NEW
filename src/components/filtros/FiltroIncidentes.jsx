@@ -4,6 +4,7 @@ import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import { logger } from '../../utils/logger.js';
 import { Filter, RotateCcw, BadgeCheck, ChevronUp, ChevronDown, Calendar } from 'lucide-react';
+import { useMapLayout } from '../../context/MapLayoutContext';
 
 const TIPO_CONFIG = [
   { key: 'robos',       label: 'Robos',       color: '#e74c3c' },
@@ -41,7 +42,15 @@ const QUICK_OPTIONS = [
 ];
 
 const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
+  const { drawerOpen } = useMapLayout();
   const defaultRange = getDefaultRange();
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const [filtros, setFiltros] = useState({
     fechaInicio: fmtDate(defaultRange.startDate),
@@ -119,7 +128,7 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
     return () => handlers.forEach(([ev, h]) => window.removeEventListener(ev, h));
   }, []);
 
-  useEffect(() => { onFiltrar(filtros); }, [filtros]);
+  useEffect(() => { onFiltrar(filtros); }, [filtros, onFiltrar]);
 
   useEffect(() => {
     const handleClickOutside = e => {
@@ -164,6 +173,8 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
     width: '100%', boxSizing: 'border-box', fontFamily: 'inherit',
   };
 
+  if (drawerOpen) return null;
+
   return (
     <div style={{
       width: '33vw', maxWidth: '420px', minWidth: '280px',
@@ -199,14 +210,14 @@ const FiltroIncidentes = ({ onFiltrar, onLimpiar }) => {
         <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
           {/* Contadores */}
-          <div style={{ background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', padding: 12 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6, marginBottom: 10 }}>
+          <div style={{ background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', padding: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(4, 1fr)' : 'repeat(5, 1fr)', gap: 3, marginBottom: 10 }}>
               {TIPO_CONFIG.map(t => (
                 <div key={t.key} style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
                   background: '#ffffff', border: `1.5px solid ${t.color}44`,
                   borderTop: `3px solid ${t.color}`,
-                  borderRadius: 8, padding: '7px 4px', minHeight: 52, justifyContent: 'center',
+                  borderRadius: 8, padding: '4px 1px', minHeight: 44, justifyContent: 'center',
                 }}>
                   <div style={{ fontSize: 17, fontWeight: 700, color: '#1f2937', lineHeight: 1 }}>
                     {t.key === 'robos' ? Math.max(0, contadores.robos - contadores.extorsion) : contadores[t.key]}

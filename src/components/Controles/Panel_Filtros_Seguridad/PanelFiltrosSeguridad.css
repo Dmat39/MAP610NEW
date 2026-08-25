@@ -14,11 +14,45 @@
   animation: pfsFadeIn 0.28s ease;
 }
 
+/* Botón cerrar en pestañas (mobile) */
+.pfs-close-btn {
+  background: none;
+  border: none;
+  color: var(--theme-text-3);
+  cursor: pointer;
+  padding: 6px 8px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.pfs-close-btn:hover {
+  background: var(--theme-surface-2);
+  color: var(--theme-text);
+}
+
+@media (max-width: 768px) {
+  .pfs-close-btn {
+    display: flex;
+  }
+}
+
 /* La barra de pestañas, la jurisdicción y los totales no se encogen */
 .pfs-container > .pfs-tabs,
 .pfs-container > .pfs-juris,
 .pfs-container > .ts-block {
   flex-shrink: 0;
+}
+
+/* Pestañas con flexbox para acomodar botón cerrar */
+.pfs-tabs {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
 }
 
 /* ---- Filtro de jurisdicción global ---- */
@@ -230,11 +264,54 @@
   .pfs-container {
     width: calc(100vw - var(--sidebar-width, 70px) - 30px);
     max-width: 360px;
+    max-height: 60vh;
+    top: auto !important;
+    bottom: 10px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
   }
   .pfs-tab-label {
     display: none;
   }
   .pfs-tab {
-    padding: 11px 6px;
+    padding: 9px 4px;
+    font-size: 11px;
+  }
+
+  /* Reducir altura de la jurisdicción en mobile */
+  .pfs-juris-header {
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+
+  .pfs-juris-list {
+    max-height: 140px;
+    padding: 3px 8px 10px;
+  }
+
+  .pfs-juris-item {
+    padding: 5px 6px;
+    font-size: 11px;
+  }
+
+  /* Reducir altura del body en mobile */
+  .pfs-body {
+    max-height: calc(60vh - 120px);
+  }
+}
+
+/* Estilos para small mobile */
+@media (max-width: 480px) {
+  .pfs-container {
+    max-height: 55vh;
+  }
+
+  .pfs-body {
+    max-height: calc(55vh - 110px);
+  }
+
+  .pfs-tab {
+    padding: 8px 3px;
+    font-size: 10px;
   }
 }

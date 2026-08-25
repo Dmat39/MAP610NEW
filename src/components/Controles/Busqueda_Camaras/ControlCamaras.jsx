@@ -23,7 +23,19 @@ const ControlCamaras = ({
   // Reporta el total de cámaras dentro de la jurisdicción (para los totales del panel).
   onConteoChange,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  // Hook para detectar mobile de forma confiable
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Collapsar por defecto en mobile (especialmente cuando está embebido en pestañas)
+  const [isCollapsed, setIsCollapsed] = useState(typeof window !== 'undefined' && window.innerWidth <= 768);
   const panelRef = useRef(null);
   const [busqueda, setBusqueda] = useState('');
   const [camaras, setCamaras] = useState([]);
@@ -335,23 +347,30 @@ const ControlCamaras = ({
 
   if (!visible) return null;
 
-  const contentCollapsed = isCollapsed && !embedded;
+  // En mobile embebido, mostrar header; en desktop no-embebido, mostrar header
+  const shouldShowHeader = !embedded || (embedded && isMobile);
+  const contentCollapsed = isCollapsed && shouldShowHeader;
 
   return (
     <div
       ref={panelRef}
       className={`control-camaras ${mapType}-mode ${contentCollapsed ? 'collapsed' : ''}`}
     >
-      {!embedded && (
-        <div className="control-camaras-header" onClick={toggleCollapse}>
+      {shouldShowHeader && (
+        <button
+          className="control-camaras-header"
+          onClick={toggleCollapse}
+          style={{ cursor: 'pointer' }}
+          type="button"
+        >
           <div className="header-content">
             <Camera size={20} style={{ color: '#16a34a', flexShrink: 0 }} />
             <h3>Búsqueda de Cámaras</h3>
-            <button className="collapse-btn-cc">
+            <span className="collapse-btn-cc">
               {isCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
-            </button>
+            </span>
           </div>
-        </div>
+        </button>
       )}
 
       <div className={`control-camaras-content ${contentCollapsed ? 'hidden' : ''}`}>

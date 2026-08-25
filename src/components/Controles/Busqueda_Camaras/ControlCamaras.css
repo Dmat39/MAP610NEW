@@ -21,6 +21,7 @@
 
 /* Header */
 .control-camaras-header {
+  width: 100%;
   padding: 16px 20px;
   cursor: pointer;
   user-select: none;
@@ -28,11 +29,21 @@
   border-radius: 14px 14px 0 0;
   border-top: 4px solid #16a34a;
   border-bottom: 1px solid var(--theme-border);
-  transition: background 0.2s ease;
+  border: none;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .control-camaras-header:hover {
   background: var(--theme-surface-2);
+}
+
+.control-camaras-header:active {
+  background: var(--theme-surface-2);
+  transform: scale(0.98);
 }
 
 .header-content {
@@ -726,6 +737,20 @@
     width: auto;
     max-width: none;
     top: 12px;
+    position: fixed;
+  }
+
+  .control-camaras.collapsed {
+    max-height: 52px;
+  }
+
+  .control-camaras-header {
+    padding: 12px 16px;
+    border-radius: 12px;
+  }
+
+  .control-camaras-header h3 {
+    font-size: 14px;
   }
 
   .control-camaras-content {
@@ -797,5 +822,107 @@
   .btn-seguimiento,
   .btn-limpiar-seguimiento {
     width: 100%;
+  }
+}
+
+/* Estilos embebido en mobile: dentro del panel de pestañas */
+.pfs-body .control-camaras {
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  animation: none !important;
+}
+
+@media (max-width: 768px) {
+  .pfs-body .control-camaras {
+    max-height: none;
+    flex-shrink: 0;
+  }
+
+  .pfs-body .control-camaras.collapsed {
+    max-height: 44px;
+    overflow: hidden;
+  }
+
+  /* Header visible en mobile embebido para collapse */
+  .pfs-body .control-camaras-header {
+    display: flex !important;
+    padding: 8px 12px;
+    border: none !important;
+    border-bottom: 1px solid var(--theme-border);
+    background: var(--theme-surface-2) !important;
+    border-radius: 0 !important;
+    cursor: pointer;
+    user-select: none;
+    min-height: 44px;
+  }
+
+  .pfs-body .control-camaras-header h3 {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+  }
+
+  .pfs-body .control-camaras-header .collapse-btn-cc {
+    width: 24px;
+    height: 24px;
+    padding: 2px;
+  }
+
+  .pfs-body .control-camaras-content {
+    padding: 12px;
+    background: transparent !important;
+  }
+
+  .pfs-body .control-camaras-content.hidden {
+    display: none !important;
+  }
+
+  .pfs-body .busqueda-principal {
+    margin-bottom: 12px;
+  }
+
+  .pfs-body .filtros-compactos {
+    margin-bottom: 12px;
+  }
+
+  .pfs-body .filtros-titulo {
+    font-size: 11px;
+    margin-bottom: 8px;
+  }
+
+  .pfs-body .filtro-btn {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .pfs-body .busqueda-input {
+    font-size: 14px;
+    padding: 11px 14px 11px 36px;
+  }
+
+  .pfs-body .btn-buscar {
+    width: 38px;
+    height: 44px;
+    padding: 6px;
+  }
+
+  .pfs-body .input-group {
+    gap: 6px;
+  }
+
+  .pfs-body .acciones-container {
+    gap: 6px;
+  }
+
+  .pfs-body .btn-limpiar-todo,
+  .pfs-body .btn-seguimiento {
+    padding: 8px 10px;
+    font-size: 12px;
   }
 }

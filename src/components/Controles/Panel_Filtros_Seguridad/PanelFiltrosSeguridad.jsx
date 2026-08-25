@@ -4,7 +4,7 @@
 // una barra de pestañas; solo se muestra el contenido de la capa seleccionada.
 // Recibe `tabs`: [{ id, label, icon, color, render }] ya filtrado a las capas activas.
 import React, { useEffect, useMemo, useState } from 'react';
-import { MapPin, ChevronDown, ChevronUp } from 'lucide-react';
+import { MapPin, ChevronDown, ChevronUp, X } from 'lucide-react';
 import './PanelFiltrosSeguridad.css';
 
 const PanelFiltrosSeguridad = ({
@@ -14,6 +14,7 @@ const PanelFiltrosSeguridad = ({
   jurisdicciones = [],
   jurisdiccionesSeleccionadas = [],
   onJurisdiccionesChange,
+  onClose = null,
   footer = null,
 }) => {
   const validTabs = useMemo(() => tabs.filter(Boolean), [tabs]);
@@ -51,7 +52,7 @@ const PanelFiltrosSeguridad = ({
         zIndex: 1000,
       }}
     >
-      {/* 1) Pestañas */}
+      {/* 1) Pestañas con botón cerrar (mobile) */}
       <div className="pfs-tabs" role="tablist">
         {validTabs.map(({ id, label, icon: Icon, color }) => (
           <button
@@ -67,6 +68,16 @@ const PanelFiltrosSeguridad = ({
             <span className="pfs-tab-label">{label}</span>
           </button>
         ))}
+        {typeof window !== 'undefined' && window.innerWidth <= 768 && onClose && (
+          <button
+            className="pfs-close-btn"
+            onClick={onClose}
+            title="Ocultar filtros"
+            aria-label="Ocultar filtros"
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
 
       {/* 2) Filtros de la pestaña activa */}
