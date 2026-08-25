@@ -277,6 +277,12 @@ const MapView = () => {
     if (anyPatrimonio) setFiltrosRobos(payload);
     else setFiltrosRobos(PAYLOAD_VACIO);
 
+    if (payload?.Jurisdiccion) {
+      setJurisdiccionesSeleccionadas([payload.Jurisdiccion]);
+    } else {
+      setJurisdiccionesSeleccionadas([]);
+    }
+
     if (capasVisibles.extorsiones) setFiltrosExtorsion(payload);
     else setFiltrosExtorsion(PAYLOAD_VACIO);
 
@@ -301,6 +307,7 @@ const MapView = () => {
 
   const handleLimpiar = useCallback(() => {
     setPayloadFiltros(null);
+    setJurisdiccionesSeleccionadas([]);
     setFiltrosRobos(PAYLOAD_VACIO);
     setFiltrosExtorsion(PAYLOAD_VACIO);
     setFiltrosHomicidios(PAYLOAD_VACIO);
@@ -494,10 +501,16 @@ const MapView = () => {
 
   const handleFiltrarPnp = useCallback(payload => {
     setFiltrosPnp(payload);
+    if (payload?.jurisdiction) {
+      setJurisdiccionesSeleccionadas([payload.jurisdiction]);
+    } else {
+      setJurisdiccionesSeleccionadas([]);
+    }
   }, []);
 
   const handleLimpiarPnp = useCallback(() => {
     setFiltrosPnp(null);
+    setJurisdiccionesSeleccionadas([]);
   }, []);
 
   const anyPnpVisible = PNP_TIPOS.some(t => capasVisibles[t.key]);

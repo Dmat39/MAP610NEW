@@ -47,6 +47,7 @@ const CapaIncidenciasPNP = ({ visible, filtros = null, tipo }) => {
     if (tipo && i.modality?.subtype?.type?.name !== tipo) return false;
     if (filtros?.subtype_id && i.modality?.subtype?.id !== filtros.subtype_id) return false;
     if (filtros?.modality_id && i.modality?.id !== filtros.modality_id) return false;
+    if (filtros?.jurisdiction && i.jurisdiction !== filtros.jurisdiction) return false;
     return true;
   });
 
