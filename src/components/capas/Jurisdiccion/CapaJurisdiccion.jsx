@@ -7,6 +7,7 @@ const CapaJurisdiccion = ({
   ubicadorActivo = false,
   camaraConVision = null,
   camaraSeleccionada = null,
+  jurisdiccionesSeleccionadas = [],
 }) => {
   const [data, setData] = useState(null);
   const [key, setKey] = useState(0); // Para forzar re-render
@@ -24,13 +25,28 @@ const CapaJurisdiccion = ({
       .catch(err => logger.error('Error cargando jurisdicción:', err));
   }, []);
 
-  const estiloPorDefecto = feature => ({
-    color: feature.properties.color || '#34b429',
-    weight: 2,
-    fillOpacity: esInactivo ? 0.1 : 0.2, // Menos opacidad cuando está inactivo
-    interactive: !esInactivo && !ubicadorActivo, // No interactivo si ubicador está activo o está inactivo
-    bubblingMouseEvents: esInactivo || ubicadorActivo ? false : true, // Prevenir bubbling cuando inactivo o ubicador activo
-  });
+  const estiloPorDefecto = feature => {
+    const normalizeName = (n) => {
+      if (!n) return '';
+      return n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    };
+
+    const featureName = normalizeName(feature.properties?.name);
+    const isSelected = jurisdiccionesSeleccionadas.length === 0 || 
+      jurisdiccionesSeleccionadas.some(s => normalizeName(s) === featureName);
+
+    if (!isSelected) {
+      return { opacity: 0, fillOpacity: 0, weight: 0, interactive: false };
+    }
+
+    return {
+      color: feature.properties.color || '#34b429',
+      weight: 2,
+      fillOpacity: esInactivo ? 0.1 : 0.2, // Menos opacidad cuando está inactivo
+      interactive: !esInactivo && !ubicadorActivo, // No interactivo si ubicador está activo o está inactivo
+      bubblingMouseEvents: esInactivo || ubicadorActivo ? false : true, // Prevenir bubbling cuando inactivo o ubicador activo
+    };
+  };
 
   const popupJurisdiccion = (feature, layer) => {
     const nombre = feature.properties.name || 'Jurisdicción';
@@ -68,10 +84,12 @@ const CapaJurisdiccion = ({
           ? `(Cámara ${camaraSeleccionada.name} seleccionada)`
           : ubicadorActivo
             ? '(Herramienta activa)'
-            : '';
+            : jurisdiccionesSeleccionadas.length > 0 
+              ? '(Filtro jurisdicción)' 
+              : '';
       logger.log(`🗺️ Jurisdicciones - ${esInactivo || ubicadorActivo ? 'NO INTERACTIVAS' : 'INTERACTIVAS'}`, razon);
     }
-  }, [esInactivo, ubicadorActivo, data, camaraConVision, camaraSeleccionada]);
+  }, [esInactivo, ubicadorActivo, data, camaraConVision, camaraSeleccionada, jurisdiccionesSeleccionadas]);
 
   // Efecto para aplicar estilos CSS cuando esté inactivo o ubicador activo
   useEffect(() => {

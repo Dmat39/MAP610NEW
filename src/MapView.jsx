@@ -766,6 +766,7 @@ const MapView = () => {
               }
               camaraConVision={camaraConVision}
               camaraSeleccionada={camaraSeleccionada}
+              jurisdiccionesSeleccionadas={jurisdiccionesSeleccionadas}
             />
           )}
           {canSeeCamaras && (
