@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Plus, Edit2, Trash2, X, Save, RefreshCw, Shield,
-  Layers, Settings, Users, ChevronDown, ChevronUp, Camera,
+  Layers, Settings, Users, ChevronDown, ChevronUp, Camera, Table2, Lock,
 } from 'lucide-react';
 import rolesService from '../../services/rolesService';
 import pnpIncidenceService from '../../services/pnpIncidenceService';
@@ -16,6 +16,7 @@ import './GestionRoles.css';
 const AVAILABLE_MODULES = [
   { key: 'camaras-municipales',  label: 'Cámaras Municipales' },
   { key: 'camaras-vecinales',    label: 'Cámaras Vecinales' },
+  { key: 'camaras-vecinales-export', label: 'Cámaras Vecinales — Descargar Excel' },
   { key: 'actividades',          label: 'Actividades' },
   { key: 'incidencias-pnp',      label: 'Incidencias PNP' },
   { key: 'tipos-incidencia',     label: 'Tipos de Incidencia PNP' },
@@ -120,6 +121,25 @@ const MODULE_VISIBLE_FIELDS = {
   ],
 };
 
+// Columnas del MÓDULO administrativo y su Excel. Es una lista distinta de
+// MODULE_VISIBLE_FIELDS a propósito: aquella controla lo que el rol ve en la
+// CAPA DEL MAPA, ésta lo que ve en el panel de gestión (datos sensibles que
+// nunca salen al mapa: teléfono del vecino, usuario y contraseña).
+const MODULE_EXPORT_FIELDS = {
+  'camaras-vecinales': [
+    { key: 'address',   label: 'Dirección' },
+    { key: 'neighbor',  label: 'Nombre del Vecino' },
+    { key: 'brand',     label: 'Marca' },
+    { key: 'mode',      label: 'Modo' },
+    { key: 'phone',     label: 'Teléfono del Vecino', sensible: true },
+    { key: 'user',      label: 'Usuario de Acceso',   sensible: true },
+    { key: 'password',  label: 'Contraseña',          sensible: true },
+    { key: 'serial',    label: 'Serial del Dispositivo', sensible: true },
+    { key: 'latitude',  label: 'Latitud' },
+    { key: 'longitude', label: 'Longitud' },
+  ],
+};
+
 // Vincula cada capa de cámara con su módulo y sus campos configurables
 const LAYER_CAMERA_CONFIG = {
   camaras:          { moduleKey: 'camaras-municipales', label: 'Cámaras Municipales', fields: MODULE_VISIBLE_FIELDS['camaras-municipales'] },
@@ -129,7 +149,7 @@ const LAYER_CAMERA_CONFIG = {
 
 const buildInitialModuleState = () =>
   Object.fromEntries(
-    AVAILABLE_MODULES.map(m => [m.key, { enabled: false, can_create: false, can_edit: false, can_delete: false, visible_fields: [] }])
+    AVAILABLE_MODULES.map(m => [m.key, { enabled: false, can_create: false, can_edit: false, can_delete: false, visible_fields: [], export_fields: [] }])
   );
 
 const buildInitialLayerState = () =>
@@ -159,6 +179,7 @@ const moduleStateToApi = (moduleState, layerState) =>
       can_edit:       moduleState[m.key].can_edit,
       can_delete:     moduleState[m.key].can_delete,
       visible_fields: moduleState[m.key].visible_fields ?? [],
+      export_fields:  moduleState[m.key].export_fields  ?? [],
     }));
 
 const layerStateToApi = (layerState) =>
@@ -168,7 +189,7 @@ const layerStateToApi = (layerState) =>
 
 const apiToModuleState = (modulePermissions = []) => {
   const state = buildInitialModuleState();
-  modulePermissions.forEach(({ module_key, can_access, can_create, can_edit, can_delete, visible_fields }) => {
+  modulePermissions.forEach(({ module_key, can_access, can_create, can_edit, can_delete, visible_fields, export_fields }) => {
     if (state[module_key] !== undefined) {
       // enabled = can_access (con fallback true para datos anteriores sin este campo)
       state[module_key] = {
@@ -177,6 +198,7 @@ const apiToModuleState = (modulePermissions = []) => {
         can_edit,
         can_delete,
         visible_fields: visible_fields ?? [],
+        export_fields:  export_fields  ?? [],
       };
     }
   });
@@ -380,6 +402,7 @@ const GestionRoles = () => {
           can_edit:   enabled ? current.can_edit   : false,
           can_delete: enabled ? current.can_delete : false,
           visible_fields: current.visible_fields ?? [],
+          export_fields:  current.export_fields  ?? [],
         },
       };
     });
@@ -399,6 +422,24 @@ const GestionRoles = () => {
         ? current.filter(f => f !== fieldKey)
         : [...current, fieldKey];
       return { ...prev, [moduleKey]: { ...prev[moduleKey], visible_fields: next } };
+    });
+  };
+
+  const toggleExportField = (moduleKey, fieldKey) => {
+    setModuleState(prev => {
+      const current = prev[moduleKey].export_fields ?? [];
+      const next = current.includes(fieldKey)
+        ? current.filter(f => f !== fieldKey)
+        : [...current, fieldKey];
+      return { ...prev, [moduleKey]: { ...prev[moduleKey], export_fields: next } };
+    });
+  };
+
+  const toggleAllExportFields = (moduleKey, fields) => {
+    setModuleState(prev => {
+      const current = prev[moduleKey].export_fields ?? [];
+      const todas = current.length === fields.length;
+      return { ...prev, [moduleKey]: { ...prev[moduleKey], export_fields: todas ? [] : fields.map(f => f.key) } };
     });
   };
 
@@ -677,6 +718,7 @@ const GestionRoles = () => {
                     {AVAILABLE_MODULES.map(mod => {
                       const s = moduleState[mod.key];
                       const cameraFields = MODULE_VISIBLE_FIELDS[mod.key];
+                      const exportFields = MODULE_EXPORT_FIELDS[mod.key];
                       return (
                         <div key={mod.key} className={`modules-table-row-wrapper${s.enabled ? ' enabled' : ''}${cameraFields ? ' has-camera-fields' : ''}`}>
                           <div className="modules-table-row">
@@ -701,6 +743,53 @@ const GestionRoles = () => {
                               <input type="checkbox" checked={s.can_delete} onChange={() => toggleModulePerm(mod.key, 'can_delete')} disabled={!s.enabled} className="perm-checkbox" />
                             </label>
                           </div>
+
+                          {/* Columnas del módulo administrativo — independientes del mapa */}
+                          {exportFields && s.enabled && (() => {
+                            const seleccionadas = s.export_fields ?? [];
+                            const todas = seleccionadas.length === exportFields.length;
+                            return (
+                              <div className="module-export-fields-panel">
+                                <div className="module-export-fields-title">
+                                  <Table2 size={13} />
+                                  <span style={{ flex: 1 }}>Columnas del módulo y del Excel</span>
+                                  <button
+                                    type="button"
+                                    className="module-export-fields-toggle"
+                                    onClick={() => toggleAllExportFields(mod.key, exportFields)}
+                                  >
+                                    {todas ? 'Quitar todas' : 'Marcar todas'}
+                                  </button>
+                                  <span className="module-fields-count">
+                                    {seleccionadas.length === 0 ? 'Todo' : `${seleccionadas.length}/${exportFields.length}`}
+                                  </span>
+                                </div>
+                                <div className="module-fields-list">
+                                  {exportFields.map(field => (
+                                    <label
+                                      key={field.key}
+                                      className={`field-item${seleccionadas.includes(field.key) ? ' checked' : ''}${field.sensible ? ' sensitive' : ''}`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={seleccionadas.includes(field.key)}
+                                        onChange={() => toggleExportField(mod.key, field.key)}
+                                        className="perm-checkbox"
+                                        style={{ width: 13, height: 13 }}
+                                      />
+                                      {field.label}
+                                      {field.sensible && <Lock size={10} className="field-sensitive-icon" />}
+                                    </label>
+                                  ))}
+                                </div>
+                                <div className="module-fields-hint">
+                                  Independiente de lo que el rol ve en el mapa (eso se configura en «Capas»).
+                                  Sin selección = ve todas las columnas. La descarga del Excel requiere además
+                                  el módulo «Cámaras Vecinales — Descargar Excel».
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                         </div>
                       );

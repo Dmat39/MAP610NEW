@@ -17,6 +17,9 @@ const camarasVecinalesAdminService = {
       if (filters.mode) params.append('mode', filters.mode);
       if (filters.page !== undefined && filters.page !== null) params.append('page', filters.page);
       if (filters.limit) params.append('limit', filters.limit);
+      // Ambito del panel administrativo: el backend filtra por export_fields,
+      // no por los campos que el rol ve en la capa del mapa.
+      params.append('scope', 'manage');
 
       const queryString = params.toString();
       const url = `${API_URL}communal${queryString ? `?${queryString}` : ''}`;
@@ -76,11 +79,52 @@ const camarasVecinalesAdminService = {
    * @param {string} id - UUID de la cámara
    * @returns {Promise<Object>}
    */
+  /**
+   * Descarga completa para el Excel del panel.
+   * Requiere el modulo 'camaras-vecinales-export'; el backend decide que
+   * columnas devuelve segun los export_fields del rol y registra la descarga
+   * en Auditoria (puede incluir credenciales de las camaras).
+   * @param {Object} filters - { search, brand, mode }
+   * @returns {Promise<{ data: Array, columns: string[], totalCount: number }>}
+   */
+  async exportAll(filters = {}) {
+    const token = localStorage.getItem('token');
+    const params = new URLSearchParams();
+    if (filters.search) params.append('search', filters.search);
+    if (filters.brand) params.append('brand', filters.brand);
+    if (filters.mode) params.append('mode', filters.mode);
+
+    const queryString = params.toString();
+    const response = await fetch(`${API_URL}communal/export${queryString ? `?${queryString}` : ''}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      if (response.status === 403) {
+        throw new Error('Tu rol no tiene permiso para descargar el Excel de cámaras vecinales');
+      }
+      throw new Error(errorData.message || 'Error al generar la exportación');
+    }
+
+    const json = await response.json();
+    const payload = json.data ?? json;
+    return {
+      data: payload.data ?? [],
+      columns: payload.columns ?? [],
+      totalCount: payload.totalCount ?? (payload.data ?? []).length,
+    };
+  },
+
   async getById(id) {
     try {
       const token = localStorage.getItem('token');
 
-      const response = await fetch(`${API_URL}communal/${id}`, {
+      const response = await fetch(`${API_URL}communal/${id}?scope=manage`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

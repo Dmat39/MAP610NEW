@@ -11,6 +11,21 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './GestionCamarasVecinales.css';
 
+// Columnas posibles del Excel. Cuales salen realmente lo decide el backend
+// segun los export_fields del rol; aqui solo se les pone nombre y ancho.
+const EXCEL_COLUMNS = {
+  address:   { header: 'Dirección',             width: 42 },
+  neighbor:  { header: 'Nombre del Vecino',     width: 28 },
+  brand:     { header: 'Marca',                 width: 14 },
+  mode:      { header: 'Modo',                  width: 12 },
+  phone:     { header: 'Teléfono del Vecino',   width: 18, sensible: true },
+  user:      { header: 'Usuario de Acceso',     width: 20, sensible: true },
+  password:  { header: 'Contraseña',            width: 20, sensible: true },
+  serial:    { header: 'Serial del Dispositivo', width: 24, sensible: true },
+  latitude:  { header: 'Latitud',               width: 14 },
+  longitude: { header: 'Longitud',              width: 14 },
+};
+
 const GestionCamarasVecinales = () => {
   const location = useLocation();
   const { addParams, getParams, removeParams } = UseUrlParamsManager();
@@ -54,6 +69,8 @@ const GestionCamarasVecinales = () => {
   const { hasModuleAccess, hasModuleOp } = useAuth();
   const isAdmin  = hasModuleAccess('camaras-vecinales');
   const canWrite = hasModuleOp('camaras-vecinales', 'create');
+  // Permiso propio: se concede a un rol sin darle el resto del panel, y al revés.
+  const canExport = hasModuleAccess('camaras-vecinales-export');
 
   // Cargar cámaras cuando cambian los parámetros de URL
   useEffect(() => {
@@ -248,46 +265,74 @@ const GestionCamarasVecinales = () => {
       setLoading(true);
       setError(null);
 
-      const response = await camarasVecinalesAdminService.getAll({ page: 0 });
-      const todasLasCamaras = response.data || [];
+      // El backend aplica los export_fields del rol y devuelve qué columnas
+      // están permitidas; la descarga queda registrada en Auditoría.
+      const { data: todasLasCamaras, columns } = await camarasVecinalesAdminService.exportAll();
 
       if (todasLasCamaras.length === 0) {
         setError('No hay cámaras vecinales para exportar');
         return;
       }
 
+      const permitidas = (columns || []).filter(key => EXCEL_COLUMNS[key]);
+      if (permitidas.length === 0) {
+        setError('Tu rol no tiene ninguna columna habilitada para exportar');
+        return;
+      }
+      const conSensibles = permitidas.some(key => EXCEL_COLUMNS[key].sensible);
+
       const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'CECOM - Sistema de Gestión';
+      workbook.created = new Date();
       const worksheet = workbook.addWorksheet('Cámaras Vecinales');
 
       worksheet.columns = [
         { header: '#', key: 'index', width: 6 },
-        { header: 'Dirección', key: 'address', width: 40 },
-        { header: 'Vecino', key: 'neighbor', width: 25 },
-        { header: 'Marca', key: 'brand', width: 15 },
-        { header: 'Modo', key: 'mode', width: 12 },
-        { header: 'Latitud', key: 'latitude', width: 15 },
-        { header: 'Longitud', key: 'longitude', width: 15 },
+        ...permitidas.map(key => ({
+          header: EXCEL_COLUMNS[key].header,
+          key,
+          width: EXCEL_COLUMNS[key].width,
+        })),
       ];
 
       worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      worksheet.getRow(1).fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF1E3A5F' },
-      };
       worksheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.getRow(1).eachCell((cell, col) => {
+        // Las columnas con datos sensibles se marcan en rojo en la cabecera
+        const key = col === 1 ? null : permitidas[col - 2];
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: key && EXCEL_COLUMNS[key].sensible ? 'FF991B1B' : 'FF1E3A5F' },
+        };
+      });
 
       todasLasCamaras.forEach((camara, idx) => {
-        worksheet.addRow({
-          index: idx + 1,
-          address: camara.address || '',
-          neighbor: camara.neighbor || '',
-          brand: camara.brand || '',
-          mode: camara.mode || '',
-          latitude: camara.latitude || '',
-          longitude: camara.longitude || '',
+        const fila = { index: idx + 1 };
+        permitidas.forEach(key => {
+          const valor = camara[key];
+          fila[key] = valor === null || valor === undefined ? '' : valor;
         });
+        const row = worksheet.addRow(fila);
+        if ((idx + 1) % 2 === 0) {
+          row.eachCell(c => {
+            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+          });
+        }
       });
+
+      // Las credenciales se guardan como texto para no perder ceros a la izquierda
+      permitidas.forEach((key, i) => {
+        if (key === 'password' || key === 'user' || key === 'serial' || key === 'phone') {
+          worksheet.getColumn(i + 2).numFmt = '@';
+        }
+      });
+
+      worksheet.autoFilter = {
+        from: { row: 1, column: 1 },
+        to: { row: 1, column: permitidas.length + 1 },
+      };
+      worksheet.views = [{ state: 'frozen', ySplit: 1 }];
 
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
@@ -300,11 +345,15 @@ const GestionCamarasVecinales = () => {
       link.click();
       window.URL.revokeObjectURL(url);
 
-      setSuccess('Excel exportado exitosamente');
-      setTimeout(() => setSuccess(null), 3000);
+      setSuccess(
+        conSensibles
+          ? `Excel exportado (${todasLasCamaras.length} registros). Contiene datos sensibles — la descarga quedó registrada en Auditoría.`
+          : `Excel exportado (${todasLasCamaras.length} registros).`,
+      );
+      setTimeout(() => setSuccess(null), 6000);
     } catch (err) {
       console.error('Error al exportar Excel:', err);
-      setError('Error al generar el archivo Excel');
+      setError(err.message || 'Error al generar el archivo Excel');
     } finally {
       setLoading(false);
     }
@@ -398,10 +447,13 @@ const GestionCamarasVecinales = () => {
           <button onClick={refreshData} className="btn-camaras-secondary">
             <RefreshCw size={15} className={loading ? 'spinning' : ''} /> Actualizar
           </button>
-          <button onClick={exportarExcel} className="btn-camaras-excel" disabled={loading} title="Descargar Excel">
-            <Download size={18} />
-            <span>Descargar Excel</span>
-          </button>
+          {canExport && (
+            <button onClick={exportarExcel} className="btn-camaras-excel" disabled={loading}
+              title="Descargar Excel con los datos del módulo">
+              <Download size={18} />
+              <span>Descargar Excel</span>
+            </button>
+          )}
           {canWrite && (
             <button onClick={openCreateModal} className="btn-camaras-primary">
               <Plus size={18} />

@@ -20,7 +20,7 @@ const PAGE_META = {
   '/admin/subtipos-incidencia':{ title: 'Subtipos de Incidencia', sub: 'Gestión de subtipos de incidencia' },
   '/admin/modalidades-incidencia':{ title: 'Modalidades PNP',     sub: 'Gestión de modalidades de incidencia' },
   '/admin/roles':              { title: 'Roles',                  sub: 'Gestión de roles y permisos' },
-  '/reportes/incidencias':     { title: 'Reportes',               sub: 'Reportes de incidencias' },
+  '/reportes/incidencias':     { title: 'Reportes',               sub: 'Incidencias de Serenazgo y PNP' },
 };
 
 const getRoleLabel = role => {

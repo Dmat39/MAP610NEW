@@ -625,3 +625,64 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ── Columnas del módulo administrativo (independientes del mapa) ──────────── */
+/* Verde = capas del mapa. Ámbar = panel de gestión, que maneja datos sensibles. */
+.module-export-fields-panel {
+  padding: 12px 14px 14px;
+  background: #fffbeb;
+  border-top: 1px dashed #fcd34d;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.module-export-fields-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.module-export-fields-toggle {
+  background: none;
+  border: none;
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.module-export-fields-panel .module-fields-count {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fcd34d;
+}
+
+.module-export-fields-panel .field-item:hover {
+  border-color: #fbbf24;
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.module-export-fields-panel .field-item.checked {
+  background: #fef3c7;
+  border-color: #fbbf24;
+  color: #b45309;
+}
+
+.module-export-fields-panel .field-item.sensitive.checked {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.field-sensitive-icon { opacity: 0.75; flex-shrink: 0; }

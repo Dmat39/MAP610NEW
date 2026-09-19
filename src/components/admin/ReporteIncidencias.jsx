@@ -1,6 +1,5 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useClusterWorker } from '../../hooks/useClusterWorker';
-import ExcelJS from 'exceljs';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell, Legend, AreaChart, Area,
@@ -8,12 +7,17 @@ import {
 import {
   FileDown, Filter, RefreshCw, CalendarDays,
   ChevronDown, ChevronRight, BarChart2, AlertTriangle, ScatterChart, SlidersHorizontal,
-  Clock, MapPin, TrendingUp, Flame, Sunrise, Activity,
+  Clock, MapPin, TrendingUp, Flame, Sunrise, Activity, Shield, Building2, GitCompare,
 } from 'lucide-react';
-
-const API_URL = import.meta.env.VITE_API_URL;
-
-const TIPO_COLORS = ['#1d4ed8','#7c3aed','#16a34a','#dc2626','#f97316','#0891b2','#a21caf','#854d0e','#15803d','#9333ea','#0369a1','#b45309','#be185d','#065f46','#1e40af'];
+import {
+  FUENTES, FUENTE_COLOR, SERENO, PNP, SIN_TIPIFICAR,
+  GRUPOS, SIMPLES, ALL_ITEMS, JURISDICCIONES, TIPO_COLORS,
+  STATUS_COLORS,
+  fmt, getDefault,
+  fetchSereno, fetchPnp, fetchPnpTipologia, fetchPnpJurisdicciones,
+  resolvePnpJurisdiction, agruparPnp, normalizarModalidades,
+} from './reportes/reportesData';
+import { generarExcelIncidencias, generarExcelClusters } from './reportes/reportesExcel';
 
 // ── Diseño ────────────────────────────────────────────────────────────────────
 const PRIMARY    = '#1d4ed8';
@@ -26,283 +30,145 @@ const TEXT_DARK  = 'var(--theme-text)';
 const TEXT_MID   = 'var(--theme-text-3)';
 const TEXT_LIGHT = 'var(--theme-text-4)';
 
-// ── Catálogo de tipos ─────────────────────────────────────────────────────────
-const GRUPOS = [
-  {
-    key: 'robos', label: 'Robos', color: '#1d4ed8',
-    items: [
-      { key: 'roboPersonas',   label: 'Robo a Personas',    tipo: 3, subtype: 10 },
-      { key: 'roboCasa',       label: 'Robo Casa Habitada', tipo: 3, subtype: 11 },
-      { key: 'roboGanado',     label: 'Robo de Ganado',     tipo: 3, subtype: 12 },
-      { key: 'roboEmpresas',   label: 'Robo a Empresas',    tipo: 3, subtype: 13 },
-      { key: 'roboVehiculos',  label: 'Robo de Vehículos',  tipo: 3, subtype: 14 },
-      { key: 'roboAutopartes', label: 'Robo de Autopartes', tipo: 3, subtype: 15 },
-      { key: 'roboPasajeros',  label: 'Robo a Pasajeros',   tipo: 3, subtype: 16 },
-    ],
-  },
-  {
-    key: 'hurtos', label: 'Hurtos', color: '#7c3aed',
-    items: [
-      { key: 'hurtoPersonas',  label: 'Hurto a Personas',    tipo: 3, subtype: 18 },
-      { key: 'hurtoCasa',      label: 'Hurto Casa Habitada', tipo: 3, subtype: 19 },
-      { key: 'hurtoGanado',    label: 'Hurto de Ganado',     tipo: 3, subtype: 20 },
-      { key: 'hurtoEmpresas',  label: 'Hurto a Empresas',    tipo: 3, subtype: 21 },
-      { key: 'hurtoVehiculos', label: 'Hurto de Vehículos',  tipo: 3, subtype: 22 },
-      { key: 'hurtoPasajeros', label: 'Hurto a Pasajeros',   tipo: 3, subtype: 23 },
-    ],
-  },
-];
-
-const SIMPLES = [
-  { key: 'danos',       label: 'Daños',       color: '#f97316', tipo: 3, subtype: 17 },
-  { key: 'extorsiones', label: 'Extorsiones', color: '#ea580c', tipo: 3, subtype: 24 },
-  { key: 'homicidios',  label: 'Homicidios',  color: '#1e293b', tipo: 1, subtype: 1  },
-  { key: 'feminicidios',label: 'Feminicidios',color: '#a21caf', tipo: 1, subtype: 2  },
-  { key: 'sicariatos',  label: 'Sicariatos',  color: '#7c3aed', tipo: 1, subtype: 3  },
-  { key: 'secuestros',  label: 'Secuestros',  color: '#1d4ed8', tipo: 2, subtype: 6  },
-  { key: 'drogas',      label: 'Drogas',      color: '#15803d', tipo: 5, subtype: 28 },
-  { key: 'barras',      label: 'Barras',      color: '#a16207', tipo: 7, subtype: 31 },
-];
-
-const ALL_ITEMS = [...GRUPOS.flatMap(g => g.items), ...SIMPLES];
-
-const JURISDICCIONES = [
-  { id: '',  label: 'Todas las jurisdicciones' },
-  { id: '1', label: 'Caja de Agua'     },
-  { id: '2', label: 'Zárate'           },
-  { id: '3', label: 'Huayrona'         },
-  { id: '4', label: 'Canto Rey'        },
-  { id: '5', label: 'Santa Elizabeth'  },
-  { id: '6', label: 'Bayóvar'          },
-  { id: '7', label: 'Mariscal Cáceres' },
-  { id: '8', label: '10 de Octubre'    },
-];
-
-const fmt = d => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const day = String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${day}`;
-};
-const getDefault = () => {
-  const end = new Date(); const start = new Date();
-  start.setDate(end.getDate()-29);
-  return { start: fmt(start), end: fmt(end) };
-};
-
-// ── Fetch incidencias (con coordenadas) ───────────────────────────────────────
-const fetchTipologia = async ({ tipo, subtype, start, end, jurisdiction }) => {
-  const token = localStorage.getItem('token');
-  const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
-  const params = new URLSearchParams({ type: tipo, start, end: `${end}T23:59:59`, page: 0, limit: 5000 });
-  if (subtype)      params.set('subtype', subtype);
-  if (jurisdiction) params.set('jurisdiction', jurisdiction);
-  const res  = await fetch(`${API_URL}incidence?${params}`, { headers });
-  const json = await res.json();
-  return (json.data?.data || []).map(r => ({
-    codigo:       r.code || r.codigo_incidencia || '',
-    descripcion:  r.description || r.Descripcion || '',
-    fecha:        (r.date || r.occurred_at || '').split('T')[0],
-    hora:         r.hour || '',
-    turno:        r.shift || '',
-    jurisdiccion: r.jurisdiction || r.Jurisdiccion || '',
-    Latitud:      parseFloat(r.latitude  ?? r.Latitud),
-    Longitud:     parseFloat(r.longitude ?? r.Longitud),
-  })).filter(r => r.fecha && !isNaN(r.Latitud) && !isNaN(r.Longitud));
-};
-
-// ── Excel — Incidencias ───────────────────────────────────────────────────────
-const generarExcelIncidencias = async (data, filtroLabel, rangoLabel) => {
-  const wb = new ExcelJS.Workbook();
-  wb.creator = 'CECOM - Sistema de Gestión'; wb.created = new Date();
-
-  const ws1 = wb.addWorksheet('Resumen');
-  ws1.columns = [{ key:'tipo', width:28 },{ key:'total', width:12 },{ key:'pct', width:14 }];
-  ws1.addRow(['REPORTE DE INCIDENCIAS DELICTIVAS']).font = { bold:true, size:14, color:{ argb:'FF1D4ED8' } };
-  ws1.mergeCells('A1:C1');
-  ws1.addRow([`Período: ${rangoLabel}`]).font = { italic:true, color:{ argb:'FF6B7280' } };
-  ws1.addRow([`Filtro: ${filtroLabel}`]).font = { italic:true, color:{ argb:'FF6B7280' } };
-  ws1.addRow([`Generado: ${new Date().toLocaleString('es-PE')}`]).font = { italic:true, color:{ argb:'FF6B7280' } };
-  ws1.addRow([]);
-  const hdr = ws1.addRow(['Tipo de Incidencia','Total','% del Total']);
-  hdr.eachCell(c => { c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1D4ED8'}}; c.alignment={horizontal:'center'}; });
-  const total = data.reduce((s,r)=>s+r.registros.length, 0);
-  data.forEach(({ label, registros }) => {
-    const row = ws1.addRow([label, registros.length, total>0?`${((registros.length/total)*100).toFixed(1)}%`:'0%']);
-    row.getCell(2).alignment={horizontal:'center'}; row.getCell(3).alignment={horizontal:'center'};
-  });
-  const tot = ws1.addRow(['TOTAL GENERAL', total, '100%']);
-  tot.font={bold:true}; tot.eachCell(c=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEFF6FF'}}; c.alignment={horizontal:'center'}; });
-  ws1.addRow([]);
-  const hdrJ = ws1.addRow(['Jurisdicción','Total','% del Total']);
-  hdrJ.eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF16A34A'}}; c.alignment={horizontal:'center'}; });
-  const byJur = {};
-  data.forEach(({ registros }) => registros.forEach(r => { byJur[r.jurisdiccion||'Sin datos']=(byJur[r.jurisdiccion||'Sin datos']||0)+1; }));
-  Object.entries(byJur).sort((a,b)=>b[1]-a[1]).forEach(([j,n]) => {
-    const row=ws1.addRow([j,n,total>0?`${((n/total)*100).toFixed(1)}%`:'0%']);
-    row.getCell(2).alignment={horizontal:'center'}; row.getCell(3).alignment={horizontal:'center'};
-  });
-
-  // ── Resumen por Turno ──
-  ws1.addRow([]);
-  const hdrT = ws1.addRow(['Turno','Total','% del Total']);
-  hdrT.eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF7C3AED'}}; c.alignment={horizontal:'center'}; });
-  const byTurnoXls = {};
-  data.forEach(({ registros }) => registros.forEach(r => { const t=r.turno?.trim()||'Sin turno'; byTurnoXls[t]=(byTurnoXls[t]||0)+1; }));
-  const TURNO_ORDER = ['Mañana','Tarde','Noche'];
-  Object.entries(byTurnoXls).sort((a,b)=>{ const ai=TURNO_ORDER.indexOf(a[0]),bi=TURNO_ORDER.indexOf(b[0]); if(ai!==-1&&bi!==-1) return ai-bi; if(ai!==-1) return -1; if(bi!==-1) return 1; return b[1]-a[1]; }).forEach(([t,n])=>{
-    const row=ws1.addRow([t,n,total>0?`${((n/total)*100).toFixed(1)}%`:'0%']);
-    row.getCell(2).alignment={horizontal:'center'}; row.getCell(3).alignment={horizontal:'center'};
-  });
-  const totT=ws1.addRow(['TOTAL',total,'100%']);
-  totT.font={bold:true}; totT.eachCell(c=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF5F3FF'}}; c.alignment={horizontal:'center'}; });
-
-  // ── Incidencias por Hora ──
-  ws1.addRow([]);
-  const hdrH = ws1.addRow(['Hora','Total','% del Total']);
-  hdrH.eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF97316'}}; c.alignment={horizontal:'center'}; });
-  const byHoraXls = {};
-  data.forEach(({ registros }) => registros.forEach(r => { if(!r.hora) return; const h=String(r.hora).split(':')[0].padStart(2,'0'); byHoraXls[h]=(byHoraXls[h]||0)+1; }));
-  Object.entries(byHoraXls).sort((a,b)=>b[1]-a[1]).forEach(([h,n])=>{
-    const row=ws1.addRow([`${h}:00 – ${h}:59`,n,total>0?`${((n/total)*100).toFixed(1)}%`:'0%']);
-    row.getCell(2).alignment={horizontal:'center'}; row.getCell(3).alignment={horizontal:'center'};
-  });
-
-  const ws2 = wb.addWorksheet('Detalle');
-  ws2.columns = [
-    {header:'Tipo',key:'tipo',width:22},{header:'Código',key:'codigo',width:18},
-    {header:'Jurisdicción',key:'jurisdiccion',width:22},{header:'Turno',key:'turno',width:16},
-    {header:'Fecha',key:'fecha',width:14},{header:'Hora',key:'hora',width:12},
-    {header:'Descripción',key:'descripcion',width:40},
-  ];
-  ws2.getRow(1).eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1D4ED8'}}; c.alignment={horizontal:'center'}; });
-  let ri=2;
-  data.forEach(({ label, registros }) => registros.forEach(r => {
-    ws2.addRow({ tipo:label, codigo:r.codigo, jurisdiccion:r.jurisdiccion, turno:r.turno, fecha:r.fecha, hora:r.hora, descripcion:r.descripcion });
-    if (ri%2===0) ws2.getRow(ri).eachCell(c=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFC'}}; });
-    ri++;
-  }));
-
-  _download(wb, `Reporte_Incidencias_${fmt(new Date())}.xlsx`);
-};
-
-// ── Excel — Clusters ──────────────────────────────────────────────────────────
-const generarExcelClusters = async (clusters, filtroLabel, rangoLabel, radio) => {
-  const wb = new ExcelJS.Workbook();
-  wb.creator = 'CECOM - Sistema de Gestión'; wb.created = new Date();
-
-  // ── Hoja resumen ──
-  const ws1 = wb.addWorksheet('Resumen Clusters');
-  ws1.columns = [
-    {key:'num',  width:10},{key:'jur',   width:22},{key:'cant',  width:14},
-    {key:'radio',width:12},{key:'tipos', width:36},{key:'lat',   width:16},{key:'lng', width:16},
-  ];
-  ws1.addRow(['REPORTE DE CLUSTERS DE INCIDENCIAS']).font={bold:true,size:14,color:{argb:'FF1D4ED8'}};
-  ws1.mergeCells('A1:G1');
-  ws1.addRow([`Período: ${rangoLabel}`]).font={italic:true,color:{argb:'FF6B7280'}};
-  ws1.addRow([`Radio de clustering: ${radio} m`]).font={italic:true,color:{argb:'FF6B7280'}};
-  ws1.addRow([`Filtro: ${filtroLabel}`]).font={italic:true,color:{argb:'FF6B7280'}};
-  ws1.addRow([`Generado: ${new Date().toLocaleString('es-PE')}`]).font={italic:true,color:{argb:'FF6B7280'}};
-  ws1.addRow([]);
-  const hdr = ws1.addRow(['Cluster #','Jurisdicción Principal','# Incidencias','Radio (m)','Tipos','Latitud Centroide','Longitud Centroide']);
-  hdr.eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1D4ED8'}}; c.alignment={horizontal:'center'}; });
-
-  clusters.forEach((cl, i) => {
-    const jurCount = {};
-    cl.puntos.forEach(p=>{ jurCount[p.jurisdiccion||'Sin datos']=(jurCount[p.jurisdiccion||'Sin datos']||0)+1; });
-    const jurPrincipal = Object.entries(jurCount).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
-    const tipoCount = {};
-    cl.puntos.forEach(p=>{ tipoCount[p.Tipo||'—']=(tipoCount[p.Tipo||'—']||0)+1; });
-    const tiposStr = Object.entries(tipoCount).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`${t}(${n})`).join(', ');
-    const row = ws1.addRow([
-      i+1, jurPrincipal, cl.cantidad, Math.round(cl.radio),
-      tiposStr, cl.centroide.lat.toFixed(6), cl.centroide.lng.toFixed(6),
-    ]);
-    row.getCell(3).alignment={horizontal:'center'};
-    row.getCell(4).alignment={horizontal:'center'};
-    if ((i+1)%2===0) row.eachCell(c=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFC'}}; });
-  });
-
-  const totRow = ws1.addRow(['', 'TOTAL', clusters.reduce((s,c)=>s+c.cantidad,0), '', '', '', '']);
-  totRow.font={bold:true}; totRow.eachCell(c=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEFF6FF'}}; });
-
-  // ── Hoja detalle ──
-  const ws2 = wb.addWorksheet('Detalle por Cluster');
-  const detCols = [
-    {header:'Cluster #',key:'clNum',width:12},{header:'Tipo',key:'tipo',width:22},
-    {header:'Código',key:'codigo',width:18},{header:'Jurisdicción',key:'jur',width:22},
-    {header:'Turno',key:'turno',width:16},{header:'Fecha',key:'fecha',width:14},
-    {header:'Hora',key:'hora',width:12},{header:'Descripción',key:'desc',width:40},
-  ];
-  ws2.columns = detCols;
-  ws2.getRow(1).eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1D4ED8'}}; c.alignment={horizontal:'center'}; });
-
-  let ri2=2;
-  clusters.forEach((cl, i) => {
-    // Fila cabecera del cluster
-    const clHdr = ws2.addRow([`── Cluster ${i+1} — ${cl.cantidad} incidencias — Radio ${Math.round(cl.radio)} m`, '', '', '', '', '', '', '']);
-    ws2.mergeCells(`A${ri2}:H${ri2}`);
-    clHdr.font={bold:true,italic:true}; clHdr.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE0E7FF'}};
-    ri2++;
-    cl.puntos.forEach(p => {
-      ws2.addRow({ clNum:i+1, tipo:p.Tipo||'—', codigo:p.codigo, jur:p.jurisdiccion, turno:p.turno, fecha:p.fecha, hora:p.hora, desc:p.descripcion });
-      if (ri2%2===0) ws2.getRow(ri2).eachCell(c=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFC'}}; });
-      ri2++;
-    });
-  });
-
-  _download(wb, `Reporte_Clusters_${fmt(new Date())}.xlsx`);
-};
-
-const _download = async (wb, filename) => {
-  const buf  = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
-};
+const TURNO_COLOR = t => t === 'Mañana' ? '#f59e0b' : t === 'Tarde' ? '#f97316' : t === 'Noche' ? '#4f46e5' : '#94a3b8';
 
 // ── Componente ────────────────────────────────────────────────────────────────
 const ReporteIncidencias = () => {
+  const [fuente, setFuente]       = useState('sereno'); // 'sereno' | 'pnp' | 'ambas'
   const [modo, setModo]           = useState('incidencias'); // 'incidencias' | 'clusters'
   const [range, setRange]         = useState(getDefault());
   const [jurisdiction, setJur]    = useState('');
-  const [selected, setSelected]   = useState(() => Object.fromEntries(ALL_ITEMS.map(i=>[i.key,true])));
-  const [expanded, setExpanded]   = useState({ robos:false, hurtos:false });
   const [radio, setRadio]         = useState(100);
   const [loading, setLoading]     = useState(false);
-  const [rawData, setRawData]     = useState(null); // array de { label, key, registros[] }
+  const [error, setError]         = useState('');
+  const [rawData, setRawData]     = useState(null); // [{ key, label, fuente, registros[] }]
 
-  const toggleItem  = key  => setSelected(p=>({...p,[key]:!p[key]}));
+  // ── Filtros Serenazgo ──
+  const [selected, setSelected] = useState(() => Object.fromEntries(ALL_ITEMS.map(i => [i.key, true])));
+  const [expanded, setExpanded] = useState({ robos: false, hurtos: false });
+
+  // ── Filtros PNP ──
+  const [pnpTree, setPnpTree]         = useState([]);
+  const [pnpLabels, setPnpLabels]     = useState({});
+  const [pnpJurs, setPnpJurs]         = useState([]);
+  const [pnpSel, setPnpSel]           = useState({});
+  const [pnpExpanded, setPnpExpanded] = useState({});
+  const [catalogo, setCatalogo]       = useState('idle'); // idle | loading | ready | error
+  const [catalogoError, setCatError]  = useState('');
+  const [reintento, setReintento]     = useState(0);
+  const catalogoListo = useRef(false);
+
+  const usaSereno = fuente === 'sereno' || fuente === 'ambas';
+  const usaPnp    = fuente === 'pnp'    || fuente === 'ambas';
+  const mixto     = fuente === 'ambas';
+  const fuentesSel = mixto ? [SERENO, PNP] : fuente === 'pnp' ? [PNP] : [SERENO];
+
+  // ── Carga del catálogo PNP (una sola vez, al entrar a una vista que lo use) ──
+  // Ojo: `catalogo` NO puede ir en las dependencias — setCatalogo('loading')
+  // volvería a ejecutar el efecto y su cleanup cancelaría la petición en vuelo.
+  useEffect(() => {
+    if (!usaPnp || catalogoListo.current) return;
+    let cancelled = false;
+    setCatalogo('loading'); setCatError('');
+    Promise.all([fetchPnpTipologia(), fetchPnpJurisdicciones()])
+      .then(([{ tree, labelByModality }, jurs]) => {
+        if (cancelled) return;
+        setPnpTree(tree);
+        setPnpLabels(labelByModality);
+        setPnpJurs(jurs);
+        const keys = [...tree.flatMap(t => t.subtypes.flatMap(s => s.modalities.map(m => m.id))), SIN_TIPIFICAR];
+        setPnpSel(Object.fromEntries(keys.map(k => [k, true])));
+        catalogoListo.current = true;
+        setCatalogo('ready');
+      })
+      .catch(e => {
+        if (cancelled) return;
+        setCatError(e.message || 'No se pudo cargar la tipología PNP');
+        setCatalogo('error');
+      });
+    return () => { cancelled = true; };
+  }, [usaPnp, reintento]);
+
+  // ── Selecciones ──
+  const toggleItem  = key  => setSelected(p => ({ ...p, [key]: !p[key] }));
   const toggleGrupo = gkey => {
-    const keys = GRUPOS.find(g=>g.key===gkey)?.items.map(i=>i.key)??[];
-    const allOn = keys.every(k=>selected[k]);
-    setSelected(p=>({...p,...Object.fromEntries(keys.map(k=>[k,!allOn]))}));
+    const keys = GRUPOS.find(g => g.key === gkey)?.items.map(i => i.key) ?? [];
+    const allOn = keys.every(k => selected[k]);
+    setSelected(p => ({ ...p, ...Object.fromEntries(keys.map(k => [k, !allOn])) }));
   };
   const toggleAll = () => {
-    const allOn = ALL_ITEMS.every(i=>selected[i.key]);
-    setSelected(Object.fromEntries(ALL_ITEMS.map(i=>[i.key,!allOn])));
+    const allOn = ALL_ITEMS.every(i => selected[i.key]);
+    setSelected(Object.fromEntries(ALL_ITEMS.map(i => [i.key, !allOn])));
   };
-  const activeItems = ALL_ITEMS.filter(i=>selected[i.key]);
+  const activeItems = ALL_ITEMS.filter(i => selected[i.key]);
 
-  // Clusters calculados en tiempo real desde rawData (en Web Worker para no bloquear el hilo principal)
+  const pnpAllKeys = useMemo(
+    () => [...pnpTree.flatMap(t => t.subtypes.flatMap(s => s.modalities.map(m => m.id))), SIN_TIPIFICAR],
+    [pnpTree],
+  );
+  const pnpActiveCount = pnpAllKeys.filter(k => pnpSel[k]).length;
+  const pnpTodoOn = pnpAllKeys.length > 0 && pnpActiveCount === pnpAllKeys.length;
+
+  const togglePnpKey = k => setPnpSel(p => ({ ...p, [k]: !p[k] }));
+  const togglePnpKeys = keys => {
+    const allOn = keys.every(k => pnpSel[k]);
+    setPnpSel(p => ({ ...p, ...Object.fromEntries(keys.map(k => [k, !allOn])) }));
+  };
+  const togglePnpAll = () => setPnpSel(Object.fromEntries(pnpAllKeys.map(k => [k, !pnpTodoOn])));
+
+  // ── Carga de datos ──────────────────────────────────────────────────────────
+  const cargar = useCallback(async () => {
+    setLoading(true); setRawData(null); setError('');
+    try {
+      const bloques = [];
+
+      if (usaSereno && activeItems.length) {
+        const results = await Promise.allSettled(
+          activeItems.map(async item => {
+            const registros = await fetchSereno({
+              tipo: item.tipo, subtype: item.subtype,
+              start: range.start, end: range.end, jurisdiction,
+            });
+            return { key: `sereno:${item.key}`, label: item.label, fuente: SERENO, registros };
+          }),
+        );
+        bloques.push(...results.flatMap(r => (r.status === 'fulfilled' ? [r.value] : [])));
+      }
+
+      if (usaPnp && catalogo === 'ready' && pnpActiveCount > 0) {
+        const nombreJur = JURISDICCIONES.find(j => j.id === jurisdiction)?.nombre || '';
+        const rows = await fetchPnp({
+          start: range.start, end: range.end,
+          jurisdiction: resolvePnpJurisdiction(nombreJur, pnpJurs),
+        });
+        const normalizados = normalizarModalidades(rows, pnpLabels);
+        const filtrados = pnpTodoOn ? normalizados : normalizados.filter(r => pnpSel[r.modalityId]);
+        bloques.push(...agruparPnp(filtrados, pnpLabels));
+      }
+
+      setRawData(bloques);
+    } catch (e) {
+      setError(e.message || 'Error al consultar las incidencias');
+      setRawData([]);
+    } finally { setLoading(false); }
+  }, [usaSereno, usaPnp, activeItems, range, jurisdiction, catalogo, pnpActiveCount,
+      pnpTodoOn, pnpSel, pnpLabels, pnpJurs]);
+
+  // ── Clusters (Web Worker) ───────────────────────────────────────────────────
   const clusterAsync = useClusterWorker();
   const [clusters, setClusters] = useState([]);
   useEffect(() => {
     if (!rawData || modo !== 'clusters') { setClusters([]); return; }
-    const allPuntos = rawData.flatMap(({ label, registros }) =>
-      registros.map(r => ({ ...r, Tipo: label }))
-    );
+    const allPuntos = rawData.flatMap(({ label, registros }) => registros.map(r => ({ ...r, Tipo: label })));
     const seen = new Set();
     const uniq = allPuntos.filter(p => {
-      const k = p.codigo || `${p.Latitud.toFixed(5)},${p.Longitud.toFixed(5)}`;
+      const k = `${p.fuente}|${p.codigo || `${p.Latitud.toFixed(5)},${p.Longitud.toFixed(5)}`}`;
       if (seen.has(k)) return false; seen.add(k); return true;
     });
     let cancelled = false;
     clusterAsync(uniq, radio).then(result => {
       if (cancelled) return;
-      setClusters(result.sort((a,b)=>b.cantidad-a.cantidad));
+      setClusters(result.sort((a, b) => b.cantidad - a.cantidad));
     }).catch(err => {
       if (cancelled || err?.name === 'AbortError') return;
       setClusters([]);
@@ -310,80 +176,53 @@ const ReporteIncidencias = () => {
     return () => { cancelled = true; };
   }, [rawData, radio, modo, clusterAsync]);
 
-  const cargar = useCallback(async () => {
-    if (!activeItems.length) return;
-    setLoading(true); setRawData(null);
-    try {
-      const results = await Promise.allSettled(
-        activeItems.map(async item => {
-          const registros = await fetchTipologia({ ...item, start:range.start, end:range.end, jurisdiction });
-          return { label:item.label, key:item.key, registros };
-        })
-      );
-      setRawData(results.flatMap(r=>r.status==='fulfilled'?[r.value]:[]));
-    } finally { setLoading(false); }
-  }, [activeItems, range, jurisdiction]);
+  // ── Agregados ───────────────────────────────────────────────────────────────
+  const todos = useMemo(
+    () => (rawData || []).flatMap(({ label, registros }) => registros.map(r => ({ ...r, tipo: label }))),
+    [rawData],
+  );
+  const totalIncidencias = todos.length;
 
-  const totalIncidencias = rawData?.reduce((s,r)=>s+r.registros.length, 0) ?? 0;
+  const countBy = (rows, fn) => {
+    const counts = {};
+    rows.forEach(r => { const k = fn(r); if (k) counts[k] = (counts[k] || 0) + 1; });
+    return counts;
+  };
+  const sortDesc = counts => Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  const totalSereno = useMemo(() => todos.filter(r => r.fuente === SERENO).length, [todos]);
+  const totalPnp    = useMemo(() => todos.filter(r => r.fuente === PNP).length, [todos]);
 
   const byTurno = useMemo(() => {
-    if (!rawData) return [];
-    const counts = {};
-    rawData.forEach(({ registros }) => {
-      registros.forEach(r => {
-        const t = r.turno?.trim() || 'Sin turno';
-        counts[t] = (counts[t] || 0) + 1;
-      });
-    });
     const ORDER = ['Mañana', 'Tarde', 'Noche'];
-    return Object.entries(counts).sort((a, b) => {
+    return Object.entries(countBy(todos, r => r.turno?.trim() || 'Sin turno')).sort((a, b) => {
       const ai = ORDER.indexOf(a[0]), bi = ORDER.indexOf(b[0]);
       if (ai !== -1 && bi !== -1) return ai - bi;
       if (ai !== -1) return -1;
       if (bi !== -1) return 1;
       return b[1] - a[1];
     });
-  }, [rawData]);
+  }, [todos]);
 
-  const byHora = useMemo(() => {
-    if (!rawData) return [];
-    const counts = {};
-    rawData.forEach(({ registros }) => {
-      registros.forEach(r => {
-        if (!r.hora) return;
-        const h = String(r.hora).split(':')[0].padStart(2, '0');
-        counts[h] = (counts[h] || 0) + 1;
-      });
-    });
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  }, [rawData]);
+  const byHora = useMemo(
+    () => sortDesc(countBy(todos, r => (r.hora ? String(r.hora).split(':')[0].padStart(2, '0') : null))),
+    [todos],
+  );
 
-  const tipoChartData = useMemo(() =>
-    (rawData || []).filter(r => r.registros.length > 0)
+  const tipoChartData = useMemo(
+    () => (rawData || []).filter(r => r.registros.length > 0)
       .sort((a, b) => b.registros.length - a.registros.length)
-      .map(r => ({ name: r.label, value: r.registros.length }))
-  , [rawData]);
+      .map(r => ({ name: mixto ? `${r.label} (${r.fuente === PNP ? 'PNP' : 'Ser.'})` : r.label, value: r.registros.length, fuente: r.fuente })),
+    [rawData, mixto],
+  );
 
-  const byJur = useMemo(() => {
-    if (!rawData) return [];
-    const counts = {};
-    rawData.forEach(({ registros }) => registros.forEach(r => {
-      const j = r.jurisdiccion?.trim() || 'Sin datos';
-      counts[j] = (counts[j] || 0) + 1;
-    }));
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  }, [rawData]);
+  const byJur = useMemo(() => sortDesc(countBy(todos, r => r.jurisdiccion?.trim() || 'Sin datos')), [todos]);
 
   const byFecha = useMemo(() => {
-    if (!rawData) return [];
-    const counts = {};
-    rawData.forEach(({ registros }) => registros.forEach(r => {
-      if (!r.fecha) return;
-      counts[r.fecha] = (counts[r.fecha] || 0) + 1;
-    }));
+    const counts = countBy(todos, r => r.fecha);
     return Object.entries(counts).sort((a, b) => a[0].localeCompare(b[0]))
       .map(([fecha, value]) => ({ fecha, value, label: fecha.slice(5).split('-').reverse().join('/') }));
-  }, [rawData]);
+  }, [todos]);
 
   const horaProfile = useMemo(() => {
     const map = Object.fromEntries(byHora.map(([h, v]) => [h, v]));
@@ -394,349 +233,714 @@ const ReporteIncidencias = () => {
     });
   }, [byHora]);
 
+  // ── Agregados PNP ──
+  const byEstado = useMemo(
+    () => sortDesc(countBy(todos.filter(r => r.fuente === PNP), r => r.estado || 'Sin estado')),
+    [todos],
+  );
+  const byComisaria = useMemo(
+    () => sortDesc(countBy(todos.filter(r => r.fuente === PNP), r => r.comisaria || 'Sin comisaría')).slice(0, 12),
+    [todos],
+  );
+
+  // ── Agregados comparativos (fuente Ambas) ──
+  const jurComparado = useMemo(() => {
+    if (!mixto) return [];
+    const ser = countBy(todos.filter(r => r.fuente === SERENO), r => r.jurisdiccion?.trim() || 'Sin datos');
+    const pnp = countBy(todos.filter(r => r.fuente === PNP),    r => r.jurisdiccion?.trim() || 'Sin datos');
+    return [...new Set([...Object.keys(ser), ...Object.keys(pnp)])]
+      .map(name => ({ name, Serenazgo: ser[name] || 0, PNP: pnp[name] || 0 }))
+      .sort((a, b) => (b.Serenazgo + b.PNP) - (a.Serenazgo + a.PNP));
+  }, [todos, mixto]);
+
+  const fechaComparada = useMemo(() => {
+    if (!mixto) return [];
+    const ser = countBy(todos.filter(r => r.fuente === SERENO), r => r.fecha);
+    const pnp = countBy(todos.filter(r => r.fuente === PNP),    r => r.fecha);
+    return [...new Set([...Object.keys(ser), ...Object.keys(pnp)])].sort()
+      .map(fecha => ({
+        fecha, label: fecha.slice(5).split('-').reverse().join('/'),
+        Serenazgo: ser[fecha] || 0, PNP: pnp[fecha] || 0,
+      }));
+  }, [todos, mixto]);
+
+  const turnoComparado = useMemo(() => {
+    if (!mixto) return [];
+    const ORDER = ['Mañana', 'Tarde', 'Noche', 'Sin turno'];
+    const ser = countBy(todos.filter(r => r.fuente === SERENO), r => r.turno?.trim() || 'Sin turno');
+    const pnp = countBy(todos.filter(r => r.fuente === PNP),    r => r.turno?.trim() || 'Sin turno');
+    return [...new Set([...Object.keys(ser), ...Object.keys(pnp)])]
+      .sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b))
+      .map(name => ({ name, Serenazgo: ser[name] || 0, PNP: pnp[name] || 0 }));
+  }, [todos, mixto]);
+
   const insights = useMemo(() => {
-    const horaPico  = byHora[0]  ? { hora: byHora[0][0], count: byHora[0][1] } : null;
-    const turnoTop  = [...byTurno].sort((a, b) => b[1] - a[1])[0] || null;
-    const jurTop    = byJur[0] || null;
-    const tipoTop   = tipoChartData[0] || null;
-    const diaPico   = [...byFecha].sort((a, b) => b.value - a.value)[0] || null;
-    const numDias   = byFecha.length || 1;
-    return { horaPico, turnoTop, jurTop, tipoTop, diaPico, numDias, promedioDiario: totalIncidencias / numDias };
+    const horaPico = byHora[0] ? { hora: byHora[0][0], count: byHora[0][1] } : null;
+    const turnoTop = [...byTurno].sort((a, b) => b[1] - a[1])[0] || null;
+    const jurTop   = byJur[0] || null;
+    const tipoTop  = tipoChartData[0] || null;
+    const numDias  = byFecha.length || 1;
+    return { horaPico, turnoTop, jurTop, tipoTop, numDias, promedioDiario: totalIncidencias / numDias };
   }, [byHora, byTurno, byJur, tipoChartData, byFecha, totalIncidencias]);
 
-  const jurLabel = JURISDICCIONES.find(j=>j.id===jurisdiction)?.label ?? 'Todas';
-  const tiposLabel = activeItems.length===ALL_ITEMS.length ? 'Todos los tipos' : activeItems.map(i=>i.label).join(', ');
-  const rangoLabel = `${range.start} al ${range.end}`;
+  // ── Etiquetas para el Excel / encabezados ───────────────────────────────────
+  const fuenteLabel = mixto ? 'Serenazgo + PNP' : fuente === 'pnp' ? 'PNP' : 'Serenazgo';
+  const jurLabel    = JURISDICCIONES.find(j => j.id === jurisdiction)?.label ?? 'Todas';
+  const rangoLabel  = `${range.start} al ${range.end}`;
+  const filtroLabel = useMemo(() => {
+    const partes = [];
+    if (usaSereno) {
+      partes.push(`Serenazgo: ${activeItems.length === ALL_ITEMS.length ? 'todos los tipos' : activeItems.map(i => i.label).join(', ') || 'ninguno'}`);
+    }
+    if (usaPnp) {
+      partes.push(`PNP: ${pnpTodoOn ? 'toda la tipología' : `${pnpActiveCount} modalidad(es)`}`);
+    }
+    partes.push(`Jurisdicción: ${jurLabel}`);
+    return partes.join(' — ');
+  }, [usaSereno, usaPnp, activeItems, pnpTodoOn, pnpActiveCount, jurLabel]);
 
+  const excelMeta = { fuenteLabel, filtroLabel, rangoLabel, fuentes: fuentesSel };
+
+  const puedeCargar = (usaSereno && activeItems.length > 0) || (usaPnp && catalogo === 'ready' && pnpActiveCount > 0);
+
+  // ── Estilos ─────────────────────────────────────────────────────────────────
   const inputSt = {
-    padding:'7px 10px', borderRadius:8, border:BORDER,
-    background:CARD, color:TEXT_DARK, fontSize:13, outline:'none',
-    fontFamily:'inherit', width:'100%', boxSizing:'border-box',
+    padding: '7px 10px', borderRadius: 8, border: BORDER,
+    background: CARD, color: TEXT_DARK, fontSize: 13, outline: 'none',
+    fontFamily: 'inherit', width: '100%', boxSizing: 'border-box',
   };
-  const btnSt = (bg=PRIMARY) => ({
-    display:'flex', alignItems:'center', gap:7, padding:'9px 20px',
-    borderRadius:9, border:'none', background:bg, color:'white',
-    cursor:'pointer', fontSize:13, fontWeight:700, transition:'opacity 0.15s',
+  const btnSt = (bg = PRIMARY) => ({
+    display: 'flex', alignItems: 'center', gap: 7, padding: '9px 20px',
+    borderRadius: 9, border: 'none', background: bg, color: 'white',
+    cursor: 'pointer', fontSize: 13, fontWeight: 700, transition: 'opacity 0.15s',
   });
-  const tooltipStyle = { background:CARD, border:BORDER, borderRadius:8, fontSize:12, boxShadow:SHADOW, color:TEXT_DARK };
-  const panelSt = { background:'var(--theme-surface-2)', borderRadius:10, border:BORDER, padding:'16px 18px' };
+  const tooltipStyle = { background: CARD, border: BORDER, borderRadius: 8, fontSize: 12, boxShadow: SHADOW, color: TEXT_DARK };
+  const panelSt = { background: 'var(--theme-surface-2)', borderRadius: 10, border: BORDER, padding: '16px 18px' };
+  const labelSt = { fontSize: 11, fontWeight: 600, color: TEXT_LIGHT, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 };
+  const seccionSt = { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8 };
+  const thSt = (align = 'left') => ({
+    padding: '9px 16px', textAlign: align, fontWeight: 600, fontSize: 11, color: TEXT_LIGHT,
+    textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9',
+  });
+  const hoverRow = {
+    onMouseEnter: e => { e.currentTarget.style.background = '#f9fafb'; },
+    onMouseLeave: e => { e.currentTarget.style.background = 'transparent'; },
+  };
+  const fuenteChip = f => (
+    <span style={{
+      background: `${FUENTE_COLOR[f]}14`, color: FUENTE_COLOR[f], borderRadius: 4,
+      padding: '2px 7px', fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap',
+    }}>{f}</span>
+  );
 
   return (
-    <div style={{ background:BG, minHeight:'100vh', padding:'28px 32px', fontFamily:"'Inter','Segoe UI',system-ui,sans-serif" }}>
+    <div style={{ background: BG, minHeight: '100vh', padding: '28px 32px', fontFamily: "'Inter','Segoe UI',system-ui,sans-serif" }}>
 
-      {/* Título + tabs */}
-      <div style={{ marginBottom:20 }}>
-        <h1 style={{ margin:'0 0 12px', fontSize:22, fontWeight:800, color:TEXT_DARK }}>Reportes de Incidencias</h1>
-        <div style={{ display:'flex', gap:6 }}>
-          {[
-            { key:'incidencias', label:'Por Incidencia', icon:<BarChart2 size={14}/> },
-            { key:'clusters',    label:'Por Cluster',    icon:<ScatterChart size={14}/> },
-          ].map(t => (
-            <button key={t.key} onClick={()=>setModo(t.key)} style={{
-              display:'flex', alignItems:'center', gap:6, padding:'8px 18px',
-              borderRadius:9, border:`1.5px solid ${modo===t.key?PRIMARY:'#e2e8f0'}`,
-              background: modo===t.key ? PRIMARY : CARD,
-              color: modo===t.key ? 'white' : TEXT_MID,
-              cursor:'pointer', fontSize:13, fontWeight:600,
-            }}>
-              {t.icon} {t.label}
-            </button>
-          ))}
+      {/* Título + selector de fuente + vista */}
+      <div style={{ marginBottom: 20 }}>
+        <h1 style={{ margin: '0 0 14px', fontSize: 22, fontWeight: 800, color: TEXT_DARK }}>Reportes de Incidencias</h1>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-end' }}>
+          <div>
+            <div style={labelSt}>Fuente</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {FUENTES.map(f => {
+                const on = fuente === f.key;
+                const icon = f.key === 'sereno' ? <Shield size={14} /> : f.key === 'pnp' ? <Building2 size={14} /> : <GitCompare size={14} />;
+                return (
+                  <button key={f.key} onClick={() => { setFuente(f.key); setRawData(null); setError(''); }} style={{
+                    display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px',
+                    borderRadius: 9, border: `1.5px solid ${on ? f.color : '#e2e8f0'}`,
+                    background: on ? f.color : CARD, color: on ? 'white' : TEXT_MID,
+                    cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                  }}>
+                    {icon} {f.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <div style={labelSt}>Vista</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {[
+                { key: 'incidencias', label: 'Por Incidencia', icon: <BarChart2 size={14} /> },
+                { key: 'clusters',    label: 'Por Cluster',    icon: <ScatterChart size={14} /> },
+              ].map(t => (
+                <button key={t.key} onClick={() => setModo(t.key)} style={{
+                  display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px',
+                  borderRadius: 9, border: `1.5px solid ${modo === t.key ? PRIMARY : '#e2e8f0'}`,
+                  background: modo === t.key ? PRIMARY : CARD,
+                  color: modo === t.key ? 'white' : TEXT_MID,
+                  cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                }}>
+                  {t.icon} {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'320px 1fr', gap:20, alignItems:'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20, alignItems: 'start' }}>
 
         {/* ── Panel filtros ── */}
-        <div style={{ background:CARD, borderRadius:RADIUS, border:BORDER, boxShadow:SHADOW, padding:20, display:'flex', flexDirection:'column', gap:16 }}>
-          <div style={{ fontSize:13, fontWeight:700, color:TEXT_DARK, display:'flex', alignItems:'center', gap:6 }}>
-            <Filter size={15} color={PRIMARY}/> Filtros
+        <div style={{ background: CARD, borderRadius: RADIUS, border: BORDER, boxShadow: SHADOW, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_DARK, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Filter size={15} color={PRIMARY} /> Filtros
           </div>
 
           {/* Fechas */}
           <div>
-            <label style={{ fontSize:11, fontWeight:600, color:TEXT_LIGHT, textTransform:'uppercase', letterSpacing:'0.05em', display:'flex', alignItems:'center', gap:5, marginBottom:6 }}>
-              <CalendarDays size={13}/> Período
+            <label style={{ ...labelSt, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <CalendarDays size={13} /> Período
             </label>
-            <div style={{ display:'flex', gap:8 }}>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:11, color:TEXT_LIGHT, marginBottom:3 }}>Desde</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: TEXT_LIGHT, marginBottom: 3 }}>Desde</div>
                 <input type="date" value={range.start} max={range.end} style={inputSt}
-                  onChange={e=>setRange(p=>({...p,start:e.target.value}))}/>
+                  onChange={e => setRange(p => ({ ...p, start: e.target.value }))} />
               </div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:11, color:TEXT_LIGHT, marginBottom:3 }}>Hasta</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: TEXT_LIGHT, marginBottom: 3 }}>Hasta</div>
                 <input type="date" value={range.end} min={range.start} max={fmt(new Date())} style={inputSt}
-                  onChange={e=>setRange(p=>({...p,end:e.target.value}))}/>
+                  onChange={e => setRange(p => ({ ...p, end: e.target.value }))} />
               </div>
             </div>
           </div>
 
           {/* Jurisdicción */}
           <div>
-            <label style={{ fontSize:11, fontWeight:600, color:TEXT_LIGHT, textTransform:'uppercase', letterSpacing:'0.05em', display:'block', marginBottom:6 }}>Jurisdicción</label>
-            <select value={jurisdiction} onChange={e=>setJur(e.target.value)} style={inputSt}>
-              {JURISDICCIONES.map(j=><option key={j.id} value={j.id}>{j.label}</option>)}
+            <label style={labelSt}>Jurisdicción</label>
+            <select value={jurisdiction} onChange={e => setJur(e.target.value)} style={inputSt}>
+              {JURISDICCIONES.map(j => <option key={j.id} value={j.id}>{j.label}</option>)}
             </select>
+            {mixto && (
+              <div style={{ fontSize: 10, color: TEXT_LIGHT, marginTop: 4 }}>
+                Se aplica a ambas fuentes (Serenazgo por código, PNP por nombre de comisaría).
+              </div>
+            )}
           </div>
 
           {/* Radio — solo en modo clusters */}
           {modo === 'clusters' && (
             <div>
-              <label style={{ fontSize:11, fontWeight:600, color:TEXT_LIGHT, textTransform:'uppercase', letterSpacing:'0.05em', display:'flex', alignItems:'center', gap:5, marginBottom:6 }}>
-                <SlidersHorizontal size={13}/> Radio de clustering
+              <label style={{ ...labelSt, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <SlidersHorizontal size={13} /> Radio de clustering
               </label>
-              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                <input type="range" min={10} max={500} value={radio} onChange={e=>setRadio(Number(e.target.value))}
-                  style={{ flex:1, accentColor:PRIMARY }}/>
-                <span style={{ fontSize:13, fontWeight:700, color:PRIMARY, minWidth:56 }}>{radio} m</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <input type="range" min={10} max={500} value={radio} onChange={e => setRadio(Number(e.target.value))}
+                  style={{ flex: 1, accentColor: PRIMARY }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: PRIMARY, minWidth: 56 }}>{radio} m</span>
               </div>
-              <div style={{ fontSize:11, color:TEXT_LIGHT, marginTop:3 }}>
+              <div style={{ fontSize: 11, color: TEXT_LIGHT, marginTop: 3 }}>
                 Incidencias dentro de {radio}m se agrupan en un cluster
               </div>
             </div>
           )}
 
-          {/* Tipos */}
-          <div>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-              <label style={{ fontSize:11, fontWeight:600, color:TEXT_LIGHT, textTransform:'uppercase', letterSpacing:'0.05em' }}>Tipos</label>
-              <button onClick={toggleAll} style={{ background:'none', border:'none', cursor:'pointer', fontSize:11, color:PRIMARY, fontWeight:600 }}>
-                {ALL_ITEMS.every(i=>selected[i.key]) ? 'Quitar todos' : 'Selec. todos'}
-              </button>
-            </div>
-            {GRUPOS.map(g=>{
-              const keys=g.items.map(i=>i.key), activeC=keys.filter(k=>selected[k]).length, allOn=activeC===keys.length, isExp=expanded[g.key];
-              return (
-                <div key={g.key} style={{ marginBottom:3 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 8px', borderRadius:7, background:'var(--theme-surface-2)', border:BORDER, marginBottom:isExp?3:0 }}>
-                    <input type="checkbox" checked={allOn}
-                      ref={el=>{ if(el) el.indeterminate=activeC>0&&!allOn; }}
-                      onChange={()=>toggleGrupo(g.key)}
-                      style={{ width:14, height:14, accentColor:g.color, cursor:'pointer', flexShrink:0 }}/>
-                    <span style={{ flex:1, fontSize:12, fontWeight:600, color:g.color, cursor:'pointer' }}
-                      onClick={()=>setExpanded(p=>({...p,[g.key]:!p[g.key]}))}>
-                      {g.label}
-                    </span>
-                    <span style={{ fontSize:10, color:TEXT_LIGHT }}>({activeC}/{keys.length})</span>
-                    <span style={{ color:TEXT_LIGHT, cursor:'pointer' }} onClick={()=>setExpanded(p=>({...p,[g.key]:!p[g.key]}))}>
-                      {isExp ? <ChevronDown size={12}/> : <ChevronRight size={12}/>}
-                    </span>
-                  </div>
-                  {isExp && (
-                    <div style={{ paddingLeft:14 }}>
-                      {g.items.map(item=>(
-                        <label key={item.key} style={{ display:'flex', alignItems:'center', gap:7, padding:'3px 0', cursor:'pointer', fontSize:12, color:TEXT_MID }}>
-                          <input type="checkbox" checked={!!selected[item.key]} onChange={()=>toggleItem(item.key)}
-                            style={{ width:13, height:13, accentColor:g.color, cursor:'pointer' }}/>
-                          {item.label}
-                        </label>
-                      ))}
+          {/* ── Tipos Serenazgo ── */}
+          {usaSereno && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ ...seccionSt, marginBottom: 0, color: FUENTE_COLOR[SERENO] }}>
+                  <Shield size={13} /> {mixto ? 'Tipos — Serenazgo' : 'Tipos'}
+                </span>
+                <button onClick={toggleAll} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: PRIMARY, fontWeight: 600 }}>
+                  {ALL_ITEMS.every(i => selected[i.key]) ? 'Quitar todos' : 'Selec. todos'}
+                </button>
+              </div>
+              {GRUPOS.map(g => {
+                const keys = g.items.map(i => i.key), activeC = keys.filter(k => selected[k]).length;
+                const allOn = activeC === keys.length, isExp = expanded[g.key];
+                return (
+                  <div key={g.key} style={{ marginBottom: 3 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', borderRadius: 7, background: 'var(--theme-surface-2)', border: BORDER, marginBottom: isExp ? 3 : 0 }}>
+                      <input type="checkbox" checked={allOn}
+                        ref={el => { if (el) el.indeterminate = activeC > 0 && !allOn; }}
+                        onChange={() => toggleGrupo(g.key)}
+                        style={{ width: 14, height: 14, accentColor: g.color, cursor: 'pointer', flexShrink: 0 }} />
+                      <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: g.color, cursor: 'pointer' }}
+                        onClick={() => setExpanded(p => ({ ...p, [g.key]: !p[g.key] }))}>
+                        {g.label}
+                      </span>
+                      <span style={{ fontSize: 10, color: TEXT_LIGHT }}>({activeC}/{keys.length})</span>
+                      <span style={{ color: TEXT_LIGHT, cursor: 'pointer' }} onClick={() => setExpanded(p => ({ ...p, [g.key]: !p[g.key] }))}>
+                        {isExp ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                      </span>
                     </div>
-                  )}
-                </div>
-              );
-            })}
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:3, marginTop:4 }}>
-              {SIMPLES.map(item=>(
-                <label key={item.key} style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 6px', borderRadius:6, background:'var(--theme-surface-2)', border:BORDER, cursor:'pointer', fontSize:12, color:TEXT_MID }}>
-                  <input type="checkbox" checked={!!selected[item.key]} onChange={()=>toggleItem(item.key)}
-                    style={{ width:13, height:13, accentColor:item.color, cursor:'pointer' }}/>
-                  {item.label}
-                </label>
-              ))}
+                    {isExp && (
+                      <div style={{ paddingLeft: 14 }}>
+                        {g.items.map(item => (
+                          <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '3px 0', cursor: 'pointer', fontSize: 12, color: TEXT_MID }}>
+                            <input type="checkbox" checked={!!selected[item.key]} onChange={() => toggleItem(item.key)}
+                              style={{ width: 13, height: 13, accentColor: g.color, cursor: 'pointer' }} />
+                            {item.label}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, marginTop: 4 }}>
+                {SIMPLES.map(item => (
+                  <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px', borderRadius: 6, background: 'var(--theme-surface-2)', border: BORDER, cursor: 'pointer', fontSize: 12, color: TEXT_MID }}>
+                    <input type="checkbox" checked={!!selected[item.key]} onChange={() => toggleItem(item.key)}
+                      style={{ width: 13, height: 13, accentColor: item.color, cursor: 'pointer' }} />
+                    {item.label}
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          <button onClick={cargar} disabled={loading||!activeItems.length}
-            style={{ ...btnSt('#16a34a'), justifyContent:'center', opacity:loading||!activeItems.length?0.6:1 }}>
-            <RefreshCw size={14} style={{ animation:loading?'spin 0.9s linear infinite':'none' }}/>
+          {/* ── Filtros PNP ── */}
+          {usaPnp && (
+            <div style={mixto ? { borderTop: BORDER, paddingTop: 14 } : undefined}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ ...seccionSt, marginBottom: 0, color: FUENTE_COLOR[PNP] }}>
+                  <Building2 size={13} /> {mixto ? 'Tipos — PNP' : 'Tipos'}
+                </span>
+                {catalogo === 'ready' && (
+                  <button onClick={togglePnpAll} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: FUENTE_COLOR[PNP], fontWeight: 600 }}>
+                    {pnpTodoOn ? 'Quitar todos' : 'Selec. todos'}
+                  </button>
+                )}
+              </div>
+
+              {catalogo === 'loading' && (
+                <div style={{ fontSize: 12, color: TEXT_LIGHT, padding: '8px 0' }}>Cargando tipología PNP…</div>
+              )}
+              {catalogo === 'error' && (
+                <div style={{ fontSize: 12, color: '#b91c1c', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 10px' }}>
+                  {catalogoError}
+                  <button onClick={() => setReintento(n => n + 1)} style={{ marginLeft: 8, background: 'none', border: 'none', color: '#b91c1c', textDecoration: 'underline', cursor: 'pointer', fontSize: 12 }}>
+                    Reintentar
+                  </button>
+                </div>
+              )}
+
+              {catalogo === 'ready' && (
+                <div style={{ maxHeight: 300, overflowY: 'auto', paddingRight: 2 }}>
+                  {pnpTree.map(t => {
+                    const tKeys = t.subtypes.flatMap(s => s.modalities.map(m => m.id));
+                    const tActive = tKeys.filter(k => pnpSel[k]).length;
+                    const tAllOn = tKeys.length > 0 && tActive === tKeys.length;
+                    const tExp = !!pnpExpanded[t.id];
+                    return (
+                      <div key={t.id} style={{ marginBottom: 3 }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, padding: '6px 8px', borderRadius: 7, background: 'var(--theme-surface-2)', border: BORDER, marginBottom: tExp ? 3 : 0 }}>
+                          <input type="checkbox" checked={tAllOn}
+                            ref={el => { if (el) el.indeterminate = tActive > 0 && !tAllOn; }}
+                            onChange={() => togglePnpKeys(tKeys)}
+                            style={{ width: 14, height: 14, marginTop: 1, accentColor: FUENTE_COLOR[PNP], cursor: 'pointer', flexShrink: 0 }} />
+                          <span title={t.name} style={{ flex: 1, fontSize: 12, fontWeight: 600, lineHeight: 1.35, color: FUENTE_COLOR[PNP], cursor: 'pointer' }}
+                            onClick={() => setPnpExpanded(p => ({ ...p, [t.id]: !p[t.id] }))}>
+                            {t.name}
+                          </span>
+                          <span style={{ fontSize: 10, color: TEXT_LIGHT, flexShrink: 0, marginTop: 2 }}>({tActive}/{tKeys.length})</span>
+                          <span style={{ color: TEXT_LIGHT, cursor: 'pointer', flexShrink: 0, marginTop: 1 }} onClick={() => setPnpExpanded(p => ({ ...p, [t.id]: !p[t.id] }))}>
+                            {tExp ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                          </span>
+                        </div>
+                        {tExp && (
+                          <div style={{ paddingLeft: 12 }}>
+                            {t.subtypes.map(s => {
+                              const sKeys = s.modalities.map(m => m.id);
+                              const sActive = sKeys.filter(k => pnpSel[k]).length;
+                              const sAllOn = sKeys.length > 0 && sActive === sKeys.length;
+                              const sExp = !!pnpExpanded[s.id];
+                              return (
+                                <div key={s.id} style={{ marginBottom: 2 }}>
+                                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, padding: '4px 4px 4px 8px', borderLeft: '2px solid var(--theme-border)' }}>
+                                    <input type="checkbox" checked={sAllOn}
+                                      ref={el => { if (el) el.indeterminate = sActive > 0 && !sAllOn; }}
+                                      onChange={() => togglePnpKeys(sKeys)}
+                                      style={{ width: 13, height: 13, marginTop: 1, accentColor: FUENTE_COLOR[PNP], cursor: 'pointer', flexShrink: 0 }} />
+                                    <span title={s.name} style={{ flex: 1, fontSize: 12, fontWeight: 500, lineHeight: 1.35, color: TEXT_MID, cursor: 'pointer' }}
+                                      onClick={() => setPnpExpanded(p => ({ ...p, [s.id]: !p[s.id] }))}>
+                                      {s.name}
+                                    </span>
+                                    <span style={{ fontSize: 10, color: TEXT_LIGHT, flexShrink: 0, marginTop: 2 }}>({sActive}/{sKeys.length})</span>
+                                    <span style={{ color: TEXT_LIGHT, cursor: 'pointer', flexShrink: 0, marginTop: 1 }} onClick={() => setPnpExpanded(p => ({ ...p, [s.id]: !p[s.id] }))}>
+                                      {sExp ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+                                    </span>
+                                  </div>
+                                  {sExp && (
+                                    <div style={{ marginLeft: 8, paddingLeft: 16, borderLeft: '2px solid var(--theme-border)' }}>
+                                      {s.modalities.map(m => (
+                                        <label key={m.id} title={m.name}
+                                          style={{ display: 'flex', alignItems: 'flex-start', gap: 7, padding: '3px 0', cursor: 'pointer', fontSize: 12, lineHeight: 1.35, color: TEXT_LIGHT }}>
+                                          <input type="checkbox" checked={!!pnpSel[m.id]} onChange={() => togglePnpKey(m.id)}
+                                            style={{ width: 12, height: 12, marginTop: 2, accentColor: FUENTE_COLOR[PNP], cursor: 'pointer', flexShrink: 0 }} />
+                                          <span style={{ flex: 1 }}>{m.name}</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '5px 8px', marginTop: 4, borderRadius: 7, background: 'var(--theme-surface-2)', border: BORDER, cursor: 'pointer', fontSize: 12, color: TEXT_MID }}>
+                    <input type="checkbox" checked={!!pnpSel[SIN_TIPIFICAR]} onChange={() => togglePnpKey(SIN_TIPIFICAR)}
+                      style={{ width: 13, height: 13, accentColor: '#94a3b8', cursor: 'pointer' }} />
+                    Sin tipificar
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
+
+          <button onClick={cargar} disabled={loading || !puedeCargar}
+            style={{ ...btnSt('#16a34a'), justifyContent: 'center', opacity: loading || !puedeCargar ? 0.6 : 1 }}>
+            <RefreshCw size={14} style={{ animation: loading ? 'spin 0.9s linear infinite' : 'none' }} />
             {loading ? 'Cargando...' : 'Cargar datos'}
           </button>
         </div>
 
         {/* ── Resultados ── */}
-        <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {error && (
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 16px', fontSize: 13, color: '#b91c1c', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AlertTriangle size={16} /> {error}
+            </div>
+          )}
 
           {!rawData && !loading && (
-            <div style={{ background:CARD, borderRadius:RADIUS, border:BORDER, boxShadow:SHADOW, padding:60, textAlign:'center', color:TEXT_LIGHT }}>
-              {modo==='clusters' ? <ScatterChart size={40} style={{ marginBottom:12, opacity:0.4 }}/> : <BarChart2 size={40} style={{ marginBottom:12, opacity:0.4 }}/>}
-              <div style={{ fontSize:14, fontWeight:500 }}>Configura los filtros y presiona "Cargar datos"</div>
+            <div style={{ background: CARD, borderRadius: RADIUS, border: BORDER, boxShadow: SHADOW, padding: 60, textAlign: 'center', color: TEXT_LIGHT }}>
+              {modo === 'clusters' ? <ScatterChart size={40} style={{ marginBottom: 12, opacity: 0.4 }} /> : <BarChart2 size={40} style={{ marginBottom: 12, opacity: 0.4 }} />}
+              <div style={{ fontSize: 14, fontWeight: 500 }}>Configura los filtros y presiona "Cargar datos"</div>
+              <div style={{ fontSize: 12, marginTop: 6 }}>Fuente actual: <b>{fuenteLabel}</b></div>
             </div>
           )}
 
           {loading && (
-            <div style={{ background:CARD, borderRadius:RADIUS, border:BORDER, boxShadow:SHADOW, padding:60, textAlign:'center', color:TEXT_LIGHT }}>
-              <div style={{ width:36, height:36, border:`3px solid ${PRIMARY}20`, borderTop:`3px solid ${PRIMARY}`, borderRadius:'50%', animation:'spin 0.9s linear infinite', margin:'0 auto 12px' }}/>
-              <div style={{ fontSize:14 }}>Consultando incidencias...</div>
+            <div style={{ background: CARD, borderRadius: RADIUS, border: BORDER, boxShadow: SHADOW, padding: 60, textAlign: 'center', color: TEXT_LIGHT }}>
+              <div style={{ width: 36, height: 36, border: `3px solid ${PRIMARY}20`, borderTop: `3px solid ${PRIMARY}`, borderRadius: '50%', animation: 'spin 0.9s linear infinite', margin: '0 auto 12px' }} />
+              <div style={{ fontSize: 14 }}>Consultando incidencias de {fuenteLabel}...</div>
             </div>
           )}
 
           {/* ════ MODO INCIDENCIAS ════ */}
           {rawData && !loading && modo === 'incidencias' && (
             <>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12 }}>
+              {/* KPIs */}
+              <div style={{ display: 'grid', gridTemplateColumns: mixto ? 'repeat(4,1fr)' : 'repeat(3,1fr)', gap: 12 }}>
                 {[
-                  { label:'Total incidencias',   value: totalIncidencias.toLocaleString('es-PE'), color:PRIMARY },
-                  { label:'Tipos con datos',      value: rawData.filter(r=>r.registros.length>0).length, color:'#16a34a' },
-                  { label:'Jurisdicción',         value: jurLabel, color:'#7c3aed', small:true },
-                ].map((k,i)=>(
-                  <div key={i} style={{ background:CARD, borderRadius:RADIUS, border:BORDER, boxShadow:SHADOW, padding:'16px 20px' }}>
-                    <div style={{ fontSize:11, fontWeight:600, color:TEXT_LIGHT, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>{k.label}</div>
-                    <div style={{ fontSize:k.small?16:28, fontWeight:700, color:k.color }}>{k.value}</div>
+                  { label: 'Total incidencias', value: totalIncidencias.toLocaleString('es-PE'), color: PRIMARY },
+                  ...(mixto ? [
+                    { label: 'Serenazgo', value: totalSereno.toLocaleString('es-PE'), color: FUENTE_COLOR[SERENO] },
+                    { label: 'PNP',       value: totalPnp.toLocaleString('es-PE'),    color: FUENTE_COLOR[PNP] },
+                  ] : [
+                    { label: 'Tipos con datos', value: rawData.filter(r => r.registros.length > 0).length, color: '#16a34a' },
+                  ]),
+                  { label: 'Jurisdicción', value: jurLabel, color: '#7c3aed', small: true },
+                ].map((k, i) => (
+                  <div key={i} style={{ background: CARD, borderRadius: RADIUS, border: BORDER, boxShadow: SHADOW, padding: '16px 20px' }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: TEXT_LIGHT, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{k.label}</div>
+                    <div style={{ fontSize: k.small ? 16 : 28, fontWeight: 700, color: k.color }}>{k.value}</div>
                   </div>
                 ))}
               </div>
 
+              {/* ── Comparativo Serenazgo vs PNP ── */}
+              {mixto && totalIncidencias > 0 && (
+                <div style={{ background: CARD, borderRadius: RADIUS, border: BORDER, boxShadow: SHADOW, padding: '18px 20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
+                    <GitCompare size={16} color="#7c3aed" />
+                    <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_DARK }}>Comparativo Serenazgo vs PNP</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px,1fr) 1.4fr', gap: 18, marginBottom: 18, alignItems: 'stretch' }}>
+                    {/* Reparto por fuente */}
+                    <div style={panelSt}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_MID, marginBottom: 10, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Reparto por fuente</div>
+                      <div style={{ position: 'relative' }}>
+                        <ResponsiveContainer width="100%" height={230}>
+                          <PieChart>
+                            <Pie data={[{ name: SERENO, value: totalSereno }, { name: PNP, value: totalPnp }]}
+                              cx="50%" cy="44%" outerRadius={80} innerRadius={50} paddingAngle={2} dataKey="value"
+                              labelLine={false}
+                              label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                                if (percent < 0.05) return null;
+                                const RADIAN = Math.PI / 180;
+                                const r = innerRadius + (outerRadius - innerRadius) * 0.5;
+                                const x = cx + r * Math.cos(-midAngle * RADIAN);
+                                const y = cy + r * Math.sin(-midAngle * RADIAN);
+                                return <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 12, fontWeight: 700 }}>{`${(percent * 100).toFixed(0)}%`}</text>;
+                              }}>
+                              <Cell fill={FUENTE_COLOR[SERENO]} />
+                              <Cell fill={FUENTE_COLOR[PNP]} />
+                            </Pie>
+                            <Tooltip contentStyle={tooltipStyle} formatter={v => [v.toLocaleString('es-PE'), 'Incidencias']} />
+                            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div style={{ position: 'absolute', top: '44%', left: 0, right: 0, transform: 'translateY(-50%)', textAlign: 'center', pointerEvents: 'none' }}>
+                          <div style={{ fontSize: 24, fontWeight: 800, color: TEXT_DARK, lineHeight: 1 }}>{totalIncidencias.toLocaleString('es-PE')}</div>
+                          <div style={{ fontSize: 9, color: TEXT_LIGHT, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>Total</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Jurisdicción por fuente */}
+                    <div style={panelSt}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_MID, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Jurisdicción por fuente</div>
+                      <ResponsiveContainer width="100%" height={Math.max(180, jurComparado.length * 32)}>
+                        <BarChart layout="vertical" data={jurComparado} margin={{ top: 0, right: 24, bottom: 0, left: 8 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--theme-border-2)" />
+                          <XAxis type="number" tick={{ fontSize: 9, fill: TEXT_LIGHT }} tickLine={false} axisLine={false} />
+                          <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: TEXT_DARK }} tickLine={false} axisLine={false} width={108} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'var(--theme-surface-2)' }} />
+                          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                          <Bar dataKey="Serenazgo" stackId="f" fill={FUENTE_COLOR[SERENO]} radius={[0, 0, 0, 0]} />
+                          <Bar dataKey="PNP"       stackId="f" fill={FUENTE_COLOR[PNP]}    radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Tendencia comparada */}
+                  {fechaComparada.length > 1 && (
+                    <div style={{ ...panelSt, marginBottom: 18 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_MID, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Tendencia comparada</div>
+                      <ResponsiveContainer width="100%" height={220}>
+                        <AreaChart data={fechaComparada} margin={{ top: 5, right: 12, bottom: 0, left: -12 }}>
+                          <defs>
+                            <linearGradient id="gradSer" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={FUENTE_COLOR[SERENO]} stopOpacity={0.35} />
+                              <stop offset="100%" stopColor={FUENTE_COLOR[SERENO]} stopOpacity={0} />
+                            </linearGradient>
+                            <linearGradient id="gradPnp" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={FUENTE_COLOR[PNP]} stopOpacity={0.35} />
+                              <stop offset="100%" stopColor={FUENTE_COLOR[PNP]} stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--theme-border-2)" />
+                          <XAxis dataKey="label" tick={{ fontSize: 9, fill: TEXT_LIGHT }} tickLine={false} axisLine={false} minTickGap={24} />
+                          <YAxis tick={{ fontSize: 9, fill: TEXT_LIGHT }} tickLine={false} axisLine={false} width={32} allowDecimals={false} />
+                          <Tooltip contentStyle={tooltipStyle} labelFormatter={l => `Día ${l}`} />
+                          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                          <Area type="monotone" dataKey="Serenazgo" stroke={FUENTE_COLOR[SERENO]} strokeWidth={2.2} fill="url(#gradSer)" dot={false} activeDot={{ r: 4 }} />
+                          <Area type="monotone" dataKey="PNP"       stroke={FUENTE_COLOR[PNP]}    strokeWidth={2.2} fill="url(#gradPnp)" dot={false} activeDot={{ r: 4 }} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+
+                  {/* Turno por fuente */}
+                  <div style={panelSt}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_MID, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Turno por fuente</div>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={turnoComparado} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--theme-border-2)" />
+                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: TEXT_MID }} tickLine={false} axisLine={false} />
+                        <YAxis tick={{ fontSize: 9, fill: TEXT_LIGHT }} tickLine={false} axisLine={false} width={32} allowDecimals={false} />
+                        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'var(--theme-surface-2)' }} />
+                        <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                        <Bar dataKey="Serenazgo" fill={FUENTE_COLOR[SERENO]} radius={[3, 3, 0, 0]} />
+                        <Bar dataKey="PNP"       fill={FUENTE_COLOR[PNP]}    radius={[3, 3, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
               {/* ── Dashboard de estadísticas visuales ── */}
-              <div style={{ background:CARD, borderRadius:RADIUS, border:BORDER, boxShadow:SHADOW, padding:'18px 20px' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:18 }}>
-                  <Activity size={16} color={PRIMARY}/>
-                  <span style={{ fontSize:15, fontWeight:800, color:TEXT_DARK }}>Estadísticas visuales</span>
+              <div style={{ background: CARD, borderRadius: RADIUS, border: BORDER, boxShadow: SHADOW, padding: '18px 20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
+                  <Activity size={16} color={PRIMARY} />
+                  <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_DARK }}>
+                    Estadísticas visuales {mixto && <span style={{ fontSize: 12, fontWeight: 500, color: TEXT_LIGHT }}>(ambas fuentes consolidadas)</span>}
+                  </span>
                 </div>
 
                 {/* Insight cards */}
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:12, marginBottom:24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 12, marginBottom: 24 }}>
                   {[
-                    { icon:<Clock size={15}/>,      label:'Hora pico',          value: insights.horaPico ? `${insights.horaPico.hora}:00 h` : '—',  sub: insights.horaPico ? `${insights.horaPico.count.toLocaleString('es-PE')} incidencias` : 'Sin datos', color:'#dc2626' },
-                    { icon:<Sunrise size={15}/>,    label:'Turno crítico',      value: insights.turnoTop ? insights.turnoTop[0] : '—',             sub: insights.turnoTop ? `${insights.turnoTop[1].toLocaleString('es-PE')} incidencias` : 'Sin datos', color:'#f59e0b' },
-                    { icon:<MapPin size={15}/>,     label:'Jurisdicción crítica', value: insights.jurTop ? insights.jurTop[0] : '—',              sub: insights.jurTop ? `${insights.jurTop[1].toLocaleString('es-PE')} incidencias` : 'Sin datos', color:'#7c3aed', small:true },
-                    { icon:<Flame size={15}/>,      label:'Tipo más frecuente', value: insights.tipoTop ? insights.tipoTop.name : '—',             sub: insights.tipoTop ? `${insights.tipoTop.value.toLocaleString('es-PE')} incidencias` : 'Sin datos', color:'#ea580c', small:true },
-                    { icon:<TrendingUp size={15}/>, label:'Promedio diario',    value: insights.promedioDiario.toFixed(1),                          sub: `en ${insights.numDias} día(s)`, color:'#16a34a' },
-                  ].map((c,i)=>(
-                    <div key={i} style={{ position:'relative', background:'var(--theme-surface-2)', borderRadius:10, border:BORDER, padding:'12px 14px 12px 16px', overflow:'hidden' }}>
-                      <div style={{ position:'absolute', top:0, left:0, width:4, height:'100%', background:c.color }}/>
-                      <div style={{ display:'flex', alignItems:'center', gap:6, color:c.color, marginBottom:6 }}>
+                    { icon: <Clock size={15} />,      label: 'Hora pico',           value: insights.horaPico ? `${insights.horaPico.hora}:00 h` : '—', sub: insights.horaPico ? `${insights.horaPico.count.toLocaleString('es-PE')} incidencias` : 'Sin datos', color: '#dc2626' },
+                    { icon: <Sunrise size={15} />,    label: 'Turno crítico',       value: insights.turnoTop ? insights.turnoTop[0] : '—',             sub: insights.turnoTop ? `${insights.turnoTop[1].toLocaleString('es-PE')} incidencias` : 'Sin datos', color: '#f59e0b' },
+                    { icon: <MapPin size={15} />,     label: 'Jurisdicción crítica', value: insights.jurTop ? insights.jurTop[0] : '—',                sub: insights.jurTop ? `${insights.jurTop[1].toLocaleString('es-PE')} incidencias` : 'Sin datos', color: '#7c3aed', small: true },
+                    { icon: <Flame size={15} />,      label: 'Tipo más frecuente',  value: insights.tipoTop ? insights.tipoTop.name : '—',             sub: insights.tipoTop ? `${insights.tipoTop.value.toLocaleString('es-PE')} incidencias` : 'Sin datos', color: '#ea580c', small: true },
+                    { icon: <TrendingUp size={15} />, label: 'Promedio diario',     value: insights.promedioDiario.toFixed(1),                          sub: `en ${insights.numDias} día(s)`, color: '#16a34a' },
+                  ].map((c, i) => (
+                    <div key={i} style={{ position: 'relative', background: 'var(--theme-surface-2)', borderRadius: 10, border: BORDER, padding: '12px 14px 12px 16px', overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: c.color }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: c.color, marginBottom: 6 }}>
                         {c.icon}
-                        <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.04em' }}>{c.label}</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{c.label}</span>
                       </div>
-                      <div style={{ fontSize:c.small?15:21, fontWeight:800, color:TEXT_DARK, lineHeight:1.15, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{c.value}</div>
-                      <div style={{ fontSize:11, color:TEXT_LIGHT, marginTop:3 }}>{c.sub}</div>
+                      <div style={{ fontSize: c.small ? 15 : 21, fontWeight: 800, color: TEXT_DARK, lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.value}</div>
+                      <div style={{ fontSize: 11, color: TEXT_LIGHT, marginTop: 3 }}>{c.sub}</div>
                     </div>
                   ))}
                 </div>
 
                 {/* Tendencia temporal */}
                 {byFecha.length > 1 && (
-                  <div style={{ ...panelSt, marginBottom:18 }}>
-                    <div style={{ fontSize:12, fontWeight:700, color:TEXT_MID, marginBottom:12, textTransform:'uppercase', letterSpacing:'0.04em' }}>Tendencia en el tiempo</div>
+                  <div style={{ ...panelSt, marginBottom: 18 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_MID, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Tendencia en el tiempo</div>
                     <ResponsiveContainer width="100%" height={200}>
-                      <AreaChart data={byFecha} margin={{top:5,right:12,bottom:0,left:-12}}>
+                      <AreaChart data={byFecha} margin={{ top: 5, right: 12, bottom: 0, left: -12 }}>
                         <defs>
                           <linearGradient id="gradTrend" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor={PRIMARY} stopOpacity={0.4}/>
-                            <stop offset="100%" stopColor={PRIMARY} stopOpacity={0}/>
+                            <stop offset="0%" stopColor={PRIMARY} stopOpacity={0.4} />
+                            <stop offset="100%" stopColor={PRIMARY} stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--theme-border-2)"/>
-                        <XAxis dataKey="label" tick={{fontSize:9,fill:TEXT_LIGHT}} tickLine={false} axisLine={false} minTickGap={24}/>
-                        <YAxis tick={{fontSize:9,fill:TEXT_LIGHT}} tickLine={false} axisLine={false} width={32} allowDecimals={false}/>
-                        <Tooltip contentStyle={tooltipStyle} formatter={(v)=>[v.toLocaleString('es-PE'),'Incidencias']} labelFormatter={(l)=>`Día ${l}`}/>
-                        <Area type="monotone" dataKey="value" stroke={PRIMARY} strokeWidth={2.5} fill="url(#gradTrend)" dot={false} activeDot={{r:4}}/>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--theme-border-2)" />
+                        <XAxis dataKey="label" tick={{ fontSize: 9, fill: TEXT_LIGHT }} tickLine={false} axisLine={false} minTickGap={24} />
+                        <YAxis tick={{ fontSize: 9, fill: TEXT_LIGHT }} tickLine={false} axisLine={false} width={32} allowDecimals={false} />
+                        <Tooltip contentStyle={tooltipStyle} formatter={v => [v.toLocaleString('es-PE'), 'Incidencias']} labelFormatter={l => `Día ${l}`} />
+                        <Area type="monotone" dataKey="value" stroke={PRIMARY} strokeWidth={2.5} fill="url(#gradTrend)" dot={false} activeDot={{ r: 4 }} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
                 )}
 
                 {/* Turno (donut) + Jurisdicción (barras) */}
-                <div style={{ display:'grid', gridTemplateColumns:'minmax(220px,1fr) 1.4fr', gap:18, marginBottom:18, alignItems:'stretch' }}>
-
-                  {/* Turno — Donut con total al centro */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px,1fr) 1.4fr', gap: 18, marginBottom: 18, alignItems: 'stretch' }}>
                   <div style={panelSt}>
-                    <div style={{ fontSize:12, fontWeight:700, color:TEXT_MID, marginBottom:10, textAlign:'center', textTransform:'uppercase', letterSpacing:'0.04em' }}>Por turno</div>
-                    <div style={{ position:'relative' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_MID, marginBottom: 10, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Por turno</div>
+                    <div style={{ position: 'relative' }}>
                       <ResponsiveContainer width="100%" height={230}>
                         <PieChart>
                           <Pie
-                            data={byTurno.map(([name,value])=>({name,value}))}
+                            data={byTurno.map(([name, value]) => ({ name, value }))}
                             cx="50%" cy="44%" outerRadius={80} innerRadius={50}
-                            paddingAngle={2} dataKey="value"
-                            labelLine={false}
+                            paddingAngle={2} dataKey="value" labelLine={false}
                             label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
                               if (percent < 0.05) return null;
                               const RADIAN = Math.PI / 180;
                               const r = innerRadius + (outerRadius - innerRadius) * 0.5;
                               const x = cx + r * Math.cos(-midAngle * RADIAN);
                               const y = cy + r * Math.sin(-midAngle * RADIAN);
-                              return (
-                                <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" style={{fontSize:12,fontWeight:700}}>
-                                  {`${(percent*100).toFixed(0)}%`}
-                                </text>
-                              );
+                              return <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 12, fontWeight: 700 }}>{`${(percent * 100).toFixed(0)}%`}</text>;
                             }}
                           >
-                            {byTurno.map(([name],i)=>(
-                              <Cell key={i} fill={name==='Mañana'?'#f59e0b':name==='Tarde'?'#f97316':name==='Noche'?'#4f46e5':'#94a3b8'}/>
-                            ))}
+                            {byTurno.map(([name], i) => <Cell key={i} fill={TURNO_COLOR(name)} />)}
                           </Pie>
-                          <Tooltip contentStyle={tooltipStyle} formatter={(v)=>[v.toLocaleString('es-PE'),'Incidencias']}/>
-                          <Legend iconType="circle" iconSize={8} wrapperStyle={{fontSize:11}}/>
+                          <Tooltip contentStyle={tooltipStyle} formatter={v => [v.toLocaleString('es-PE'), 'Incidencias']} />
+                          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
                         </PieChart>
                       </ResponsiveContainer>
-                      <div style={{ position:'absolute', top:'44%', left:0, right:0, transform:'translateY(-50%)', textAlign:'center', pointerEvents:'none' }}>
-                        <div style={{ fontSize:24, fontWeight:800, color:TEXT_DARK, lineHeight:1 }}>{byTurno.reduce((s,[,v])=>s+v,0).toLocaleString('es-PE')}</div>
-                        <div style={{ fontSize:9, color:TEXT_LIGHT, textTransform:'uppercase', letterSpacing:'0.05em', marginTop:2 }}>Total</div>
+                      <div style={{ position: 'absolute', top: '44%', left: 0, right: 0, transform: 'translateY(-50%)', textAlign: 'center', pointerEvents: 'none' }}>
+                        <div style={{ fontSize: 24, fontWeight: 800, color: TEXT_DARK, lineHeight: 1 }}>{byTurno.reduce((s, [, v]) => s + v, 0).toLocaleString('es-PE')}</div>
+                        <div style={{ fontSize: 9, color: TEXT_LIGHT, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>Total</div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Jurisdicción — barras horizontales */}
                   <div style={panelSt}>
-                    <div style={{ fontSize:12, fontWeight:700, color:TEXT_MID, marginBottom:10, textTransform:'uppercase', letterSpacing:'0.04em' }}>Por jurisdicción</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_MID, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Por jurisdicción</div>
                     {byJur.length > 0 ? (
                       <ResponsiveContainer width="100%" height={Math.max(180, byJur.length * 30)}>
-                        <BarChart layout="vertical" data={byJur.map(([name,value])=>({name,value}))} margin={{top:0,right:40,bottom:0,left:8}}>
-                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--theme-border-2)"/>
-                          <XAxis type="number" tick={{fontSize:9,fill:TEXT_LIGHT}} tickLine={false} axisLine={false}/>
-                          <YAxis type="category" dataKey="name" tick={{fontSize:11,fill:TEXT_DARK}} tickLine={false} axisLine={false} width={108}/>
-                          <Tooltip contentStyle={tooltipStyle} formatter={(v)=>[v.toLocaleString('es-PE'),'Incidencias']} cursor={{fill:'var(--theme-surface-2)'}}/>
-                          <Bar dataKey="value" radius={[0,4,4,0]} label={{position:'right',fontSize:10,fontWeight:600,fill:TEXT_MID}}>
-                            {byJur.map((_,i)=>(<Cell key={i} fill={i===0?'#7c3aed':'#a78bfa'}/>))}
+                        <BarChart layout="vertical" data={byJur.map(([name, value]) => ({ name, value }))} margin={{ top: 0, right: 40, bottom: 0, left: 8 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--theme-border-2)" />
+                          <XAxis type="number" tick={{ fontSize: 9, fill: TEXT_LIGHT }} tickLine={false} axisLine={false} />
+                          <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: TEXT_DARK }} tickLine={false} axisLine={false} width={108} />
+                          <Tooltip contentStyle={tooltipStyle} formatter={v => [v.toLocaleString('es-PE'), 'Incidencias']} cursor={{ fill: 'var(--theme-surface-2)' }} />
+                          <Bar dataKey="value" radius={[0, 4, 4, 0]} label={{ position: 'right', fontSize: 10, fontWeight: 600, fill: TEXT_MID }}>
+                            {byJur.map((_, i) => <Cell key={i} fill={i === 0 ? '#7c3aed' : '#a78bfa'} />)}
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div style={{ padding:30, textAlign:'center', color:TEXT_LIGHT, fontSize:12 }}>Sin datos de jurisdicción</div>
+                      <div style={{ padding: 30, textAlign: 'center', color: TEXT_LIGHT, fontSize: 12 }}>Sin datos de jurisdicción</div>
                     )}
                   </div>
                 </div>
 
-                {/* Perfil por hora — 24h con pico resaltado */}
-                <div style={{ ...panelSt, marginBottom:18 }}>
-                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:TEXT_MID, textTransform:'uppercase', letterSpacing:'0.04em' }}>Perfil horario (24 h)</span>
+                {/* ── Específicos PNP: estado del caso + comisaría ── */}
+                {usaPnp && totalPnp > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px,1fr) 1.4fr', gap: 18, marginBottom: 18, alignItems: 'stretch' }}>
+                    <div style={panelSt}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_MID, marginBottom: 10, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Estado del caso (PNP)</div>
+                      <ResponsiveContainer width="100%" height={230}>
+                        <PieChart>
+                          <Pie data={byEstado.map(([name, value]) => ({ name, value }))}
+                            cx="50%" cy="44%" outerRadius={80} innerRadius={50} paddingAngle={2} dataKey="value" labelLine={false}
+                            label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                              if (percent < 0.05) return null;
+                              const RADIAN = Math.PI / 180;
+                              const r = innerRadius + (outerRadius - innerRadius) * 0.5;
+                              const x = cx + r * Math.cos(-midAngle * RADIAN);
+                              const y = cy + r * Math.sin(-midAngle * RADIAN);
+                              return <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 12, fontWeight: 700 }}>{`${(percent * 100).toFixed(0)}%`}</text>;
+                            }}>
+                            {byEstado.map(([name], i) => (
+                              <Cell key={i} fill={
+                                name === 'En investigación' ? STATUS_COLORS.INVESTIGATING
+                                  : name === 'Derivado' ? STATUS_COLORS.REFERRED
+                                    : name === 'Cerrado' ? STATUS_COLORS.CLOSED : '#94a3b8'
+                              } />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={tooltipStyle} formatter={v => [v.toLocaleString('es-PE'), 'Casos']} />
+                          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div style={panelSt}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_MID, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Por comisaría (PNP) — top 12</div>
+                      <ResponsiveContainer width="100%" height={Math.max(180, byComisaria.length * 30)}>
+                        <BarChart layout="vertical" data={byComisaria.map(([name, value]) => ({ name, value }))} margin={{ top: 0, right: 40, bottom: 0, left: 8 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--theme-border-2)" />
+                          <XAxis type="number" tick={{ fontSize: 9, fill: TEXT_LIGHT }} tickLine={false} axisLine={false} />
+                          <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: TEXT_DARK }} tickLine={false} axisLine={false} width={130} />
+                          <Tooltip contentStyle={tooltipStyle} formatter={v => [v.toLocaleString('es-PE'), 'Casos']} cursor={{ fill: 'var(--theme-surface-2)' }} />
+                          <Bar dataKey="value" radius={[0, 4, 4, 0]} fill={FUENTE_COLOR[PNP]} label={{ position: 'right', fontSize: 10, fontWeight: 600, fill: TEXT_MID }} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
+
+                {/* Perfil por hora */}
+                <div style={{ ...panelSt, marginBottom: 18 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_MID, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Perfil horario (24 h)</span>
                     {insights.horaPico && (
-                      <span style={{ fontSize:11, color:'#dc2626', fontWeight:700, display:'flex', alignItems:'center', gap:4 }}>
-                        <Flame size={12}/> Pico: {insights.horaPico.hora}:00 h
+                      <span style={{ fontSize: 11, color: '#dc2626', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Flame size={12} /> Pico: {insights.horaPico.hora}:00 h
                       </span>
                     )}
                   </div>
                   <ResponsiveContainer width="100%" height={210}>
-                    <BarChart data={horaProfile} margin={{top:8,right:8,bottom:0,left:-12}}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--theme-border-2)"/>
-                      <XAxis dataKey="name" tick={{fontSize:9,fill:TEXT_LIGHT}} tickLine={false} axisLine={false} interval={0}/>
-                      <YAxis tick={{fontSize:9,fill:TEXT_LIGHT}} tickLine={false} axisLine={false} width={32} allowDecimals={false}/>
-                      <Tooltip contentStyle={tooltipStyle} formatter={(v)=>[v.toLocaleString('es-PE'),'Incidencias']} labelFormatter={(l)=>`${l}:00 – ${l}:59`} cursor={{fill:'var(--theme-surface-2)'}}/>
-                      <Bar dataKey="value" radius={[3,3,0,0]}>
-                        {horaProfile.map((d,i)=>(<Cell key={i} fill={d.peak?'#dc2626':PRIMARY}/>))}
+                    <BarChart data={horaProfile} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--theme-border-2)" />
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fill: TEXT_LIGHT }} tickLine={false} axisLine={false} interval={0} />
+                      <YAxis tick={{ fontSize: 9, fill: TEXT_LIGHT }} tickLine={false} axisLine={false} width={32} allowDecimals={false} />
+                      <Tooltip contentStyle={tooltipStyle} formatter={v => [v.toLocaleString('es-PE'), 'Incidencias']} labelFormatter={l => `${l}:00 – ${l}:59`} cursor={{ fill: 'var(--theme-surface-2)' }} />
+                      <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                        {horaProfile.map((d, i) => <Cell key={i} fill={d.peak ? '#dc2626' : PRIMARY} />)}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
 
-                {/* Por tipo — barras horizontales */}
+                {/* Por tipo */}
                 {tipoChartData.length > 0 && (
                   <div style={panelSt}>
-                    <div style={{ fontSize:12, fontWeight:700, color:TEXT_MID, marginBottom:12, textTransform:'uppercase', letterSpacing:'0.04em' }}>Por tipo de incidencia</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_MID, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Por tipo de incidencia</div>
                     <ResponsiveContainer width="100%" height={Math.max(160, tipoChartData.length * 30)}>
-                      <BarChart layout="vertical" data={tipoChartData} margin={{top:0,right:48,bottom:0,left:130}}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--theme-border-2)"/>
-                        <XAxis type="number" tick={{fontSize:9,fill:TEXT_LIGHT}} tickLine={false} axisLine={false}/>
-                        <YAxis type="category" dataKey="name" tick={{fontSize:11,fill:TEXT_DARK}} tickLine={false} axisLine={false} width={130}/>
-                        <Tooltip contentStyle={tooltipStyle} formatter={(v)=>[v.toLocaleString('es-PE'),'Incidencias']} cursor={{fill:'var(--theme-surface-2)'}}/>
-                        <Bar dataKey="value" radius={[0,4,4,0]} label={{position:'right',fontSize:10,fontWeight:600,fill:TEXT_MID}}>
-                          {tipoChartData.map((_,i)=>(
-                            <Cell key={i} fill={TIPO_COLORS[i % TIPO_COLORS.length]}/>
+                      <BarChart layout="vertical" data={tipoChartData} margin={{ top: 0, right: 48, bottom: 0, left: 130 }}>
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--theme-border-2)" />
+                        <XAxis type="number" tick={{ fontSize: 9, fill: TEXT_LIGHT }} tickLine={false} axisLine={false} />
+                        <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: TEXT_DARK }} tickLine={false} axisLine={false} width={130} />
+                        <Tooltip contentStyle={tooltipStyle} formatter={v => [v.toLocaleString('es-PE'), 'Incidencias']} cursor={{ fill: 'var(--theme-surface-2)' }} />
+                        <Bar dataKey="value" radius={[0, 4, 4, 0]} label={{ position: 'right', fontSize: 10, fontWeight: 600, fill: TEXT_MID }}>
+                          {tipoChartData.map((d, i) => (
+                            <Cell key={i} fill={mixto ? FUENTE_COLOR[d.fuente] : TIPO_COLORS[i % TIPO_COLORS.length]} />
                           ))}
                         </Bar>
                       </BarChart>
@@ -745,142 +949,138 @@ const ReporteIncidencias = () => {
                 )}
               </div>
 
-              <div style={{ background:CARD, borderRadius:RADIUS, border:BORDER, boxShadow:SHADOW, overflow:'hidden' }}>
-                <div style={{ padding:'14px 20px', borderBottom:'1px solid #f1f5f9', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                  <span style={{ fontSize:14, fontWeight:700, color:TEXT_DARK }}>Resumen por tipo</span>
-                  <button onClick={()=>generarExcelIncidencias(rawData, `${tiposLabel} — ${jurLabel}`, rangoLabel)} style={{ ...btnSt('#16a34a'), padding:'7px 16px' }}>
-                    <FileDown size={15}/> Descargar Excel
+              {/* Resumen por tipo + Excel */}
+              <div style={{ background: CARD, borderRadius: RADIUS, border: BORDER, boxShadow: SHADOW, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_DARK }}>Resumen por tipo</span>
+                  <button onClick={() => generarExcelIncidencias(rawData, excelMeta)} style={{ ...btnSt('#16a34a'), padding: '7px 16px' }}>
+                    <FileDown size={15} /> Descargar Excel
                   </button>
                 </div>
-                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead><tr>
-                    {['Tipo de Incidencia','Registros','% del Total'].map(h=>(
-                      <th key={h} style={{ padding:'9px 16px', textAlign:h==='Registros'||h==='% del Total'?'center':'left', fontWeight:600, fontSize:11, color:TEXT_LIGHT, textTransform:'uppercase', letterSpacing:'0.05em', borderBottom:'1px solid #f1f5f9' }}>{h}</th>
+                    {(mixto ? ['Fuente', 'Tipo de Incidencia', 'Registros', '% del Total'] : ['Tipo de Incidencia', 'Registros', '% del Total']).map(h => (
+                      <th key={h} style={thSt(h === 'Registros' || h === '% del Total' ? 'center' : 'left')}>{h}</th>
                     ))}
                   </tr></thead>
                   <tbody>
-                    {[...rawData].sort((a,b)=>b.registros.length-a.registros.length).map((row,i)=>(
-                      <tr key={i} style={{ borderBottom:'1px solid var(--theme-border-2)' }}
-                        onMouseEnter={e=>e.currentTarget.style.background='#f9fafb'}
-                        onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                        <td style={{ padding:'9px 16px', color:TEXT_DARK, fontWeight:500 }}>{row.label}</td>
-                        <td style={{ padding:'9px 16px', textAlign:'center', fontWeight:700, color:PRIMARY }}>{row.registros.length.toLocaleString('es-PE')}</td>
-                        <td style={{ padding:'9px 16px', textAlign:'center', color:TEXT_MID }}>{totalIncidencias>0?`${((row.registros.length/totalIncidencias)*100).toFixed(1)}%`:'0%'}</td>
+                    {[...rawData].sort((a, b) => b.registros.length - a.registros.length).map((row, i) => (
+                      <tr key={row.key || i} style={{ borderBottom: '1px solid var(--theme-border-2)' }} {...hoverRow}>
+                        {mixto && <td style={{ padding: '9px 16px' }}>{fuenteChip(row.fuente)}</td>}
+                        <td style={{ padding: '9px 16px', color: TEXT_DARK, fontWeight: 500 }}>{row.label}</td>
+                        <td style={{ padding: '9px 16px', textAlign: 'center', fontWeight: 700, color: PRIMARY }}>{row.registros.length.toLocaleString('es-PE')}</td>
+                        <td style={{ padding: '9px 16px', textAlign: 'center', color: TEXT_MID }}>{totalIncidencias > 0 ? `${((row.registros.length / totalIncidencias) * 100).toFixed(1)}%` : '0%'}</td>
                       </tr>
                     ))}
-                    <tr style={{ background:'#eff6ff', fontWeight:700 }}>
-                      <td style={{ padding:'10px 16px', color:TEXT_DARK }}>TOTAL</td>
-                      <td style={{ padding:'10px 16px', textAlign:'center', color:PRIMARY }}>{totalIncidencias.toLocaleString('es-PE')}</td>
-                      <td style={{ padding:'10px 16px', textAlign:'center', color:TEXT_MID }}>100%</td>
+                    <tr style={{ background: '#eff6ff', fontWeight: 700 }}>
+                      <td style={{ padding: '10px 16px', color: TEXT_DARK }} colSpan={mixto ? 2 : 1}>TOTAL</td>
+                      <td style={{ padding: '10px 16px', textAlign: 'center', color: PRIMARY }}>{totalIncidencias.toLocaleString('es-PE')}</td>
+                      <td style={{ padding: '10px 16px', textAlign: 'center', color: TEXT_MID }}>100%</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
 
               {/* Resumen por Turno + Incidencias por Hora */}
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
-
-                {/* Turno */}
-                <div style={{ background:CARD, borderRadius:RADIUS, border:BORDER, boxShadow:SHADOW, overflow:'hidden' }}>
-                  <div style={{ padding:'14px 20px', borderBottom:'1px solid #f1f5f9' }}>
-                    <span style={{ fontSize:14, fontWeight:700, color:TEXT_DARK }}>Resumen por turno</span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div style={{ background: CARD, borderRadius: RADIUS, border: BORDER, boxShadow: SHADOW, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 20px', borderBottom: '1px solid #f1f5f9' }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_DARK }}>Resumen por turno</span>
                   </div>
-                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead><tr>
-                      {['Turno','Total','% del Total'].map(h=>(
-                        <th key={h} style={{ padding:'9px 16px', textAlign:h==='Turno'?'left':'center', fontWeight:600, fontSize:11, color:TEXT_LIGHT, textTransform:'uppercase', letterSpacing:'0.05em', borderBottom:'1px solid #f1f5f9' }}>{h}</th>
-                      ))}
+                      {['Turno', 'Total', '% del Total'].map(h => <th key={h} style={thSt(h === 'Turno' ? 'left' : 'center')}>{h}</th>)}
                     </tr></thead>
                     <tbody>
-                      {byTurno.map(([turno,count],i)=>{
-                        const badge = turno==='Mañana'?{bg:'#fef9c3',tc:'#92400e'}:turno==='Tarde'?{bg:'#ffedd5',tc:'#9a3412'}:turno==='Noche'?{bg:'#e0e7ff',tc:'#3730a3'}:{bg:'#f1f5f9',tc:TEXT_MID};
+                      {byTurno.map(([turno, count], i) => {
+                        const badge = turno === 'Mañana' ? { bg: '#fef9c3', tc: '#92400e' } : turno === 'Tarde' ? { bg: '#ffedd5', tc: '#9a3412' } : turno === 'Noche' ? { bg: '#e0e7ff', tc: '#3730a3' } : { bg: '#f1f5f9', tc: TEXT_MID };
                         return (
-                          <tr key={i} style={{ borderBottom:'1px solid var(--theme-border-2)' }}
-                            onMouseEnter={e=>e.currentTarget.style.background='#f9fafb'}
-                            onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                            <td style={{ padding:'9px 16px' }}>
-                              <span style={{ background:badge.bg, color:badge.tc, borderRadius:20, padding:'2px 10px', fontSize:11, fontWeight:700 }}>{turno}</span>
+                          <tr key={i} style={{ borderBottom: '1px solid var(--theme-border-2)' }} {...hoverRow}>
+                            <td style={{ padding: '9px 16px' }}>
+                              <span style={{ background: badge.bg, color: badge.tc, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>{turno}</span>
                             </td>
-                            <td style={{ padding:'9px 16px', textAlign:'center', fontWeight:700, color:PRIMARY }}>{count.toLocaleString('es-PE')}</td>
-                            <td style={{ padding:'9px 16px', textAlign:'center', color:TEXT_MID }}>{totalIncidencias>0?`${((count/totalIncidencias)*100).toFixed(1)}%`:'0%'}</td>
+                            <td style={{ padding: '9px 16px', textAlign: 'center', fontWeight: 700, color: PRIMARY }}>{count.toLocaleString('es-PE')}</td>
+                            <td style={{ padding: '9px 16px', textAlign: 'center', color: TEXT_MID }}>{totalIncidencias > 0 ? `${((count / totalIncidencias) * 100).toFixed(1)}%` : '0%'}</td>
                           </tr>
                         );
                       })}
-                      {byTurno.length===0 && (
-                        <tr><td colSpan={3} style={{ padding:20, textAlign:'center', color:TEXT_LIGHT }}>Sin datos de turno</td></tr>
+                      {byTurno.length === 0 && (
+                        <tr><td colSpan={3} style={{ padding: 20, textAlign: 'center', color: TEXT_LIGHT }}>Sin datos de turno</td></tr>
                       )}
-                      <tr style={{ background:'#eff6ff', fontWeight:700 }}>
-                        <td style={{ padding:'10px 16px', color:TEXT_DARK }}>TOTAL</td>
-                        <td style={{ padding:'10px 16px', textAlign:'center', color:PRIMARY }}>{totalIncidencias.toLocaleString('es-PE')}</td>
-                        <td style={{ padding:'10px 16px', textAlign:'center', color:TEXT_MID }}>100%</td>
+                      <tr style={{ background: '#eff6ff', fontWeight: 700 }}>
+                        <td style={{ padding: '10px 16px', color: TEXT_DARK }}>TOTAL</td>
+                        <td style={{ padding: '10px 16px', textAlign: 'center', color: PRIMARY }}>{totalIncidencias.toLocaleString('es-PE')}</td>
+                        <td style={{ padding: '10px 16px', textAlign: 'center', color: TEXT_MID }}>100%</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
-                {/* Hora */}
-                <div style={{ background:CARD, borderRadius:RADIUS, border:BORDER, boxShadow:SHADOW, overflow:'hidden' }}>
-                  <div style={{ padding:'14px 20px', borderBottom:'1px solid #f1f5f9' }}>
-                    <span style={{ fontSize:14, fontWeight:700, color:TEXT_DARK }}>Incidencias por hora</span>
-                    <span style={{ fontSize:12, color:TEXT_LIGHT, fontWeight:400, marginLeft:8 }}>(mayor a menor)</span>
+                <div style={{ background: CARD, borderRadius: RADIUS, border: BORDER, boxShadow: SHADOW, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 20px', borderBottom: '1px solid #f1f5f9' }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_DARK }}>Incidencias por hora</span>
+                    <span style={{ fontSize: 12, color: TEXT_LIGHT, fontWeight: 400, marginLeft: 8 }}>(mayor a menor)</span>
                   </div>
-                  <div style={{ maxHeight:300, overflowY:'auto' }}>
-                    <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                  <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                       <thead><tr>
-                        {['Hora','Total','% del Total'].map(h=>(
-                          <th key={h} style={{ padding:'9px 16px', textAlign:h==='Hora'?'left':'center', fontWeight:600, fontSize:11, color:TEXT_LIGHT, textTransform:'uppercase', letterSpacing:'0.05em', borderBottom:'1px solid #f1f5f9', position:'sticky', top:0, background:CARD, zIndex:1 }}>{h}</th>
+                        {['Hora', 'Total', '% del Total'].map(h => (
+                          <th key={h} style={{ ...thSt(h === 'Hora' ? 'left' : 'center'), position: 'sticky', top: 0, background: CARD, zIndex: 1 }}>{h}</th>
                         ))}
                       </tr></thead>
                       <tbody>
-                        {byHora.map(([hora,count],i)=>(
-                          <tr key={i} style={{ borderBottom:'1px solid var(--theme-border-2)' }}
-                            onMouseEnter={e=>e.currentTarget.style.background='#f9fafb'}
-                            onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                            <td style={{ padding:'9px 16px', color:TEXT_DARK, fontWeight:600 }}>{hora}:00 – {hora}:59</td>
-                            <td style={{ padding:'9px 16px', textAlign:'center', fontWeight:700, color:i===0?'#dc2626':PRIMARY }}>{count.toLocaleString('es-PE')}</td>
-                            <td style={{ padding:'9px 16px', textAlign:'center', color:TEXT_MID }}>{totalIncidencias>0?`${((count/totalIncidencias)*100).toFixed(1)}%`:'0%'}</td>
+                        {byHora.map(([hora, count], i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid var(--theme-border-2)' }} {...hoverRow}>
+                            <td style={{ padding: '9px 16px', color: TEXT_DARK, fontWeight: 600 }}>{hora}:00 – {hora}:59</td>
+                            <td style={{ padding: '9px 16px', textAlign: 'center', fontWeight: 700, color: i === 0 ? '#dc2626' : PRIMARY }}>{count.toLocaleString('es-PE')}</td>
+                            <td style={{ padding: '9px 16px', textAlign: 'center', color: TEXT_MID }}>{totalIncidencias > 0 ? `${((count / totalIncidencias) * 100).toFixed(1)}%` : '0%'}</td>
                           </tr>
                         ))}
-                        {byHora.length===0 && (
-                          <tr><td colSpan={3} style={{ padding:20, textAlign:'center', color:TEXT_LIGHT }}>Sin datos de hora</td></tr>
+                        {byHora.length === 0 && (
+                          <tr><td colSpan={3} style={{ padding: 20, textAlign: 'center', color: TEXT_LIGHT }}>Sin datos de hora</td></tr>
                         )}
                       </tbody>
                     </table>
                   </div>
                 </div>
-
               </div>
 
               {/* Vista previa detalle */}
-              <div style={{ background:CARD, borderRadius:RADIUS, border:BORDER, boxShadow:SHADOW, overflow:'hidden' }}>
-                <div style={{ padding:'14px 20px', borderBottom:'1px solid #f1f5f9' }}>
-                  <span style={{ fontSize:14, fontWeight:700, color:TEXT_DARK }}>Vista previa <span style={{ fontSize:12, color:TEXT_LIGHT, fontWeight:400 }}>(primeras 20 filas — el Excel incluye todo)</span></span>
+              <div style={{ background: CARD, borderRadius: RADIUS, border: BORDER, boxShadow: SHADOW, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: '1px solid #f1f5f9' }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_DARK }}>Vista previa <span style={{ fontSize: 12, color: TEXT_LIGHT, fontWeight: 400 }}>(primeras 20 filas — el Excel incluye todo)</span></span>
                 </div>
-                <div style={{ overflowX:'auto' }}>
-                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead><tr>
-                      {['Tipo','Código','Jurisdicción','Turno','Fecha','Descripción'].map(h=>(
-                        <th key={h} style={{ padding:'8px 14px', textAlign:'left', fontWeight:600, fontSize:10, color:TEXT_LIGHT, textTransform:'uppercase', letterSpacing:'0.05em', borderBottom:'1px solid #f1f5f9', whiteSpace:'nowrap' }}>{h}</th>
+                      {[
+                        ...(mixto ? ['Fuente'] : []),
+                        'Tipo', usaPnp ? 'Código / Denuncia' : 'Código', 'Jurisdicción',
+                        ...(usaPnp ? ['Comisaría', 'Estado'] : []),
+                        'Turno', 'Fecha', 'Descripción',
+                      ].map(h => (
+                        <th key={h} style={{ ...thSt('left'), padding: '8px 14px', fontSize: 10, whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr></thead>
                     <tbody>
-                      {rawData.flatMap(row=>row.registros.map(r=>({...r,tipo:row.label}))).slice(0,20).map((r,i)=>(
-                        <tr key={i} style={{ borderBottom:'1px solid var(--theme-border-2)' }}
-                          onMouseEnter={e=>e.currentTarget.style.background='#f9fafb'}
-                          onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                          <td style={{ padding:'7px 14px', whiteSpace:'nowrap' }}>
-                            <span style={{ background:`${PRIMARY}12`, color:PRIMARY, borderRadius:4, padding:'2px 7px', fontSize:10, fontWeight:700 }}>{r.tipo}</span>
+                      {todos.slice(0, 20).map((r, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid var(--theme-border-2)' }} {...hoverRow}>
+                          {mixto && <td style={{ padding: '7px 14px' }}>{fuenteChip(r.fuente)}</td>}
+                          <td style={{ padding: '7px 14px', whiteSpace: 'nowrap' }}>
+                            <span style={{ background: `${PRIMARY}12`, color: PRIMARY, borderRadius: 4, padding: '2px 7px', fontSize: 10, fontWeight: 700 }}>{r.tipo}</span>
                           </td>
-                          <td style={{ padding:'7px 14px', fontFamily:'monospace', color:PRIMARY, fontSize:11 }}>{r.codigo||'—'}</td>
-                          <td style={{ padding:'7px 14px', color:TEXT_MID }}>{r.jurisdiccion||'—'}</td>
-                          <td style={{ padding:'7px 14px', color:TEXT_MID }}>{r.turno||'—'}</td>
-                          <td style={{ padding:'7px 14px', color:TEXT_MID, whiteSpace:'nowrap' }}>{r.fecha||'—'}</td>
-                          <td style={{ padding:'7px 14px', color:TEXT_LIGHT, maxWidth:240, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.descripcion||'—'}</td>
+                          <td style={{ padding: '7px 14px', fontFamily: 'monospace', color: PRIMARY, fontSize: 11 }}>{r.codigo || '—'}</td>
+                          <td style={{ padding: '7px 14px', color: TEXT_MID }}>{r.jurisdiccion || '—'}</td>
+                          {usaPnp && <td style={{ padding: '7px 14px', color: TEXT_MID }}>{r.comisaria || '—'}</td>}
+                          {usaPnp && <td style={{ padding: '7px 14px', color: TEXT_MID }}>{r.estado || '—'}</td>}
+                          <td style={{ padding: '7px 14px', color: TEXT_MID }}>{r.turno || '—'}</td>
+                          <td style={{ padding: '7px 14px', color: TEXT_MID, whiteSpace: 'nowrap' }}>{r.fecha || '—'}</td>
+                          <td style={{ padding: '7px 14px', color: TEXT_LIGHT, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion || '—'}</td>
                         </tr>
                       ))}
-                      {totalIncidencias===0 && (
-                        <tr><td colSpan={6} style={{ padding:40, textAlign:'center', color:TEXT_LIGHT }}>
-                          <AlertTriangle size={20} style={{ marginBottom:6, opacity:0.5 }}/>
+                      {totalIncidencias === 0 && (
+                        <tr><td colSpan={12} style={{ padding: 40, textAlign: 'center', color: TEXT_LIGHT }}>
+                          <AlertTriangle size={20} style={{ marginBottom: 6, opacity: 0.5 }} />
                           <div>Sin incidencias para los filtros seleccionados</div>
                         </td></tr>
                       )}
@@ -894,72 +1094,73 @@ const ReporteIncidencias = () => {
           {/* ════ MODO CLUSTERS ════ */}
           {rawData && !loading && modo === 'clusters' && (
             <>
-              {/* KPIs */}
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
                 {[
-                  { label:'Total clusters',    value: clusters.length,                      color:PRIMARY },
-                  { label:'Total incidencias', value: clusters.reduce((s,c)=>s+c.cantidad,0).toLocaleString('es-PE'), color:'#16a34a' },
-                  { label:'Radio usado',       value: `${radio} m`,                         color:'#f97316' },
-                  { label:'Jurisdicción',      value: jurLabel,                             color:'#7c3aed', small:true },
-                ].map((k,i)=>(
-                  <div key={i} style={{ background:CARD, borderRadius:RADIUS, border:BORDER, boxShadow:SHADOW, padding:'16px 20px' }}>
-                    <div style={{ fontSize:11, fontWeight:600, color:TEXT_LIGHT, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>{k.label}</div>
-                    <div style={{ fontSize:k.small?14:26, fontWeight:700, color:k.color }}>{k.value}</div>
+                  { label: 'Total clusters',    value: clusters.length, color: PRIMARY },
+                  { label: 'Total incidencias', value: clusters.reduce((s, c) => s + c.cantidad, 0).toLocaleString('es-PE'), color: '#16a34a' },
+                  { label: 'Radio usado',       value: `${radio} m`, color: '#f97316' },
+                  { label: 'Fuente',            value: fuenteLabel, color: '#7c3aed', small: true },
+                ].map((k, i) => (
+                  <div key={i} style={{ background: CARD, borderRadius: RADIUS, border: BORDER, boxShadow: SHADOW, padding: '16px 20px' }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: TEXT_LIGHT, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{k.label}</div>
+                    <div style={{ fontSize: k.small ? 14 : 26, fontWeight: 700, color: k.color }}>{k.value}</div>
                   </div>
                 ))}
               </div>
 
-              {/* Tabla de clusters */}
-              <div style={{ background:CARD, borderRadius:RADIUS, border:BORDER, boxShadow:SHADOW, overflow:'hidden' }}>
-                <div style={{ padding:'14px 20px', borderBottom:'1px solid #f1f5f9', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                  <span style={{ fontSize:14, fontWeight:700, color:TEXT_DARK }}>
-                    Clusters detectados — radio {radio} m
-                  </span>
+              <div style={{ background: CARD, borderRadius: RADIUS, border: BORDER, boxShadow: SHADOW, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_DARK }}>Clusters detectados — radio {radio} m</span>
                   <button
-                    onClick={()=>generarExcelClusters(clusters, `${tiposLabel} — ${jurLabel}`, rangoLabel, radio)}
-                    disabled={clusters.length===0}
-                    style={{ ...btnSt('#16a34a'), padding:'7px 16px', opacity:clusters.length===0?0.5:1 }}>
-                    <FileDown size={15}/> Descargar Excel
+                    onClick={() => generarExcelClusters(clusters, { ...excelMeta, radio })}
+                    disabled={clusters.length === 0}
+                    style={{ ...btnSt('#16a34a'), padding: '7px 16px', opacity: clusters.length === 0 ? 0.5 : 1 }}>
+                    <FileDown size={15} /> Descargar Excel
                   </button>
                 </div>
 
                 {clusters.length === 0 ? (
-                  <div style={{ padding:40, textAlign:'center', color:TEXT_LIGHT }}>
-                    <ScatterChart size={28} style={{ marginBottom:8, opacity:0.4 }}/>
-                    <div style={{ fontSize:13 }}>No se formaron clusters con el radio seleccionado.<br/>Intenta aumentar el radio.</div>
+                  <div style={{ padding: 40, textAlign: 'center', color: TEXT_LIGHT }}>
+                    <ScatterChart size={28} style={{ marginBottom: 8, opacity: 0.4 }} />
+                    <div style={{ fontSize: 13 }}>No se formaron clusters con el radio seleccionado.<br />Intenta aumentar el radio.</div>
                   </div>
                 ) : (
-                  <div style={{ overflowX:'auto' }}>
-                    <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                       <thead><tr>
-                        {['#','Jurisdicción principal','Incidencias','Radio real (m)','Tipos de incidencia'].map(h=>(
-                          <th key={h} style={{ padding:'9px 14px', textAlign:h==='Incidencias'||h==='Radio real (m)'?'center':'left', fontWeight:600, fontSize:10, color:TEXT_LIGHT, textTransform:'uppercase', letterSpacing:'0.05em', borderBottom:'1px solid #f1f5f9', whiteSpace:'nowrap' }}>{h}</th>
+                        {['#', 'Jurisdicción principal', 'Incidencias', ...(mixto ? ['Fuentes'] : []), 'Radio real (m)', 'Tipos de incidencia'].map(h => (
+                          <th key={h} style={{ ...thSt(h === 'Incidencias' || h === 'Radio real (m)' ? 'center' : 'left'), padding: '9px 14px', fontSize: 10, whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                       </tr></thead>
                       <tbody>
                         {clusters.map((cl, i) => {
-                          const jurCount={};
-                          cl.puntos.forEach(p=>{ jurCount[p.jurisdiccion||'Sin datos']=(jurCount[p.jurisdiccion||'Sin datos']||0)+1; });
-                          const jurP = Object.entries(jurCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';
-                          const tipoCount={};
-                          cl.puntos.forEach(p=>{ tipoCount[p.Tipo||'—']=(tipoCount[p.Tipo||'—']||0)+1; });
-                          const intensidad = cl.cantidad<=3?{bg:'#fef3c7',color:'#92400e'}:cl.cantidad<=6?{bg:'#fee2e2',color:'#991b1b'}:{bg:'#fde8d8',color:'#9a3412'};
+                          const jurP  = sortDesc(countBy(cl.puntos, p => p.jurisdiccion || 'Sin datos'))[0]?.[0] || '—';
+                          const tipos = sortDesc(countBy(cl.puntos, p => p.Tipo || '—'));
+                          const fnts  = sortDesc(countBy(cl.puntos, p => p.fuente || '—'));
+                          const intensidad = cl.cantidad <= 3 ? { bg: '#fef3c7', color: '#92400e' } : cl.cantidad <= 6 ? { bg: '#fee2e2', color: '#991b1b' } : { bg: '#fde8d8', color: '#9a3412' };
                           return (
-                            <tr key={i} style={{ borderBottom:'1px solid var(--theme-border-2)' }}
-                              onMouseEnter={e=>e.currentTarget.style.background='#f9fafb'}
-                              onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                              <td style={{ padding:'9px 14px', fontWeight:700, color:TEXT_DARK }}>{i+1}</td>
-                              <td style={{ padding:'9px 14px', color:TEXT_MID }}>{jurP}</td>
-                              <td style={{ padding:'9px 14px', textAlign:'center' }}>
-                                <span style={{ background:intensidad.bg, color:intensidad.color, borderRadius:20, padding:'2px 10px', fontSize:12, fontWeight:700 }}>
-                                  {cl.cantidad}
-                                </span>
+                            <tr key={i} style={{ borderBottom: '1px solid var(--theme-border-2)' }} {...hoverRow}>
+                              <td style={{ padding: '9px 14px', fontWeight: 700, color: TEXT_DARK }}>{i + 1}</td>
+                              <td style={{ padding: '9px 14px', color: TEXT_MID }}>{jurP}</td>
+                              <td style={{ padding: '9px 14px', textAlign: 'center' }}>
+                                <span style={{ background: intensidad.bg, color: intensidad.color, borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 700 }}>{cl.cantidad}</span>
                               </td>
-                              <td style={{ padding:'9px 14px', textAlign:'center', color:TEXT_MID, fontFamily:'monospace' }}>{Math.round(cl.radio)}</td>
-                              <td style={{ padding:'9px 14px' }}>
-                                <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
-                                  {Object.entries(tipoCount).sort((a,b)=>b[1]-a[1]).map(([t,n])=>(
-                                    <span key={t} style={{ background:`${PRIMARY}12`, color:PRIMARY, borderRadius:4, padding:'1px 7px', fontSize:10, fontWeight:600, whiteSpace:'nowrap' }}>
+                              {mixto && (
+                                <td style={{ padding: '9px 14px' }}>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                    {fnts.map(([f, n]) => (
+                                      <span key={f} style={{ background: `${FUENTE_COLOR[f] || '#94a3b8'}14`, color: FUENTE_COLOR[f] || '#64748b', borderRadius: 4, padding: '1px 7px', fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                                        {f} ×{n}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </td>
+                              )}
+                              <td style={{ padding: '9px 14px', textAlign: 'center', color: TEXT_MID, fontFamily: 'monospace' }}>{Math.round(cl.radio)}</td>
+                              <td style={{ padding: '9px 14px' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                  {tipos.map(([t, n]) => (
+                                    <span key={t} style={{ background: `${PRIMARY}12`, color: PRIMARY, borderRadius: 4, padding: '1px 7px', fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap' }}>
                                       {t} ×{n}
                                     </span>
                                   ))}
@@ -974,10 +1175,11 @@ const ReporteIncidencias = () => {
                 )}
               </div>
 
-              {/* Nota sobre el radio */}
-              {rawData && clusters.length > 0 && (
-                <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:10, padding:'10px 16px', fontSize:12, color:TEXT_MID }}>
-                  💡 <b>Tip:</b> Ajusta el slider de radio en los filtros para ver cómo cambian los clusters en tiempo real. El Excel se descarga con el radio y configuración actuales.
+              {clusters.length > 0 && (
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '10px 16px', fontSize: 12, color: TEXT_MID }}>
+                  💡 <b>Tip:</b> Ajusta el slider de radio en los filtros para ver cómo cambian los clusters en tiempo real.
+                  {mixto && ' Con la fuente «Ambas», un cluster puede mezclar incidencias de Serenazgo y PNP en el mismo punto.'}
+                  {' '}El Excel se descarga con el radio y configuración actuales.
                 </div>
               )}
             </>
