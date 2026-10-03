@@ -10,50 +10,12 @@
   background: var(--theme-surface);
   border: 1px solid var(--theme-border);
   border-radius: 12px;
-  padding: 8px 16px;
+  padding: 8px 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.15);
   user-select: none;
   max-width: calc(100vw - 160px);
   flex-wrap: wrap;
   justify-content: center;
-}
-
-@media (max-width: 768px) {
-  .cr-flotante {
-    top: 60px;
-    padding: 5px 8px;
-    font-size: 10px;
-    gap: 4px;
-    max-width: calc(100vw - 100px);
-    left: 50vw;
-  }
-
-  .cr-flotante-estados {
-    gap: 2px;
-  }
-
-  .cr-flotante-btn {
-    width: 50px;
-    padding: 3px 0;
-    font-size: 9px;
-  }
-
-  .cr-flotante-range {
-    width: 50px;
-  }
-
-  .cr-flotante-slider-label {
-    font-size: 9px;
-  }
-
-  .cr-flotante-valor {
-    font-size: 11px;
-    min-width: 20px;
-  }
-
-  .cr-flotante-divider {
-    height: 16px;
-  }
 }
 
 [data-theme="dark"] .cr-flotante {
@@ -72,8 +34,8 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  width: 76px;
-  padding: 5px 0;
+  min-width: 72px;
+  padding: 5px 12px;
   border: 1px solid var(--theme-border);
   border-radius: 6px;
   background: transparent;
@@ -83,6 +45,11 @@
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
+}
+
+.cr-flotante-btn-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cr-flotante-btn:hover {
@@ -141,4 +108,56 @@
   color: #6366f1;
   min-width: 28px;
   text-align: left;
+}
+
+/* Mobile: va al final para que pise los estilos base (misma especificidad).
+   Dos filas: 4 botones de estado en columnas iguales y el límite a lo ancho. */
+@media (max-width: 768px) {
+  .cr-flotante {
+    top: 60px;
+    left: 50%;
+    width: calc(100vw - 24px);
+    max-width: 440px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 7px 8px;
+  }
+
+  .cr-flotante-estados {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .cr-flotante-btn {
+    min-width: 0;
+    padding: 6px 4px;
+    gap: 4px;
+    font-size: 11px;
+  }
+
+  .cr-flotante-dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  .cr-flotante-divider {
+    display: none;
+  }
+
+  .cr-flotante-slider {
+    padding: 0 4px;
+  }
+
+  .cr-flotante-range {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+
+  .cr-flotante-valor {
+    min-width: 24px;
+    text-align: right;
+  }
 }

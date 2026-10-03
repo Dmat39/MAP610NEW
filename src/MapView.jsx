@@ -5,10 +5,14 @@ import L from 'leaflet';
 
 const TILE_LIGHT = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+const MAP_MAX_ZOOM = 20;
 // Último zoom con tiles reales en el servidor (OSM y CARTO: 19). Más allá, Leaflet
 // amplía esos tiles en lugar de pedir unos que no existen (quedaba el mapa en blanco).
 // Con detectRetina Leaflet pide un nivel más (z+1), así que en pantallas retina el tope es 18.
 const TILE_MAX_NATIVE_ZOOM = 19;
+// detectRetina además le resta 1 al maxZoom de la capa: se compensa para que en
+// pantallas retina (celulares) la capa base siga visible en el zoom máximo del mapa.
+const RETINA_TILES = L.Browser.retina;
 
 const GpsMapEvents = ({ seleccionandoPunto, onPuntoSeleccionado }) => {
   useMapEvents({
@@ -761,16 +765,17 @@ const MapView = () => {
           zoom={mapZoom}
           style={mapStyle}
           minZoom={5}
-          maxZoom={20}
+          maxZoom={MAP_MAX_ZOOM}
         >
           <TileLayer
+            key={dark ? 'tiles-dark' : 'tiles-light'}
             url={dark ? TILE_DARK : TILE_LIGHT}
-            maxZoom={20}
+            maxZoom={!dark && RETINA_TILES ? MAP_MAX_ZOOM + 1 : MAP_MAX_ZOOM}
             attribution={dark
               ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
               : '&copy; OpenStreetMap'
             }
-            maxNativeZoom={!dark && L.Browser.retina ? TILE_MAX_NATIVE_ZOOM - 1 : TILE_MAX_NATIVE_ZOOM}
+            maxNativeZoom={!dark && RETINA_TILES ? TILE_MAX_NATIVE_ZOOM - 1 : TILE_MAX_NATIVE_ZOOM}
             updateWhenZooming={false}
             keepBuffer={4}
             detectRetina={!dark}

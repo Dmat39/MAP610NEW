@@ -53,7 +53,7 @@ const ControlRadiosFlotante = ({
             title={`Mostrar solo: ${getLabel(e)}`}
           >
             <span className="cr-flotante-dot" />
-            {getLabel(e)}
+            <span className="cr-flotante-btn-label">{getLabel(e)}</span>
           </button>
         ))}
       </div>
