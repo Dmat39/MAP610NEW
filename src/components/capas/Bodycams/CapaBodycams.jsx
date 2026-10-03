@@ -109,7 +109,9 @@ const CapaBodycams = ({
   // dentro de la vista actual (mismo criterio que la capa de radios).
   const visibleBodycams = useMemo(() => {
     const filtradas = bodycams
-      .map((bc, idx) => ({ bc, idx, ...estadoBodycam(bc) }))
+      // La API envía latitud/longitud como texto: Leaflet necesita números (con strings,
+      // LatLngBounds.contains entra en recursión infinita)
+      .map((bc, idx) => ({ bc, idx, lat: Number(bc.latitud), lng: Number(bc.longitud), ...estadoBodycam(bc) }))
       .filter(({ bc, estadoTexto }) => {
         if (Array.isArray(filtroEstado)) {
           if (!filtroEstado.includes(estadoTexto)) return false;
@@ -123,12 +125,14 @@ const CapaBodycams = ({
 
     if (!maxVisible || !mapView) return filtradas;
 
-    const inBounds = filtradas.filter(({ bc }) => mapView.bounds.contains([bc.latitud, bc.longitud]));
+    const inBounds = filtradas.filter(({ lat, lng }) =>
+      Number.isFinite(lat) && Number.isFinite(lng) && mapView.bounds.contains([lat, lng])
+    );
     if (inBounds.length <= maxVisible) return inBounds;
 
     const { lat, lng } = mapView.center;
     return inBounds
-      .sort((a, b) => haversineM(lat, lng, a.bc.latitud, a.bc.longitud) - haversineM(lat, lng, b.bc.latitud, b.bc.longitud))
+      .sort((a, b) => haversineM(lat, lng, a.lat, a.lng) - haversineM(lat, lng, b.lat, b.lng))
       .slice(0, maxVisible);
   }, [bodycams, mapView, maxVisible, filtroEstado, filtroJurisdicciones, jurisdiccionPorBodycam]);
 
