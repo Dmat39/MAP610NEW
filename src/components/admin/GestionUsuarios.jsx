@@ -18,6 +18,7 @@ const EMPTY_FORM = {
   phone: '',
   password: '',
   custom_role_id: '',
+  max_sessions: '',
 };
 
 const GestionUsuarios = () => {
@@ -106,6 +107,7 @@ const GestionUsuarios = () => {
         phone:          fullData.phone || '',
         password:       '',
         custom_role_id: fullData.custom_role_id || '',
+        max_sessions:   String(fullData.max_sessions ?? ''),
       };
       setFormData(editData);
       setOriginalData({ ...editData });
@@ -143,6 +145,9 @@ const GestionUsuarios = () => {
     if (!/^\d{9}$/.test(formData.phone)) return 'El teléfono debe tener exactamente 9 dígitos numéricos';
     if (!formData.custom_role_id)  return 'Debes seleccionar un rol';
     if (modalMode === 'create' && !formData.password.trim()) return 'La contraseña es obligatoria';
+    if (formData.max_sessions !== '' && !/^\d+$/.test(formData.max_sessions)) return 'El límite de sesiones debe ser un número entero';
+    if (formData.max_sessions !== '' && (Number(formData.max_sessions) < 1 || Number(formData.max_sessions) > 500)) return 'El límite de sesiones debe estar entre 1 y 500';
+    if (modalMode === 'edit' && formData.max_sessions === '') return 'El límite de sesiones es obligatorio';
     return null;
   };
 
@@ -156,7 +161,9 @@ const GestionUsuarios = () => {
       setError(null);
 
       if (modalMode === 'create') {
-        await usuariosService.create({ ...formData });
+        const { max_sessions, ...rest } = formData;
+        // Vacío = el backend asigna el valor por defecto según el rol (50 operador, 1 el resto)
+        await usuariosService.create(max_sessions === '' ? rest : { ...rest, max_sessions: Number(max_sessions) });
         setSuccess('Usuario creado exitosamente');
       } else {
         const changedFields = {};
@@ -165,6 +172,7 @@ const GestionUsuarios = () => {
           if (formData[f] !== originalData[f]) changedFields[f] = formData[f];
         }
         if (formData.password?.trim()) changedFields.password = formData.password;
+        if (formData.max_sessions !== originalData.max_sessions) changedFields.max_sessions = Number(formData.max_sessions);
 
         if (Object.keys(changedFields).length === 0) {
           setError('No se han realizado cambios');
@@ -320,6 +328,7 @@ const GestionUsuarios = () => {
                     <th>Usuario</th>
                     <th>Email</th>
                     <th>Rol</th>
+                    <th>Sesiones</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
@@ -360,6 +369,7 @@ const GestionUsuarios = () => {
                           {getRoleName(usuario)}
                         </span>
                       </td>
+                      <td title="Sesiones simultáneas permitidas">{usuario.max_sessions ?? '-'}</td>
                       <td>
                         <div className="action-buttons">
                           <button onClick={() => openEditModal(usuario)} className="btn-icon btn-edit" title="Editar">
@@ -497,6 +507,14 @@ const GestionUsuarios = () => {
                           No hay roles. Crea uno en la sección Roles.
                         </span>
                       )}
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="max_sessions"><Shield size={12} /> Límite de sesiones {modalMode === 'edit' && '*'}</label>
+                      <input type="number" id="max_sessions" name="max_sessions" value={formData.max_sessions}
+                        onChange={handleInputChange} min="1" max="500"
+                        placeholder={modalMode === 'create' ? 'Por defecto: 50 operador / 1 resto' : ''}
+                        required={modalMode === 'edit'} />
+                      <span className="form-hint">Dispositivos a la vez. Al superarlo se cierra la sesión más antigua.</span>
                     </div>
                   </div>
                 </div>

@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { consumeSessionNotice } from '../services/sessionGuard';
 import './Login.css';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => consumeSessionNotice() || '');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 

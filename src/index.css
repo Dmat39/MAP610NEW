@@ -511,7 +511,7 @@ input::placeholder, textarea::placeholder { color: var(--theme-text-4); }
   border: 1.5px solid var(--theme-border);
   color: #16a34a;
   cursor: pointer;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.15s ease, box-shadow 0.15s ease;
@@ -531,18 +531,6 @@ input::placeholder, textarea::placeholder { color: var(--theme-text-4); }
   background: var(--theme-surface-2);
   border-color: #16a34a;
   box-shadow: 0 6px 16px rgba(22, 163, 74, 0.2);
-}
-
-@media (max-width: 768px) {
-  .panel-toggle-btn-mobile {
-    display: flex !important;
-  }
-}
-
-@media (min-width: 769px) {
-  .panel-toggle-btn-mobile {
-    display: none !important;
-  }
 }
 
   .gestion-municipales-container .municipales-table tbody tr:hover { background: rgba(99,102,241,0.08) !important; }

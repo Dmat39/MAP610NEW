@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useRef, useCallback, us
 import { useQueryClient } from '@tanstack/react-query';
 import authService from '../services/authService';
 import rolesService from '../services/rolesService';
+import { PERMS_CHANGED_EVENT, SESSION_ENDED_EVENT, watchSession } from '../services/sessionGuard';
 
 const AuthContext = createContext(null);
 
@@ -28,6 +29,22 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  // Sesión revocada por el backend (otro dispositivo o expiración): volver al login
+  useEffect(() => {
+    const onSessionEnded = () => {
+      queryClient.clear();
+      setUser(null);
+    };
+    window.addEventListener(SESSION_ENDED_EVENT, onSessionEnded);
+    return () => window.removeEventListener(SESSION_ENDED_EVENT, onSessionEnded);
+  }, [queryClient]);
+
+  // Mantener abierto el aviso en tiempo real mientras haya sesión
+  useEffect(() => {
+    if (!user) return;
+    return watchSession();
+  }, [user?.username]);
+
   // Cargar permisos del rol personalizado cuando el usuario está autenticado
   useEffect(() => {
     if (!user) {
@@ -46,7 +63,9 @@ export const AuthProvider = ({ children }) => {
   const customRolePermsRef = useRef(customRolePerms);
   useEffect(() => { customRolePermsRef.current = customRolePerms; }, [customRolePerms]);
 
-  // Polling: detecta cambios de permisos y recarga la página si el admin modificó el rol
+  // Detecta cambios de permisos (aviso en tiempo real del backend + polling de respaldo).
+  // Si cambian capas, acceso a módulos o el rol, recarga la página; si solo cambian
+  // operaciones o campos visibles, los aplica en caliente.
   useEffect(() => {
     if (!user) return;
 
@@ -61,8 +80,25 @@ export const AuthProvider = ({ children }) => {
       try {
         const fresh = await rolesService.getMine();
         if (!fresh) return;
-        if (toFingerprint(customRolePermsRef.current) !== toFingerprint(fresh)) {
+        const stored = authService.getCurrentUser();
+        const roleChanged = stored && (
+          (stored.custom_role_id ?? null) !== (fresh.id ?? null) ||
+          (stored.role ?? null) !== (fresh.system_slug ?? null)
+        );
+        if (roleChanged) {
+          localStorage.setItem('user', JSON.stringify({
+            ...stored,
+            role:             fresh.system_slug ?? null,
+            custom_role_id:   fresh.id ?? null,
+            custom_role_name: fresh.name ?? null,
+          }));
+        }
+        if (roleChanged || toFingerprint(customRolePermsRef.current) !== toFingerprint(fresh)) {
           window.location.reload();
+          return;
+        }
+        if (JSON.stringify(customRolePermsRef.current) !== JSON.stringify(fresh)) {
+          setCustomRolePerms(fresh);
         }
       } catch {
         // Ignorar errores de red temporales
@@ -74,6 +110,7 @@ export const AuthProvider = ({ children }) => {
       if (document.visibilityState === 'visible') checkPerms();
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener(PERMS_CHANGED_EVENT, checkPerms);
 
     // Polling cada 30s — el listener de visibilitychange ya cubre el caso de regreso a la pestaña
     const interval = setInterval(checkPerms, 30_000);
@@ -81,6 +118,7 @@ export const AuthProvider = ({ children }) => {
     return () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener(PERMS_CHANGED_EVENT, checkPerms);
     };
   }, [user?.username]);
 

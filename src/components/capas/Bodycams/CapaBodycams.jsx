@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { Marker, Popup, LayerGroup } from 'react-leaflet';
+import { Marker, Popup, LayerGroup, useMapEvents } from 'react-leaflet';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { obtenerBodycams } from '../../../services/bodycamService';
 import { computeJurisdiccion, pasaFiltroJurisdiccion } from '../../../utils/jurisdicciones';
+import { haversineM } from '../../../utils/geoUtils';
 
 const _iconCacheBodycam = new Map();
 
@@ -30,16 +31,35 @@ const crearIconoBodycamModerno = (color) => {
   return icon;
 };
 
+// Estado por tiempo desde la última ubicación (fecha inválida/ausente => DESCONECTADA)
+const estadoBodycam = (bc) => {
+  const diffMinutos = (Date.now() - new Date(bc.ultima_ubicacion).getTime()) / (1000 * 60);
+  if (!Number.isFinite(diffMinutos) || diffMinutos > 60) return { color: '#9ca3af', estadoTexto: 'DESCONECTADA' };
+  if (diffMinutos > 30) return { color: '#eab308', estadoTexto: 'INACTIVA' };
+  return { color: '#16a34a', estadoTexto: 'ACTIVA' };
+};
+
 const CapaBodycams = ({
   visible,
   bodycamSeleccionada,
+  maxVisible,
   filtroEstado = ['ACTIVA', 'INACTIVA', 'DESCONECTADA'],
   filtroJurisdicciones = [],
   jurisdiccionesGeoJSON = null,
 }) => {
   const [bodycams, setBodycams] = useState([]);
+  const [mapView, setMapView] = useState(null);
   const map = useMap();
   const markersRef = useRef({});
+
+  useMapEvents({
+    moveend: () => setMapView({ bounds: map.getBounds(), center: map.getCenter() }),
+    zoomend: () => setMapView({ bounds: map.getBounds(), center: map.getCenter() }),
+  });
+
+  useEffect(() => {
+    if (map) setMapView({ bounds: map.getBounds(), center: map.getCenter() });
+  }, [map]);
 
   // Precalcular la jurisdicción de cada bodycam una sola vez (por referencia, para
   // no colisionar cuando hay nombres repetidos o vacíos).
@@ -85,38 +105,40 @@ const CapaBodycams = ({
     }
   }, [bodycamSeleccionada, map]);
 
+  // Filtros de estado y jurisdicción; con límite, solo las N más cercanas al centro
+  // dentro de la vista actual (mismo criterio que la capa de radios).
+  const visibleBodycams = useMemo(() => {
+    const filtradas = bodycams
+      .map((bc, idx) => ({ bc, idx, ...estadoBodycam(bc) }))
+      .filter(({ bc, estadoTexto }) => {
+        if (Array.isArray(filtroEstado)) {
+          if (!filtroEstado.includes(estadoTexto)) return false;
+        } else if (filtroEstado !== 'TODAS' && estadoTexto !== filtroEstado) {
+          // Retrocompatibilidad temporal por si acaso
+          return false;
+        }
+        // Filtro por jurisdicción global (selección vacía = todas)
+        return pasaFiltroJurisdiccion(jurisdiccionPorBodycam.get(bc), filtroJurisdicciones);
+      });
+
+    if (!maxVisible || !mapView) return filtradas;
+
+    const inBounds = filtradas.filter(({ bc }) => mapView.bounds.contains([bc.latitud, bc.longitud]));
+    if (inBounds.length <= maxVisible) return inBounds;
+
+    const { lat, lng } = mapView.center;
+    return inBounds
+      .sort((a, b) => haversineM(lat, lng, a.bc.latitud, a.bc.longitud) - haversineM(lat, lng, b.bc.latitud, b.bc.longitud))
+      .slice(0, maxVisible);
+  }, [bodycams, mapView, maxVisible, filtroEstado, filtroJurisdicciones, jurisdiccionPorBodycam]);
+
   if (!visible) return null;
 
   return (
     <LayerGroup>
-      {bodycams.map((bc, idx) => {
+      {visibleBodycams.map(({ bc, idx, color, estadoTexto }) => {
         const refKey = `bodycam-${bc.nombre}`;        // para abrir popup de la buscada
         const markerId = `${refKey}-${idx}`;          // key única de React (evita colisión)
-
-        // Calcular estado por tiempo (fecha inválida/ausente => DESCONECTADA)
-        const diffMinutos = (Date.now() - new Date(bc.ultima_ubicacion).getTime()) / (1000 * 60);
-
-        let color = '#16a34a'; // Verde (Activa)
-        let estadoTexto = 'ACTIVA';
-        if (!Number.isFinite(diffMinutos) || diffMinutos > 60) {
-          color = '#9ca3af'; // Gris (Desconectada)
-          estadoTexto = 'DESCONECTADA';
-        } else if (diffMinutos > 30) {
-          color = '#eab308'; // Amarillo (Inactiva)
-          estadoTexto = 'INACTIVA';
-        }
-
-        if (Array.isArray(filtroEstado)) {
-          if (!filtroEstado.includes(estadoTexto)) return null;
-        } else {
-          // Retrocompatibilidad temporal por si acaso
-          if (filtroEstado !== 'TODAS' && estadoTexto !== filtroEstado) return null;
-        }
-
-        // Filtro por jurisdicción global (selección vacía = todas)
-        if (!pasaFiltroJurisdiccion(jurisdiccionPorBodycam.get(bc), filtroJurisdicciones)) {
-          return null;
-        }
 
         return (
           <Marker

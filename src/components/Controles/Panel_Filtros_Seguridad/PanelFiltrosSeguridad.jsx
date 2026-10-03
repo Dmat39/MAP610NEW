@@ -68,7 +68,7 @@ const PanelFiltrosSeguridad = ({
             <span className="pfs-tab-label">{label}</span>
           </button>
         ))}
-        {typeof window !== 'undefined' && window.innerWidth <= 768 && onClose && (
+        {onClose && (
           <button
             className="pfs-close-btn"
             onClick={onClose}

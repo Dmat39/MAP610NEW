@@ -21,7 +21,7 @@
   color: var(--theme-text-3);
   cursor: pointer;
   padding: 6px 8px;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 6px;
@@ -33,12 +33,6 @@
 .pfs-close-btn:hover {
   background: var(--theme-surface-2);
   color: var(--theme-text);
-}
-
-@media (max-width: 768px) {
-  .pfs-close-btn {
-    display: flex;
-  }
 }
 
 /* La barra de pestañas, la jurisdicción y los totales no se encogen */

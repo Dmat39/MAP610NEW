@@ -1,9 +1,14 @@
 import { MapContainer, TileLayer, Pane, useMapEvents } from 'react-leaflet';
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useTheme } from './context/ThemeContext';
+import L from 'leaflet';
 
 const TILE_LIGHT = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+// Último zoom con tiles reales en el servidor (OSM y CARTO: 19). Más allá, Leaflet
+// amplía esos tiles en lugar de pedir unos que no existen (quedaba el mapa en blanco).
+// Con detectRetina Leaflet pide un nivel más (z+1), así que en pantallas retina el tope es 18.
+const TILE_MAX_NATIVE_ZOOM = 19;
 
 const GpsMapEvents = ({ seleccionandoPunto, onPuntoSeleccionado }) => {
   useMapEvents({
@@ -222,7 +227,8 @@ const MapView = () => {
   const [limpiarSeguimiento, setLimpiarSeguimiento] = useState(null);
   const [camaraConVision, setCamaraConVision] = useState(null); // Track camera with vision field active
   const [recorridoBodycam, setRecorridoBodycam] = useState(null);
-  const [maxVisibleRadios, setMaxVisibleRadios] = useState(50);
+  // Límite de marcadores visibles, compartido por radios y bodycams
+  const [maxVisibleGps, setMaxVisibleGps] = useState(50);
   // Por defecto solo se muestran radios OK y bodycams activas; los demás estados se activan por pestaña.
   const [filtroEstadoRadios, setFiltroEstadoRadios] = useState('OK');
   const [filtroEstadoBodycams, setFiltroEstadoBodycams] = useState(['ACTIVA']);
@@ -245,9 +251,13 @@ const MapView = () => {
 
   // Monitorear cambios de tamaño de ventana para panel
   useEffect(() => {
+    let wasMobile = window.innerWidth <= 768;
     const handleResize = () => {
       const isMobile = window.innerWidth <= 768;
-      // En mobile, panel oculto por defecto; en desktop, visible
+      // Solo al cruzar el breakpoint: en mobile oculto por defecto, en desktop visible.
+      // Así no se reabre el panel que el usuario cerró al redimensionar en PC.
+      if (isMobile === wasMobile) return;
+      wasMobile = isMobile;
       setIsPanelVisible(!isMobile);
     };
     window.addEventListener('resize', handleResize);
@@ -515,6 +525,13 @@ const MapView = () => {
 
   const anyPnpVisible = PNP_TIPOS.some(t => capasVisibles[t.key]);
 
+  // El panel de filtros solo tiene contenido si hay alguna de estas capas activas
+  const hayPanelFiltros =
+    (canSeeCamaras && capasVisibles.camaras) || capasVisibles.bodycams ||
+    capasVisibles.radios || capasVisibles.rutasBodycams;
+  const panelTop = (capasVisibles.busquedaDirecciones ? 450 : 0) + (capasVisibles.rutas ? 280 : 0) + 10;
+  const isMobileView = typeof window !== 'undefined' && window.innerWidth <= 768;
+
   const mapCenter = [-11.9699, -76.998];
   const mapZoom = 13.1;
   const mapStyle = { height: '100vh', width: '100%', position: 'relative', zIndex: 1 };
@@ -558,11 +575,14 @@ const MapView = () => {
             onToggle={handleToggle}
           />
       <ControlRadiosFlotante
-        visible={capasVisibles.radios}
-        maxVisible={maxVisibleRadios}
-        onMaxVisibleChange={setMaxVisibleRadios}
-        filtroEstado={filtroEstadoRadios}
-        onFiltroEstadoChange={setFiltroEstadoRadios}
+        radiosVisible={capasVisibles.radios}
+        bodycamsVisible={capasVisibles.bodycams}
+        maxVisible={maxVisibleGps}
+        onMaxVisibleChange={setMaxVisibleGps}
+        filtroEstadoRadios={filtroEstadoRadios}
+        onFiltroEstadoRadiosChange={setFiltroEstadoRadios}
+        filtroEstadoBodycams={filtroEstadoBodycams}
+        onFiltroEstadoBodycamsChange={setFiltroEstadoBodycams}
       />
       <ControlBusqueda
         visible={capasVisibles.busquedaDirecciones}
@@ -578,14 +598,15 @@ const MapView = () => {
         topPosition={capasVisibles.busquedaDirecciones ? 450 : 10}
       />
 
-      {/* Botón abajo para mostrar filtros (mobile) */}
-      {typeof window !== 'undefined' && window.innerWidth <= 768 && !isPanelVisible && (
+      {/* Botón para volver a mostrar filtros (abajo en mobile, arriba en PC donde estaba el panel) */}
+      {hayPanelFiltros && !isPanelVisible && (
         <button
-          onClick={() => setIsPanelVisible(!isPanelVisible)}
+          onClick={() => setIsPanelVisible(true)}
           className="panel-toggle-btn-mobile"
+          style={isMobileView ? undefined : { top: panelTop, bottom: 'auto' }}
           title="Mostrar filtros"
         >
-          ▲
+          {isMobileView ? '▲' : '▶'}
         </button>
       )}
 
@@ -593,7 +614,7 @@ const MapView = () => {
       {isPanelVisible && (
         <PanelFiltrosSeguridad
           mapType={mapType}
-          top={(capasVisibles.busquedaDirecciones ? 450 : 0) + (capasVisibles.rutas ? 280 : 0) + 10}
+          top={panelTop}
           jurisdicciones={JURISDICCIONES_DISPONIBLES}
           jurisdiccionesSeleccionadas={jurisdiccionesSeleccionadas}
           onJurisdiccionesChange={setJurisdiccionesSeleccionadas}
@@ -749,6 +770,7 @@ const MapView = () => {
               ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
               : '&copy; OpenStreetMap'
             }
+            maxNativeZoom={!dark && L.Browser.retina ? TILE_MAX_NATIVE_ZOOM - 1 : TILE_MAX_NATIVE_ZOOM}
             updateWhenZooming={false}
             keepBuffer={4}
             detectRetina={!dark}
@@ -786,9 +808,9 @@ const MapView = () => {
           {canSeeCamarasVecinales && (
             <CapaCamarasVecinales visible={capasVisibles.camarasVecinales} filtroJurisdicciones={jurisdiccionesSeleccionadas} jurisdiccionesGeoJSON={jurisdiccionesGeoJSON} />
           )}
-          <CapaBodycams visible={capasVisibles.bodycams} bodycamSeleccionada={bodycamSeleccionada} filtroEstado={filtroEstadoBodycams} filtroJurisdicciones={jurisdiccionesSeleccionadas} jurisdiccionesGeoJSON={jurisdiccionesGeoJSON} />
+          <CapaBodycams visible={capasVisibles.bodycams} bodycamSeleccionada={bodycamSeleccionada} maxVisible={maxVisibleGps} filtroEstado={filtroEstadoBodycams} filtroJurisdicciones={jurisdiccionesSeleccionadas} jurisdiccionesGeoJSON={jurisdiccionesGeoJSON} />
           {capasVisibles.rutasBodycams && <CapaHistorialBodycams dataRecorrido={recorridoBodycam} />}
-          <CapaRadios visible={capasVisibles.radios} radioSeleccionado={radioSeleccionado} maxVisible={maxVisibleRadios} filtroEstado={filtroEstadoRadios} filtroJurisdicciones={jurisdiccionesSeleccionadas} jurisdiccionesGeoJSON={jurisdiccionesGeoJSON} />
+          <CapaRadios visible={capasVisibles.radios} radioSeleccionado={radioSeleccionado} maxVisible={maxVisibleGps} filtroEstado={filtroEstadoRadios} filtroJurisdicciones={jurisdiccionesSeleccionadas} jurisdiccionesGeoJSON={jurisdiccionesGeoJSON} />
           <GpsMapEvents
             seleccionandoPunto={seleccionandoPunto}
             onPuntoSeleccionado={(p) => { setPuntoSeleccionado(p); setSeleccionandoPunto(false); }}
@@ -963,7 +985,7 @@ const MapView = () => {
             municipalesVisible={canSeeCamaras && capasVisibles.camaras}
             radiosVisible={capasVisibles.radios}
             bodycamsVisible={capasVisibles.bodycams}
-            panelFiltersVisible={isPanelVisible}
+            panelFiltersVisible={isPanelVisible && isMobileView}
           />
         </div>
       </div>

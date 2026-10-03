@@ -1,15 +1,45 @@
 import React from 'react';
 import './ControlRadiosFlotante.css';
 
+// Estados equivalentes de radios y bodycams. Con ambas capas activas se muestra un
+// solo botón por fila (OK = Activas, Sin GPS = Inactivas, Apagado = Desconectadas).
 const ESTADOS = [
-  { key: 'TODOS',   label: 'Todos',   color: '#6366f1' },
-  { key: 'OK',      label: 'OK',      color: '#16a34a' },
-  { key: 'SIN GPS', label: 'Sin GPS', color: '#a16207' },
-  { key: 'APAGADO', label: 'Apagado', color: '#dc2626' },
+  { key: 'TODOS',   radio: 'TODOS',   bodycam: ['ACTIVA', 'INACTIVA', 'DESCONECTADA'], radioLabel: 'Todos',   bodycamLabel: 'Todas',         color: '#6366f1' },
+  { key: 'OK',      radio: 'OK',      bodycam: ['ACTIVA'],                             radioLabel: 'OK',      bodycamLabel: 'Activas',       color: '#16a34a' },
+  { key: 'SIN GPS', radio: 'SIN GPS', bodycam: ['INACTIVA'],                           radioLabel: 'Sin GPS', bodycamLabel: 'Inactivas',     color: '#a16207' },
+  { key: 'APAGADO', radio: 'APAGADO', bodycam: ['DESCONECTADA'],                       radioLabel: 'Apagado', bodycamLabel: 'Desconectadas', color: '#dc2626' },
 ];
 
-const ControlRadiosFlotante = ({ visible, maxVisible, onMaxVisibleChange, filtroEstado, onFiltroEstadoChange }) => {
-  if (!visible) return null;
+const mismosEstados = (a, b) =>
+  Array.isArray(a) && a.length === b.length && b.every(x => a.includes(x));
+
+// Control flotante superior: estados + un único límite compartido por radios y
+// bodycams (si ambas capas están activas, los mismos valores aplican a las dos).
+const ControlRadiosFlotante = ({
+  radiosVisible,
+  bodycamsVisible,
+  maxVisible,
+  onMaxVisibleChange,
+  filtroEstadoRadios,
+  onFiltroEstadoRadiosChange,
+  filtroEstadoBodycams,
+  onFiltroEstadoBodycamsChange,
+}) => {
+  if (!radiosVisible && !bodycamsVisible) return null;
+
+  const capasLimite = [radiosVisible && 'radios', bodycamsVisible && 'bodycams'].filter(Boolean).join(' y ');
+
+  // Con ambas capas se usan las etiquetas de radios (OK = Activas, etc.)
+  const getLabel = (e) => (radiosVisible ? e.radioLabel : e.bodycamLabel);
+
+  const isActivo = (e) =>
+    (!radiosVisible || filtroEstadoRadios === e.radio) &&
+    (!bodycamsVisible || mismosEstados(filtroEstadoBodycams, e.bodycam));
+
+  const seleccionar = (e) => {
+    if (radiosVisible) onFiltroEstadoRadiosChange(e.radio);
+    if (bodycamsVisible) onFiltroEstadoBodycamsChange([...e.bodycam]);
+  };
 
   return (
     <div className="cr-flotante">
@@ -17,13 +47,13 @@ const ControlRadiosFlotante = ({ visible, maxVisible, onMaxVisibleChange, filtro
         {ESTADOS.map(e => (
           <button
             key={e.key}
-            className={`cr-flotante-btn ${filtroEstado === e.key ? 'activo' : ''}`}
+            className={`cr-flotante-btn ${isActivo(e) ? 'activo' : ''}`}
             style={{ '--estado-color': e.color }}
-            onClick={() => onFiltroEstadoChange(e.key)}
-            title={`Mostrar solo: ${e.label}`}
+            onClick={() => seleccionar(e)}
+            title={`Mostrar solo: ${getLabel(e)}`}
           >
             <span className="cr-flotante-dot" />
-            {e.label}
+            {getLabel(e)}
           </button>
         ))}
       </div>
@@ -43,7 +73,7 @@ const ControlRadiosFlotante = ({ visible, maxVisible, onMaxVisibleChange, filtro
             const v = parseInt(e.target.value);
             onMaxVisibleChange(v >= 205 ? null : v);
           }}
-          title={`Máximo de radios visibles en el mapa: ${maxVisible ?? '∞'}`}
+          title={`Máximo de ${capasLimite} visibles en el mapa: ${maxVisible ?? '∞'}`}
         />
         <span className="cr-flotante-valor">
           {maxVisible === null ? '∞' : maxVisible}
