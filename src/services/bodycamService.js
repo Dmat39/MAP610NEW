@@ -1,21 +1,20 @@
-import axios from 'axios';
+// Las bodycams se consultan a través del backend (con el JWT del usuario):
+// el token de la API externa de bodycams solo vive en el servidor.
+const API_URL = import.meta.env.VITE_API_URL;
 
-const API_URL = import.meta.env.VITE_BODYCAM_API_URL || 'https://gps-bodycam.munisjl.gob.pe';
+const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
 
-const API_TOKEN = import.meta.env.VITE_BODYCAM_API_TOKEN || 'cecom2026';
-
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${API_TOKEN}`
-  }
-});
+const getJson = async (url, errorMsg) => {
+  const response = await fetch(url, { headers: authHeaders() });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(json.message ?? errorMsg);
+  return json.data;
+};
 
 export const obtenerBodycams = async () => {
   try {
-    const response = await apiClient.get('/api/bodycams');
-    return response.data;
+    const data = await getJson(`${API_URL}bodycams`, 'Error al obtener bodycams');
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('Error al obtener bodycams:', error);
     throw error;
@@ -24,12 +23,13 @@ export const obtenerBodycams = async () => {
 
 export const obtenerHistorialBodycam = async (codigo, desde = null, hasta = null, limite = 10000) => {
   try {
-    let url = `/api/ubicaciones/${codigo}?limite=${limite}`;
-    if (desde) url += `&desde=${encodeURIComponent(desde)}`;
-    if (hasta) url += `&hasta=${encodeURIComponent(hasta)}`;
-    
-    const response = await apiClient.get(url);
-    return response.data;
+    const params = new URLSearchParams({ limite: String(limite) });
+    if (desde) params.set('desde', desde);
+    if (hasta) params.set('hasta', hasta);
+    return await getJson(
+      `${API_URL}bodycams/${encodeURIComponent(codigo)}/ubicaciones?${params}`,
+      'Error al obtener el historial de la bodycam'
+    );
   } catch (error) {
     console.error(`Error al obtener historial de la bodycam ${codigo}:`, error);
     throw error;

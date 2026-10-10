@@ -8,10 +8,12 @@ import { ThemeProvider } from './context/ThemeContext.jsx';
 import Router from './Router.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { installSessionGuard } from './services/sessionGuard.js';
+import { startMobileTokenRefresh } from './services/nativeDevice.js';
 import 'leaflet/dist/leaflet.css';
 import './index.css';
 
 installSessionGuard();
+startMobileTokenRefresh();
 
 // Configurar QueryClient con caché de 12 horas
 const queryClient = new QueryClient({

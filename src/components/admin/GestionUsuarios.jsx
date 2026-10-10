@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Edit2, Trash2, X, Save, RefreshCw, User, Mail, Phone, Shield, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, RefreshCw, User, Mail, Phone, Shield, Eye, EyeOff, Smartphone, Monitor, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import usuariosService from '../../services/usuariosService';
 import rolesService from '../../services/rolesService';
@@ -19,6 +19,16 @@ const EMPTY_FORM = {
   password: '',
   custom_role_id: '',
   max_sessions: '',
+  mobile_only: false,
+};
+
+// device_bound_at se guarda con la hora de Lima como si fuera UTC (timezoneHelper del backend)
+const formatBoundAt = (iso) => {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('es-PE', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
+  });
 };
 
 const GestionUsuarios = () => {
@@ -108,7 +118,9 @@ const GestionUsuarios = () => {
         password:       '',
         custom_role_id: fullData.custom_role_id || '',
         max_sessions:   String(fullData.max_sessions ?? ''),
+        mobile_only:    !!fullData.mobile_only,
       };
+      setSelectedUser({ ...usuario, ...fullData });
       setFormData(editData);
       setOriginalData({ ...editData });
       setShowModal(true);
@@ -129,8 +141,8 @@ const GestionUsuarios = () => {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const validateForm = () => {
@@ -145,6 +157,8 @@ const GestionUsuarios = () => {
     if (!/^\d{9}$/.test(formData.phone)) return 'El teléfono debe tener exactamente 9 dígitos numéricos';
     if (!formData.custom_role_id)  return 'Debes seleccionar un rol';
     if (modalMode === 'create' && !formData.password.trim()) return 'La contraseña es obligatoria';
+    // "Solo app móvil" fija 1 sesión en el backend: no se valida el límite
+    if (formData.mobile_only) return null;
     if (formData.max_sessions !== '' && !/^\d+$/.test(formData.max_sessions)) return 'El límite de sesiones debe ser un número entero';
     if (formData.max_sessions !== '' && (Number(formData.max_sessions) < 1 || Number(formData.max_sessions) > 500)) return 'El límite de sesiones debe estar entre 1 y 500';
     if (modalMode === 'edit' && formData.max_sessions === '') return 'El límite de sesiones es obligatorio';
@@ -161,9 +175,13 @@ const GestionUsuarios = () => {
       setError(null);
 
       if (modalMode === 'create') {
-        const { max_sessions, ...rest } = formData;
-        // Vacío = el backend asigna el valor por defecto según el rol (50 operador, 1 el resto)
-        await usuariosService.create(max_sessions === '' ? rest : { ...rest, max_sessions: Number(max_sessions) });
+        const { max_sessions, mobile_only, ...rest } = formData;
+        // Vacío = el backend asigna el valor por defecto según el rol (50 operador, 1 el resto).
+        // Solo app móvil = el backend fija 1 sesión.
+        const payload = mobile_only
+          ? { ...rest, mobile_only: true }
+          : max_sessions === '' ? rest : { ...rest, max_sessions: Number(max_sessions) };
+        await usuariosService.create(payload);
         setSuccess('Usuario creado exitosamente');
       } else {
         const changedFields = {};
@@ -172,7 +190,8 @@ const GestionUsuarios = () => {
           if (formData[f] !== originalData[f]) changedFields[f] = formData[f];
         }
         if (formData.password?.trim()) changedFields.password = formData.password;
-        if (formData.max_sessions !== originalData.max_sessions) changedFields.max_sessions = Number(formData.max_sessions);
+        if (formData.mobile_only !== originalData.mobile_only) changedFields.mobile_only = formData.mobile_only;
+        if (!formData.mobile_only && formData.max_sessions !== originalData.max_sessions) changedFields.max_sessions = Number(formData.max_sessions);
 
         if (Object.keys(changedFields).length === 0) {
           setError('No se han realizado cambios');
@@ -204,6 +223,29 @@ const GestionUsuarios = () => {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError(err.message || 'Error al eliminar el usuario');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetDevice = async (usuario) => {
+    const equipo = usuario.device_info ? ` (${usuario.device_info})` : '';
+    if (!window.confirm(
+      `¿Restablecer el dispositivo vinculado de "${usuario.username}"${equipo}?\n\n` +
+      'Se cerrará su sesión en la app y el próximo ingreso desde la app vinculará el celular nuevo.\n' +
+      'Si no cambió de celular, cambia también su contraseña.'
+    )) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await usuariosService.resetDevice(usuario.id);
+      const updated = response.data || response;
+      if (showModal) setSelectedUser(prev => ({ ...prev, ...updated }));
+      setSuccess(`Dispositivo de "${usuario.username}" restablecido`);
+      refreshData();
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err.message || 'Error al restablecer el dispositivo');
     } finally {
       setLoading(false);
     }
@@ -329,6 +371,7 @@ const GestionUsuarios = () => {
                     <th>Email</th>
                     <th>Rol</th>
                     <th>Sesiones</th>
+                    <th>Acceso</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
@@ -371,7 +414,27 @@ const GestionUsuarios = () => {
                       </td>
                       <td title="Sesiones simultáneas permitidas">{usuario.max_sessions ?? '-'}</td>
                       <td>
+                        {usuario.mobile_only ? (
+                          <span
+                            className={`access-badge ${usuario.device_bound_at ? 'access-bound' : 'access-pending'}`}
+                            title={usuario.device_bound_at
+                              ? `Vinculado: ${usuario.device_info || 'equipo sin nombre'} · ${formatBoundAt(usuario.device_bound_at)}`
+                              : 'Se vinculará en su primer ingreso desde la app'}
+                          >
+                            <Smartphone size={12} />
+                            {usuario.device_bound_at ? 'App · vinculado' : 'App · sin vincular'}
+                          </span>
+                        ) : (
+                          <span className="access-badge access-web"><Monitor size={12} /> Web</span>
+                        )}
+                      </td>
+                      <td>
                         <div className="action-buttons">
+                          {usuario.mobile_only && usuario.device_bound_at && (
+                            <button onClick={() => handleResetDevice(usuario)} className="btn-icon btn-reset-device" title="Restablecer dispositivo vinculado">
+                              <RotateCcw size={16} />
+                            </button>
+                          )}
                           <button onClick={() => openEditModal(usuario)} className="btn-icon btn-edit" title="Editar">
                             <Edit2 size={16} />
                           </button>
@@ -510,13 +573,59 @@ const GestionUsuarios = () => {
                     </div>
                     <div className="form-group">
                       <label htmlFor="max_sessions"><Shield size={12} /> Límite de sesiones {modalMode === 'edit' && '*'}</label>
-                      <input type="number" id="max_sessions" name="max_sessions" value={formData.max_sessions}
+                      <input type="number" id="max_sessions" name="max_sessions"
+                        value={formData.mobile_only ? '1' : formData.max_sessions}
                         onChange={handleInputChange} min="1" max="500"
                         placeholder={modalMode === 'create' ? 'Por defecto: 50 operador / 1 resto' : ''}
-                        required={modalMode === 'edit'} />
-                      <span className="form-hint">Dispositivos a la vez. Al superarlo se cierra la sesión más antigua.</span>
+                        disabled={formData.mobile_only}
+                        required={modalMode === 'edit' && !formData.mobile_only} />
+                      <span className="form-hint">
+                        {formData.mobile_only
+                          ? 'Fijo en 1: el usuario solo usa su celular vinculado.'
+                          : 'Dispositivos a la vez. Al superarlo se cierra la sesión más antigua.'}
+                      </span>
                     </div>
                   </div>
+                </div>
+
+                {/* ── Sección: Acceso móvil ───────────── */}
+                <div className="user-form-section" style={{ marginTop: 22, marginBottom: 0 }}>
+                  <div className="user-form-section-header">
+                    <Smartphone size={13} /> Acceso móvil
+                  </div>
+                  <label className="mobile-only-toggle">
+                    <input type="checkbox" name="mobile_only" checked={formData.mobile_only} onChange={handleInputChange} />
+                    <span>
+                      <strong>Solo app móvil</strong>
+                      <span className="form-hint" style={{ fontStyle: 'normal' }}>
+                        Solo podrá ingresar desde la app, en el primer celular donde inicie sesión. La web queda bloqueada para este usuario y se permite 1 sesión.
+                      </span>
+                    </span>
+                  </label>
+
+                  {modalMode === 'edit' && formData.mobile_only && !originalData?.mobile_only && (
+                    <div className="device-warning">
+                      Al guardar se cerrarán las sesiones abiertas de este usuario. Asegúrate de que ya tenga la app instalada.
+                    </div>
+                  )}
+
+                  {modalMode === 'edit' && originalData?.mobile_only && (
+                    <div className="device-status">
+                      {selectedUser?.device_bound_at ? (
+                        <>
+                          <div>
+                            <div className="device-status-title"><Smartphone size={14} /> {selectedUser.device_info || 'Equipo sin nombre'}</div>
+                            <div className="device-status-sub">Vinculado el {formatBoundAt(selectedUser.device_bound_at)}</div>
+                          </div>
+                          <button type="button" className="btn-secondary" onClick={() => handleResetDevice(selectedUser)} disabled={loading}>
+                            <RotateCcw size={14} /> Restablecer dispositivo
+                          </button>
+                        </>
+                      ) : (
+                        <div className="device-status-sub">Sin celular vinculado: se vinculará en su primer ingreso desde la app.</div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
               </div>

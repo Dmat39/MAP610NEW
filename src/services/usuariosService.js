@@ -203,6 +203,40 @@ const usuariosService = {
       throw new Error(error.message || 'Error al eliminar el usuario');
     }
   },
+
+  /**
+   * Restablecer el celular vinculado de un usuario "solo app móvil".
+   * Cierra su sesión y el próximo ingreso desde la app vincula el equipo nuevo.
+   * @param {string} id - ID del usuario
+   * @returns {Promise<Object>} Usuario actualizado
+   */
+  async resetDevice(id) {
+    try {
+      validateId(id);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+
+      const response = await fetch(`${API_URL}user/${id}/reset-device`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al restablecer el dispositivo');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error al restablecer dispositivo:', error);
+      throw new Error(error.message || 'Error al restablecer el dispositivo');
+    }
+  },
 };
 
 export default usuariosService;

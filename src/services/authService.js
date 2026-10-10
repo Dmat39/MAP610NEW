@@ -1,22 +1,31 @@
+import { clearMobileSession, isNativeApp, nativeLogin, storeMobileSession } from './nativeDevice';
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 const authService = {
   async login(username, password) {
     try {
-      const response = await fetch(`${API_URL}auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
+      let data;
+      if (isNativeApp()) {
+        // Dentro de la app móvil: contraseña + firma con la llave del celular
+        data = { data: await nativeLogin(username, password) };
+        storeMobileSession(data.data);
+      } else {
+        const response = await fetch(`${API_URL}auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, password }),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Error en el inicio de sesión');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Error en el inicio de sesión');
+        }
+
+        data = await response.json();
       }
-
-      const data = await response.json();
       // console.log('Respuesta del login:', data); // COMENTADO: No exponer datos de login en producción
 
       // Tu API devuelve: { message, data: { user, rol, token } }
@@ -73,6 +82,7 @@ const authService = {
       // Limpiar localStorage siempre, incluso si falla la petición
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      clearMobileSession();
     }
   },
 
