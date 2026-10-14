@@ -775,3 +775,52 @@
   color: var(--theme-text);
 }
 .device-status-sub { font-size: 12px; color: var(--theme-text-3); margin-top: 2px; }
+
+/* ── Horario de acceso ─────────────────────── */
+.access-badge.access-schedule { color: #1d4ed8; background: rgba(37, 99, 235, 0.1); border-color: rgba(37, 99, 235, 0.3); margin-left: 6px; }
+
+.schedule-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--theme-border);
+  border-radius: 10px;
+  background: var(--theme-surface-2);
+}
+
+.schedule-times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.schedule-times .form-group { margin: 0; }
+
+.schedule-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.schedule-day {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--theme-border);
+  background: transparent;
+  color: var(--theme-text-3);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.schedule-day:hover { border-color: #2563eb; }
+
+.schedule-day.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}

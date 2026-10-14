@@ -21,6 +21,7 @@ const NOTICES = {
   MOBILE_ONLY: 'Este usuario solo puede ingresar desde la app móvil autorizada.',
   DEVICE_RESET: 'El administrador restableció la vinculación de tu dispositivo. Vuelve a ingresar.',
   REFRESH_REUSED: 'Tu sesión se cerró por seguridad. Vuelve a ingresar.',
+  OUT_OF_SCHEDULE: 'Tu horario de acceso terminó. Podrás volver a ingresar en tu próximo horario.',
 };
 const NOTICE_KEY = 'session_ended_notice';
 

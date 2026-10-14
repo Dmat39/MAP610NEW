@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Edit2, Trash2, X, Save, RefreshCw, User, Mail, Phone, Shield, Eye, EyeOff, Smartphone, Monitor, RotateCcw } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, RefreshCw, User, Mail, Phone, Shield, Eye, EyeOff, Smartphone, Monitor, RotateCcw, Clock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import usuariosService from '../../services/usuariosService';
 import rolesService from '../../services/rolesService';
@@ -20,7 +20,30 @@ const EMPTY_FORM = {
   custom_role_id: '',
   max_sessions: '',
   mobile_only: false,
+  schedule_enabled: false,
+  access_start: '07:00',
+  access_end: '14:00',
+  access_days: [1, 2, 3, 4, 5, 6],
 };
+
+// Horario de acceso: 1 = lunes … 7 = domingo (hora de Lima)
+const WEEK_DAYS = [
+  { n: 1, short: 'L', name: 'lun' }, { n: 2, short: 'M', name: 'mar' }, { n: 3, short: 'X', name: 'mié' },
+  { n: 4, short: 'J', name: 'jue' }, { n: 5, short: 'V', name: 'vie' }, { n: 6, short: 'S', name: 'sáb' },
+  { n: 7, short: 'D', name: 'dom' },
+];
+
+const describeDays = (days = []) => {
+  const sorted = [...days].sort((a, b) => a - b);
+  if (!sorted.length || sorted.length === 7) return 'todos los días';
+  const contiguous = sorted.every((d, i) => i === 0 || d === sorted[i - 1] + 1);
+  const name = (d) => WEEK_DAYS[d - 1].name;
+  return contiguous && sorted.length > 2
+    ? `${name(sorted[0])} a ${name(sorted[sorted.length - 1])}`
+    : sorted.map(name).join(', ');
+};
+
+const sameDays = (a = [], b = []) => [...a].sort().join(',') === [...b].sort().join(',');
 
 // device_bound_at se guarda con la hora de Lima como si fuera UTC (timezoneHelper del backend)
 const formatBoundAt = (iso) => {
@@ -119,6 +142,10 @@ const GestionUsuarios = () => {
         custom_role_id: fullData.custom_role_id || '',
         max_sessions:   String(fullData.max_sessions ?? ''),
         mobile_only:    !!fullData.mobile_only,
+        schedule_enabled: !!(fullData.access_start && fullData.access_end),
+        access_start:   fullData.access_start || EMPTY_FORM.access_start,
+        access_end:     fullData.access_end || EMPTY_FORM.access_end,
+        access_days:    fullData.access_days?.length ? [...fullData.access_days] : [...EMPTY_FORM.access_days],
       };
       setSelectedUser({ ...usuario, ...fullData });
       setFormData(editData);
@@ -145,6 +172,20 @@ const GestionUsuarios = () => {
     setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
+  const toggleDay = (n) => {
+    setFormData(prev => ({
+      ...prev,
+      access_days: prev.access_days.includes(n)
+        ? prev.access_days.filter(d => d !== n)
+        : [...prev.access_days, n].sort((a, b) => a - b),
+    }));
+  };
+
+  // Campos de horario a enviar al backend (null = sin restricción)
+  const schedulePayload = () => formData.schedule_enabled
+    ? { access_start: formData.access_start, access_end: formData.access_end, access_days: formData.access_days }
+    : { access_start: null, access_end: null, access_days: [] };
+
   const validateForm = () => {
     if (!formData.name.trim())     return 'El nombre es obligatorio';
     if (!formData.lastname.trim()) return 'El apellido es obligatorio';
@@ -157,6 +198,11 @@ const GestionUsuarios = () => {
     if (!/^\d{9}$/.test(formData.phone)) return 'El teléfono debe tener exactamente 9 dígitos numéricos';
     if (!formData.custom_role_id)  return 'Debes seleccionar un rol';
     if (modalMode === 'create' && !formData.password.trim()) return 'La contraseña es obligatoria';
+    if (formData.schedule_enabled) {
+      if (!formData.access_start || !formData.access_end) return 'Indica la hora de inicio y de fin del horario';
+      if (formData.access_start === formData.access_end) return 'La hora de inicio y la de fin no pueden ser iguales';
+      if (!formData.access_days.length) return 'Marca al menos un día del horario';
+    }
     // "Solo app móvil" fija 1 sesión en el backend: no se valida el límite
     if (formData.mobile_only) return null;
     if (formData.max_sessions !== '' && !/^\d+$/.test(formData.max_sessions)) return 'El límite de sesiones debe ser un número entero';
@@ -175,12 +221,13 @@ const GestionUsuarios = () => {
       setError(null);
 
       if (modalMode === 'create') {
-        const { max_sessions, mobile_only, ...rest } = formData;
+        const { max_sessions, mobile_only, schedule_enabled, access_start, access_end, access_days, ...rest } = formData;
         // Vacío = el backend asigna el valor por defecto según el rol (50 operador, 1 el resto).
         // Solo app móvil = el backend fija 1 sesión.
-        const payload = mobile_only
+        const base = mobile_only
           ? { ...rest, mobile_only: true }
           : max_sessions === '' ? rest : { ...rest, max_sessions: Number(max_sessions) };
+        const payload = schedule_enabled ? { ...base, ...schedulePayload() } : base;
         await usuariosService.create(payload);
         setSuccess('Usuario creado exitosamente');
       } else {
@@ -192,6 +239,11 @@ const GestionUsuarios = () => {
         if (formData.password?.trim()) changedFields.password = formData.password;
         if (formData.mobile_only !== originalData.mobile_only) changedFields.mobile_only = formData.mobile_only;
         if (!formData.mobile_only && formData.max_sessions !== originalData.max_sessions) changedFields.max_sessions = Number(formData.max_sessions);
+        const scheduleChanged = formData.schedule_enabled !== originalData.schedule_enabled || (formData.schedule_enabled && (
+          formData.access_start !== originalData.access_start ||
+          formData.access_end !== originalData.access_end ||
+          !sameDays(formData.access_days, originalData.access_days)));
+        if (scheduleChanged) Object.assign(changedFields, schedulePayload());
 
         if (Object.keys(changedFields).length === 0) {
           setError('No se han realizado cambios');
@@ -427,6 +479,11 @@ const GestionUsuarios = () => {
                         ) : (
                           <span className="access-badge access-web"><Monitor size={12} /> Web</span>
                         )}
+                        {usuario.access_start && usuario.access_end && (
+                          <span className="access-badge access-schedule" title={`Horario de acceso: de ${usuario.access_start} a ${usuario.access_end}, ${describeDays(usuario.access_days)}`}>
+                            <Clock size={12} /> {usuario.access_start}–{usuario.access_end}
+                          </span>
+                        )}
                       </td>
                       <td>
                         <div className="action-buttons">
@@ -623,6 +680,54 @@ const GestionUsuarios = () => {
                         </>
                       ) : (
                         <div className="device-status-sub">Sin celular vinculado: se vinculará en su primer ingreso desde la app.</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Sección: Horario de acceso ───────────── */}
+                <div className="user-form-section" style={{ marginTop: 22, marginBottom: 0 }}>
+                  <div className="user-form-section-header">
+                    <Clock size={13} /> Horario de acceso
+                  </div>
+                  <label className="mobile-only-toggle">
+                    <input type="checkbox" name="schedule_enabled" checked={formData.schedule_enabled} onChange={handleInputChange} />
+                    <span>
+                      <strong>Restringir horario</strong>
+                      <span className="form-hint" style={{ fontStyle: 'normal' }}>
+                        Solo podrá ingresar en el horario indicado (hora de Perú). Al terminar el horario se cierra su sesión, en la web y en la app.
+                      </span>
+                    </span>
+                  </label>
+
+                  {formData.schedule_enabled && (
+                    <div className="schedule-box">
+                      <div className="schedule-times">
+                        <div className="form-group">
+                          <label htmlFor="access_start">Desde</label>
+                          <input type="time" id="access_start" name="access_start" value={formData.access_start} onChange={handleInputChange} required />
+                        </div>
+                        <div className="form-group">
+                          <label htmlFor="access_end">Hasta</label>
+                          <input type="time" id="access_end" name="access_end" value={formData.access_end} onChange={handleInputChange} required />
+                        </div>
+                      </div>
+                      <div className="schedule-days" role="group" aria-label="Días permitidos">
+                        {WEEK_DAYS.map(d => (
+                          <button type="button" key={d.n} title={d.name}
+                            className={`schedule-day ${formData.access_days.includes(d.n) ? 'active' : ''}`}
+                            onClick={() => toggleDay(d.n)}>
+                            {d.short}
+                          </button>
+                        ))}
+                      </div>
+                      <span className="form-hint">
+                        {formData.access_start && formData.access_end && formData.access_end <= formData.access_start
+                          ? `Turno de noche: empieza a las ${formData.access_start} del día marcado y termina a las ${formData.access_end} del día siguiente.`
+                          : `Podrá ingresar de ${formData.access_start || '--:--'} a ${formData.access_end || '--:--'}, ${describeDays(formData.access_days)}.`}
+                      </span>
+                      {modalMode === 'edit' && (
+                        <span className="form-hint">Si el nuevo horario no incluye la hora actual, su sesión se cerrará al guardar.</span>
                       )}
                     </div>
                   )}
