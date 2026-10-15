@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Política de privacidad – MIT</title>
+  <link rel="icon" href="/logo.png" />
+  <style>
+    :root { --text: #1f2937; --muted: #6b7280; --bg: #f5f7fa; --card: #ffffff; --accent: #0e4c81; --line: #e5e7eb; }
+    @media (prefers-color-scheme: dark) {
+      :root { --text: #e5e7eb; --muted: #9ca3af; --bg: #0f172a; --card: #1e293b; --accent: #60a5fa; --line: #334155; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 820px; margin: 0 auto; padding: 32px 16px 48px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 28px 24px; }
+    header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+    header img { width: 52px; height: 52px; }
+    h1 { font-size: 1.6rem; margin: 0; color: var(--accent); }
+    h2 { font-size: 1.15rem; margin: 28px 0 8px; color: var(--accent); }
+    p, li { margin: 6px 0; }
+    ul { padding-left: 22px; }
+    .muted { color: var(--muted); font-size: .92rem; }
+  </style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <header>
+      <img src="/logo.png" alt="" />
+      <div>
+        <h1>Política de privacidad de MIT</h1>
+        <div class="muted">Mapa de Inteligencia Territorial · Última actualización: 15 de octubre de 2026</div>
+      </div>
+    </header>
+
+    <p>
+      MIT (Mapa de Inteligencia Territorial) es un sistema de uso interno de la
+      <strong>Municipalidad Distrital de San Juan de Lurigancho</strong> para la supervisión del personal de campo.
+      Está disponible como sitio web (<strong>mit.munisjl.gob.pe</strong>) y como aplicación para Android.
+      Esta política explica qué datos se tratan, para qué y cómo se protegen, conforme a la
+      Ley N.° 29733, Ley de Protección de Datos Personales del Perú, y su reglamento.
+    </p>
+
+    <h2>1. Quién puede usar MIT</h2>
+    <p>
+      Solo el personal autorizado por la Municipalidad. No hay registro público: el administrador del sistema crea
+      cada cuenta y asigna sus permisos. MIT no está dirigida al público general ni a menores de edad.
+    </p>
+
+    <h2>2. Datos que se tratan</h2>
+    <ul>
+      <li><strong>Datos de la cuenta:</strong> usuario, contraseña (guardada de forma cifrada, nunca en texto legible), nombres y apellidos, y, si el administrador los registra, correo, DNI y teléfono.</li>
+      <li><strong>Datos de la sesión:</strong> fecha y hora de inicio y cierre de sesión, dirección IP y tipo de navegador o dispositivo.</li>
+      <li><strong>Datos del celular vinculado</strong> (solo en la app Android, para cuentas que usan la app):
+        <ul>
+          <li>una <strong>llave pública</strong> generada dentro del hardware del celular. La llave privada nunca sale del equipo y la Municipalidad no tiene acceso a ella;</li>
+          <li>marca, modelo y versión de Android del celular, para identificarlo;</li>
+          <li>un certificado técnico de Android que confirma que la app es la oficial y que el celular no está modificado.</li>
+        </ul>
+      </li>
+      <li><strong>Horario de acceso:</strong> si el administrador lo configura, las horas y días en que la cuenta puede ingresar.</li>
+      <li><strong>Registro de actividad:</strong> acciones administrativas realizadas en el sistema, para auditoría.</li>
+    </ul>
+    <p>
+      <strong>La app no accede</strong> a la ubicación GPS del celular, la cámara, el micrófono, los contactos, las fotos ni los archivos del usuario.
+      Las ubicaciones que se muestran en el mapa provienen de los equipos institucionales de campo (bodycams y radios), no del celular de quien usa la app.
+    </p>
+
+    <h2>3. Para qué se usan</h2>
+    <ul>
+      <li>Permitir el ingreso al sistema y verificar la identidad del usuario.</li>
+      <li>Asegurar que las cuentas restringidas solo se usen desde el celular autorizado y dentro de su horario.</li>
+      <li>Proteger el sistema contra accesos no autorizados y cerrar sesiones cuando corresponda.</li>
+      <li>Mantener un registro de auditoría de la actividad administrativa.</li>
+    </ul>
+    <p>Los datos <strong>no se venden</strong> ni se usan para publicidad. MIT no muestra anuncios.</p>
+
+    <h2>4. Con quién se comparten</h2>
+    <p>
+      Los datos se guardan en servidores de la Municipalidad y solo los ve el personal autorizado.
+      No se comparten con terceros, salvo por requerimiento de una autoridad competente conforme a ley.
+    </p>
+    <p>
+      Para dibujar el mapa y buscar direcciones, el sistema solicita información a servicios externos de mapas
+      (CARTO y OpenStreetMap) y carga tipografías de Google Fonts. Estos servicios reciben datos técnicos de la conexión
+      (como la dirección IP), pero no los datos de la cuenta.
+    </p>
+
+    <h2>5. Seguridad</h2>
+    <ul>
+      <li>Toda la comunicación viaja cifrada (HTTPS).</li>
+      <li>Las contraseñas se guardan cifradas y las sesiones caducan automáticamente.</li>
+      <li>La llave del celular se guarda en el almacenamiento seguro del hardware y no se puede copiar.</li>
+      <li>Se limita el número de sesiones por usuario y el administrador puede cerrarlas en cualquier momento.</li>
+    </ul>
+
+    <h2>6. Cuánto tiempo se conservan</h2>
+    <p>
+      Los datos se conservan mientras la cuenta esté activa y durante el tiempo que exijan las normas de la Municipalidad.
+      Si se desinstala la app o el administrador restablece el celular vinculado, la llave del celular deja de ser válida.
+      Al desactivar una cuenta, deja de poder usarse para ingresar.
+    </p>
+
+    <h2>7. Tus derechos</h2>
+    <p>
+      Puedes solicitar el acceso, rectificación, cancelación u oposición al tratamiento de tus datos personales
+      (derechos ARCO) a través de la mesa de partes de la Municipalidad Distrital de San Juan de Lurigancho
+      o comunicándote con el área responsable del sistema (CECOM).
+    </p>
+
+    <h2>8. Cambios en esta política</h2>
+    <p>
+      Si esta política cambia, se publicará la nueva versión en esta misma página con su fecha de actualización.
+    </p>
+
+    <p class="muted" style="margin-top:28px">
+      Responsable: Municipalidad Distrital de San Juan de Lurigancho – CECOM.
+    </p>
+  </div>
+</main>
+</body>
+</html>
