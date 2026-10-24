@@ -198,6 +198,9 @@ export const AuthProvider = ({ children }) => {
     return perm.visible_fields ?? null;
   }, [role, customRolePerms]);
 
+  // Pin de "mi ubicación" en el mapa: opción del usuario que asigna el administrador
+  const showLocationPin = customRolePerms?.show_location_pin === true;
+
   const value = useMemo(() => ({
     user,
     login,
@@ -218,12 +221,13 @@ export const AuthProvider = ({ children }) => {
     hasModuleOp,
     hasLayerAccess,
     getVisibleFields,
+    showLocationPin,
     customRolePerms,
   }), [
     user, login, logout, loading, customRoleLoading, role,
     isSuperAdmin, isAdmin, isSupervisor, isOperator, isViewer, isCodisec, isPnp,
     hasRole, hasAnyRole, hasModuleAccess, hasModuleOp, hasLayerAccess, getVisibleFields,
-    customRolePerms,
+    showLocationPin, customRolePerms,
   ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

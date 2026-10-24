@@ -14,6 +14,7 @@ const camarasMunicipalesAdminService = {
       // Agregar filtros si existen
       if (filters.search) params.append('search', filters.search);
       if (filters.camera) params.append('camera', filters.camera);
+      if (filters.map_hidden) params.append('map_hidden', filters.map_hidden);
       if (filters.page !== undefined && filters.page !== null) params.append('page', filters.page);
       if (filters.limit) params.append('limit', filters.limit);
 
@@ -156,6 +157,38 @@ const camarasMunicipalesAdminService = {
       return data;
     } catch (error) {
       console.error('Error en update:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Ocultar o mostrar el pin de una cámara en el mapa de todos los usuarios
+   * (cámara caída). Sigue sumando en los contadores del mapa.
+   * @param {string} id - UUID de la cámara
+   * @param {boolean} mapHidden - true = ocultar
+   * @returns {Promise<Object>} Cámara actualizada
+   */
+  async setMapVisibility(id, mapHidden) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}municipal/${id}/map-visibility`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ map_hidden: mapHidden }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al cambiar la visibilidad de la cámara');
+      }
+
+      const data = await response.json();
+      return data.data || data;
+    } catch (error) {
+      console.error('Error en setMapVisibility:', error);
       throw error;
     }
   },

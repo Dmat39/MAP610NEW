@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Edit2, Trash2, X, Save, RefreshCw, User, Mail, Phone, Shield, Eye, EyeOff, Smartphone, Monitor, RotateCcw, Clock } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, RefreshCw, User, Mail, Phone, Shield, Eye, EyeOff, Smartphone, Monitor, RotateCcw, Clock, MapPin, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import usuariosService from '../../services/usuariosService';
 import rolesService from '../../services/rolesService';
@@ -24,6 +24,7 @@ const EMPTY_FORM = {
   access_start: '07:00',
   access_end: '14:00',
   access_days: [1, 2, 3, 4, 5, 6],
+  show_location_pin: false,
 };
 
 // Horario de acceso: 1 = lunes … 7 = domingo (hora de Lima)
@@ -44,6 +45,24 @@ const describeDays = (days = []) => {
 };
 
 const sameDays = (a = [], b = []) => [...a].sort().join(',') === [...b].sort().join(',');
+
+// Resumen legible del user-agent de una sesión: "Chrome · Windows"
+const describeUserAgent = (ua) => {
+  if (!ua) return 'Dispositivo desconocido';
+  const browser = /Edg\//.test(ua) ? 'Edge'
+    : /OPR\//.test(ua) ? 'Opera'
+    : /Firefox\//.test(ua) ? 'Firefox'
+    : /Chrome\//.test(ua) ? 'Chrome'
+    : /Safari\//.test(ua) ? 'Safari'
+    : 'Navegador';
+  const os = /Android/.test(ua) ? 'Android'
+    : /iPhone|iPad/.test(ua) ? 'iOS'
+    : /Windows/.test(ua) ? 'Windows'
+    : /Mac OS/.test(ua) ? 'macOS'
+    : /Linux/.test(ua) ? 'Linux'
+    : '';
+  return os ? `${browser} · ${os}` : browser;
+};
 
 // device_bound_at se guarda con la hora de Lima como si fuera UTC (timezoneHelper del backend)
 const formatBoundAt = (iso) => {
@@ -74,6 +93,12 @@ const GestionUsuarios = () => {
 
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [customRoles, setCustomRoles] = useState([]);
+
+  // Modal de sesiones abiertas
+  const [sessionsUser, setSessionsUser] = useState(null);
+  const [sessions, setSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [sessionsError, setSessionsError] = useState(null);
 
   const { isSuperAdmin, hasModuleAccess } = useAuth();
   const isAdmin = isSuperAdmin || hasModuleAccess('usuarios');
@@ -146,6 +171,7 @@ const GestionUsuarios = () => {
         access_start:   fullData.access_start || EMPTY_FORM.access_start,
         access_end:     fullData.access_end || EMPTY_FORM.access_end,
         access_days:    fullData.access_days?.length ? [...fullData.access_days] : [...EMPTY_FORM.access_days],
+        show_location_pin: !!fullData.show_location_pin,
       };
       setSelectedUser({ ...usuario, ...fullData });
       setFormData(editData);
@@ -238,6 +264,7 @@ const GestionUsuarios = () => {
         }
         if (formData.password?.trim()) changedFields.password = formData.password;
         if (formData.mobile_only !== originalData.mobile_only) changedFields.mobile_only = formData.mobile_only;
+        if (formData.show_location_pin !== originalData.show_location_pin) changedFields.show_location_pin = formData.show_location_pin;
         if (!formData.mobile_only && formData.max_sessions !== originalData.max_sessions) changedFields.max_sessions = Number(formData.max_sessions);
         const scheduleChanged = formData.schedule_enabled !== originalData.schedule_enabled || (formData.schedule_enabled && (
           formData.access_start !== originalData.access_start ||
@@ -300,6 +327,52 @@ const GestionUsuarios = () => {
       setError(err.message || 'Error al restablecer el dispositivo');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadSessions = async (usuario) => {
+    try {
+      setSessionsLoading(true);
+      setSessionsError(null);
+      setSessions(await usuariosService.getSessions(usuario.id));
+    } catch (err) {
+      setSessionsError(err.message);
+      setSessions([]);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  const openSessionsModal = (usuario) => {
+    setSessionsUser(usuario);
+    setSessions([]);
+    loadSessions(usuario);
+  };
+
+  const closeSessionsModal = () => {
+    setSessionsUser(null);
+    setSessions([]);
+    setSessionsError(null);
+    refreshData();
+  };
+
+  // sesion = null cierra todas las sesiones del usuario
+  const handleCloseSession = async (sesion) => {
+    const aviso = sesion?.current
+      ? 'Es tu sesión actual: saldrás del sistema.'
+      : 'El usuario volverá a la pantalla de ingreso.';
+    const pregunta = sesion
+      ? `¿Cerrar la sesión de "${sessionsUser.username}" en ${sesion.is_mobile ? 'la app móvil' : describeUserAgent(sesion.user_agent)}?`
+      : `¿Cerrar todas las sesiones de "${sessionsUser.username}"?`;
+    if (!window.confirm(`${pregunta}\n\n${aviso}`)) return;
+    try {
+      setSessionsLoading(true);
+      setSessionsError(null);
+      await usuariosService.closeSessions(sessionsUser.id, sesion?.id);
+      await loadSessions(sessionsUser);
+    } catch (err) {
+      setSessionsError(err.message);
+      setSessionsLoading(false);
     }
   };
 
@@ -464,7 +537,20 @@ const GestionUsuarios = () => {
                           {getRoleName(usuario)}
                         </span>
                       </td>
-                      <td title="Sesiones simultáneas permitidas">{usuario.max_sessions ?? '-'}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className={`sessions-badge ${usuario.active_sessions > 0 ? 'sessions-active' : ''}`}
+                          onClick={() => openSessionsModal(usuario)}
+                          title="Ver y cerrar sesiones abiertas"
+                        >
+                          <span className="sessions-dot" />
+                          {usuario.active_sessions > 0
+                            ? `${usuario.active_sessions} activa${usuario.active_sessions === 1 ? '' : 's'}`
+                            : 'Sin sesión'}
+                          <span className="sessions-max">/ {usuario.max_sessions ?? '-'}</span>
+                        </button>
+                      </td>
                       <td>
                         {usuario.mobile_only ? (
                           <span
@@ -478,6 +564,11 @@ const GestionUsuarios = () => {
                           </span>
                         ) : (
                           <span className="access-badge access-web"><Monitor size={12} /> Web</span>
+                        )}
+                        {usuario.show_location_pin && (
+                          <span className="access-badge access-location" title="Ve el pin de su ubicación en el mapa">
+                            <MapPin size={12} /> Ubicación
+                          </span>
                         )}
                         {usuario.access_start && usuario.access_end && (
                           <span className="access-badge access-schedule" title={`Horario de acceso: de ${usuario.access_start} a ${usuario.access_end}, ${describeDays(usuario.access_days)}`}>
@@ -733,6 +824,22 @@ const GestionUsuarios = () => {
                   )}
                 </div>
 
+                {/* ── Sección: Mapa ───────────────────────── */}
+                <div className="user-form-section" style={{ marginTop: 22, marginBottom: 0 }}>
+                  <div className="user-form-section-header">
+                    <MapPin size={13} /> Mapa
+                  </div>
+                  <label className="mobile-only-toggle">
+                    <input type="checkbox" name="show_location_pin" checked={formData.show_location_pin} onChange={handleInputChange} />
+                    <span>
+                      <strong>Pin de mi ubicación</strong>
+                      <span className="form-hint" style={{ fontStyle: 'normal' }}>
+                        Al abrir el mapa se centra en la ubicación del usuario y muestra un pin; luego puede mover el mapa libremente y volver con el botón "Mi ubicación".
+                      </span>
+                    </span>
+                  </label>
+                </div>
+
               </div>
 
               <div className="modal-footer">
@@ -747,6 +854,73 @@ const GestionUsuarios = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {sessionsUser && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <div className="modal-header-left">
+                <div className="modal-header-icon"><Monitor size={20} /></div>
+                <div className="modal-header-text">
+                  <h2>Sesiones abiertas</h2>
+                  <p>{sessionsUser.username} · límite {sessionsUser.max_sessions ?? '-'}</p>
+                </div>
+              </div>
+              <button onClick={closeSessionsModal} className="btn-icon"><X size={18} /></button>
+            </div>
+
+            <div className="modal-body">
+              {sessionsError && (
+                <div className="alert alert-error" style={{ marginBottom: 14 }}>
+                  <X size={16} />
+                  <span>{sessionsError}</span>
+                  <button onClick={() => setSessionsError(null)} className="alert-close"><X size={14} /></button>
+                </div>
+              )}
+
+              {sessionsLoading && sessions.length === 0 ? (
+                <div className="loading-state">
+                  <RefreshCw size={24} className="spinning" />
+                  <p>Cargando sesiones...</p>
+                </div>
+              ) : sessions.length === 0 ? (
+                <div className="device-status-sub">Este usuario no tiene sesiones abiertas.</div>
+              ) : (
+                <ul className="sessions-list">
+                  {sessions.map(s => (
+                    <li key={s.id} className="session-item">
+                      <div className="session-icon">
+                        {s.is_mobile ? <Smartphone size={18} /> : <Monitor size={18} />}
+                      </div>
+                      <div className="session-info">
+                        <div className="device-status-title">
+                          {s.is_mobile ? 'App móvil' : describeUserAgent(s.user_agent)}
+                          {s.current && <span className="access-badge access-bound">Tu sesión actual</span>}
+                        </div>
+                        <div className="device-status-sub">
+                          Desde {formatBoundAt(s.created_at)}{s.ip ? ` · IP ${s.ip}` : ''}
+                        </div>
+                      </div>
+                      <button type="button" className="btn-secondary" onClick={() => handleCloseSession(s)} disabled={sessionsLoading}>
+                        <LogOut size={14} /> Cerrar
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button type="button" onClick={() => loadSessions(sessionsUser)} className="btn-secondary" disabled={sessionsLoading}>
+                <RefreshCw size={14} className={sessionsLoading ? 'spinning' : ''} /> Actualizar
+              </button>
+              <button type="button" onClick={() => handleCloseSession(null)} className="btn-primary btn-close-all" disabled={sessionsLoading || sessions.length === 0}>
+                <LogOut size={14} /> Cerrar todas
+              </button>
+            </div>
           </div>
         </div>
       )}

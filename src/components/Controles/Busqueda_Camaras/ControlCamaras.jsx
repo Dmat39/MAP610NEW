@@ -3,6 +3,7 @@ import { ChevronUp, ChevronDown, Search, Filter, MapPin, Zap, AlertTriangle, Cam
 import './ControlCamaras.css';
 import { logger } from '../../../utils/logger.js';
 import camarasService from '../../../services/camarasService';
+import { useAuth } from '../../../context/AuthContext';
 import { obtenerJurisdiccion, normalizarNombreJurisdiccion } from '../../../utils/geoUtils';
 
 const ControlCamaras = ({
@@ -39,6 +40,10 @@ const ControlCamaras = ({
   const panelRef = useRef(null);
   const [busqueda, setBusqueda] = useState('');
   const [camaras, setCamaras] = useState([]);
+  // Cámaras ocultas (caídas): siguen sumando en los contadores, pero solo quien puede
+  // editarlas las encuentra en la búsqueda
+  const { hasModuleOp } = useAuth();
+  const puedeVerOcultas = hasModuleOp('camaras-municipales', 'edit');
   const [filtros, setFiltros] = useState({
     megafono: false,
     boton: false,
@@ -194,6 +199,7 @@ const ControlCamaras = ({
           jurisdiccion: jurisdiccion,
           megafono: Boolean(camara.megaphone),
           boton: Boolean(camara.buttom),
+          oculta: Boolean(camara.map_hidden),
           lat: camara.latitude,
           lng: camara.longitude,
           properties: {
@@ -258,7 +264,8 @@ const ControlCamaras = ({
       return;
     }
 
-    const camaraEncontrada = findCamaraByTerm(busqueda, camaras);
+    const buscables = puedeVerOcultas ? camaras : camaras.filter(c => !c.oculta);
+    const camaraEncontrada = findCamaraByTerm(busqueda, buscables);
 
     if (camaraEncontrada) {
       setUltimaBusqueda(busqueda);

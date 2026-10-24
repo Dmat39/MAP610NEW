@@ -1,5 +1,5 @@
 import { MapContainer, TileLayer, Pane, useMapEvents } from 'react-leaflet';
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useTheme } from './context/ThemeContext';
 import L from 'leaflet';
 
@@ -61,6 +61,9 @@ import FiltroGiro from './components/filtros/FiltroGiro';
 import FiltroIncidenciasPNP from './components/filtros/FiltroIncidenciasPNP';
 import CapaBusquedaDirecciones from './components/capas/BusquedaDirecciones/CapaBusquedaDirecciones';
 import CapaUbicadorPunto from './components/capas/UbicadorPuntos/CapaUbicadorPunto';
+import CapaMiUbicacion from './components/capas/MiUbicacion/CapaMiUbicacion';
+import BotonMiUbicacion from './components/capas/MiUbicacion/BotonMiUbicacion';
+import useMiUbicacion from './hooks/useMiUbicacion';
 import ControlBusqueda from './components/Controles/Busqueda_Direcciones/ControlBusqueda';
 import ControlMarcadorCamaras from './components/Controles/Marcador_Camaras/ControlMarcadorCamaras';
 import ControlCamaras from './components/Controles/Busqueda_Camaras/ControlCamaras';
@@ -98,6 +101,7 @@ import GoogleCapaBarras from './components/googlemaps/GoogleCapaBarras';
 import GoogleCapaResiduos from './components/googlemaps/GoogleCapaResiduos';
 import GoogleCapaBusquedaDirecciones from './components/googlemaps/GoogleCapaBusquedaDirecciones';
 import GoogleCapaUbicadorPunto from './components/googlemaps/GoogleCapaUbicadorPuntos/GoogleCapaUbicadorPunto';
+import GoogleCapaMiUbicacion from './components/googlemaps/GoogleCapaMiUbicacion';
 import LeyendaSeguridad from './components/capas/LeyendaSeguridad/LeyendaSeguridad';
 import ClusterIncidencias from './components/capas/ClusterIncidencias/ClusterIncidencias';
 import GoogleClusterIncidencias from './components/googlemaps/GoogleClusterIncidencias';
@@ -136,9 +140,13 @@ const PNP_TIPOS = [
 
 const MapView = () => {
   const { dark } = useTheme();
-  const { user, hasLayerAccess, isAdmin, getVisibleFields } = useAuth();
+  const { user, hasLayerAccess, isAdmin, getVisibleFields, showLocationPin } = useAuth();
   const userRole = user?.role;
   const isViewer = userRole === 'VIEWER';
+
+  // Pin de "mi ubicación" (lo habilita el administrador por usuario)
+  const miUbicacion = useMiUbicacion(showLocationPin);
+  const centrarMiUbicacionRef = useRef(null);
 
   const canSeeCamaras = hasLayerAccess('camaras');
   const canSeeCamarasVecinales = hasLayerAccess('camarasVecinales');
@@ -899,6 +907,7 @@ const MapView = () => {
           />
           <CapaUbicadorPunto visible={capasVisibles.ubicadorPunto} />
           <CapaRutas visible={capasVisibles.rutas} onRutaCalculada={handleRutaCalculada} />
+          {showLocationPin && <CapaMiUbicacion posicion={miUbicacion.posicion} centrarRef={centrarMiUbicacionRef} />}
         </MapContainer>
       ) : (
         <GoogleMapWrapper center={mapCenter} zoom={mapZoom} style={mapStyle}>
@@ -980,9 +989,26 @@ const MapView = () => {
             includeTraffic={true}
             optimizeWaypoints={true}
           />
+          {showLocationPin && <GoogleCapaMiUbicacion posicion={miUbicacion.posicion} centrarRef={centrarMiUbicacionRef} />}
           {/* Capas de Google Maps - Requiere API Key configurada */}
         </GoogleMapWrapper>
       )}
+
+          {/* Botón "centrar en mi ubicación": antes de la leyenda para que, al expandirse, ella quede encima */}
+          {showLocationPin && (
+            <BotonMiUbicacion
+              posicion={miUbicacion.posicion}
+              error={miUbicacion.error}
+              onCentrar={(p) => centrarMiUbicacionRef.current?.(p)}
+              sobreLeyenda={
+                (canSeeCamarasVecinales && capasVisibles.camarasVecinales) ||
+                (canSeeCamaras && capasVisibles.camaras) ||
+                capasVisibles.radios ||
+                capasVisibles.bodycams
+              }
+              oculto={isPanelVisible && isMobileView}
+            />
+          )}
 
           {/* Leyenda flotante de capas de seguridad (ícono en la esquina) */}
           <LeyendaSeguridad

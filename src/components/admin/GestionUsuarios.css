@@ -824,3 +824,42 @@
   border-color: #2563eb;
   color: #fff;
 }
+
+/* ── Sesiones abiertas ─────────────────────── */
+.sessions-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--theme-text-3);
+  background: var(--theme-surface-2);
+  border: 1px solid var(--theme-border);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sessions-badge:hover { border-color: var(--theme-text-3); }
+.sessions-badge.sessions-active { color: #15803d; background: rgba(22, 163, 74, 0.1); border-color: rgba(22, 163, 74, 0.3); }
+.sessions-dot { width: 7px; height: 7px; border-radius: 50%; background: #9ca3af; }
+.sessions-active .sessions-dot { background: #16a34a; }
+.sessions-max { font-weight: 400; opacity: 0.75; }
+
+.sessions-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.session-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--theme-border);
+  border-radius: 12px;
+  background: var(--theme-surface-2);
+}
+.session-icon { color: var(--theme-text-3); display: flex; }
+.session-info { flex: 1; min-width: 0; }
+.session-info .device-status-title { flex-wrap: wrap; }
+.btn-primary.btn-close-all { background: #dc2626; }
+.btn-primary.btn-close-all:hover:not(:disabled) { background: #b91c1c; }
+
+.access-badge.access-location { color: #0e7490; background: rgba(8, 145, 178, 0.1); border-color: rgba(8, 145, 178, 0.3); margin-left: 6px; }

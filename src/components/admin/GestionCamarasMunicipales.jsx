@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Eye, Target, Video, Download } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, MapPin, RefreshCw, Filter, Eye, EyeOff, Target, Video, Download } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import camarasMunicipalesAdminService from '../../services/camarasMunicipalesAdminService';
 import { useAuth } from '../../context/AuthContext';
@@ -62,6 +62,8 @@ const GestionCamarasMunicipales = () => {
   const { hasModuleAccess, hasModuleOp } = useAuth();
   const isAdmin  = hasModuleAccess('camaras-municipales');
   const canWrite = hasModuleOp('camaras-municipales', 'create');
+  const canEdit  = hasModuleOp('camaras-municipales', 'edit');
+  const [togglingId, setTogglingId] = useState(null);
 
   // Cargar cámaras cuando cambian los parámetros de URL
   useEffect(() => {
@@ -79,6 +81,7 @@ const GestionCamarasMunicipales = () => {
       const filters = {
         search: params.search || '',
         camera: params.camera || '',
+        map_hidden: params.map_hidden || '',
         page: parseInt(params.page) || 1,
         limit: parseInt(params.limit) || 20,
       };
@@ -580,6 +583,28 @@ const GestionCamarasMunicipales = () => {
     }
   };
 
+  // Oculta/muestra el pin en el mapa de todos los usuarios (cámara caída). El contador del
+  // mapa no cambia; quien puede editar cámaras la sigue viendo en gris.
+  const handleToggleMapVisibility = async camera => {
+    const ocultar = !camera.map_hidden;
+    if (ocultar && !window.confirm(
+      `¿Ocultar la cámara "${camera.name}" en el mapa?\n\n` +
+      'Los usuarios dejarán de ver su pin (el total de cámaras no cambia). Tú la verás en gris.'
+    )) return;
+    try {
+      setTogglingId(camera.id);
+      setError(null);
+      await camarasMunicipalesAdminService.setMapVisibility(camera.id, ocultar);
+      setCamaras(prev => prev.map(c => (c.id === camera.id ? { ...c, map_hidden: ocultar } : c)));
+      setSuccess(ocultar ? `Cámara "${camera.name}" oculta en el mapa` : `Cámara "${camera.name}" visible en el mapa`);
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
   const exportarExcel = async () => {
     try {
       setLoading(true);
@@ -612,6 +637,7 @@ const GestionCamarasMunicipales = () => {
         { header: 'Amplitud', key: 'arc', width: 10 },
         { header: 'Botón Pánico', key: 'buttom', width: 14 },
         { header: 'Megáfono', key: 'megaphone', width: 12 },
+        { header: 'En el mapa', key: 'map_hidden', width: 12 },
       ];
 
       // Estilo del encabezado
@@ -638,6 +664,7 @@ const GestionCamarasMunicipales = () => {
           arc: camara.arc ?? '',
           buttom: camara.buttom ? 'Sí' : 'No',
           megaphone: camara.megaphone ? 'Sí' : 'No',
+          map_hidden: camara.map_hidden ? 'Oculta' : 'Visible',
         });
       });
 
@@ -740,7 +767,17 @@ const GestionCamarasMunicipales = () => {
               <option value="C360">C360</option>
             </select>
 
-            {(params.camera || params.search) && (
+            <select
+              value={params.map_hidden || ''}
+              onChange={e => addParams({ map_hidden: e.target.value, page: 1 })}
+              className="municipales-filter-select"
+            >
+              <option value="">Visibles y ocultas</option>
+              <option value="false">Visibles en el mapa</option>
+              <option value="true">Ocultas en el mapa</option>
+            </select>
+
+            {(params.camera || params.search || params.map_hidden) && (
               <button onClick={() => removeParams()} className="btn-municipales-secondary">
                 <X size={14} />
                 Limpiar filtros
@@ -788,6 +825,7 @@ const GestionCamarasMunicipales = () => {
                     <th>Coordenadas</th>
                     <th>Botón Pánico</th>
                     <th>Megáfono</th>
+                    <th>En el mapa</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
@@ -798,7 +836,7 @@ const GestionCamarasMunicipales = () => {
                     const globalIndex = (page - 1) * limit + index + 1;
 
                     return (
-                      <tr key={camera.id}>
+                      <tr key={camera.id} className={camera.map_hidden ? 'municipales-row-hidden' : undefined}>
                         <td>{globalIndex}</td>
                         <td>{camera.name}</td>
                         <td>
@@ -825,6 +863,20 @@ const GestionCamarasMunicipales = () => {
                           <span className={camera.megaphone ? 'municipales-badge municipales-badge-success' : 'municipales-badge municipales-badge-gray'}>
                             {camera.megaphone ? 'Sí' : 'No'}
                           </span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className={`municipales-map-toggle ${camera.map_hidden ? 'is-hidden' : ''}`}
+                            onClick={() => handleToggleMapVisibility(camera)}
+                            disabled={!canEdit || togglingId === camera.id}
+                            title={!canEdit
+                              ? 'Sin permiso para cambiarlo'
+                              : camera.map_hidden ? 'Mostrar de nuevo en el mapa' : 'Ocultar en el mapa (cámara caída)'}
+                          >
+                            {camera.map_hidden ? <EyeOff size={14} /> : <Eye size={14} />}
+                            {camera.map_hidden ? 'Oculta' : 'Visible'}
+                          </button>
                         </td>
                         <td>
                           {canWrite && (

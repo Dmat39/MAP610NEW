@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, memo } from "react";
 import { getAngleFromCoords, isValidReferencia, parseReferencia, generateVisionField } from "../../utils";
 import "../capas/CamarasMunicipales/CapaCamarasMunicipales.css"; // Importar estilos de campos de visión
 import camarasService from "../../services/camarasService";
+import { useAuth } from "../../context/AuthContext";
 
 // Función para crear el campo de visión de una cámara en Google Maps
 const createVisionFieldOverlay = (google, map, feature, lat, lng) => {
@@ -140,6 +141,9 @@ const GoogleCapaCamarasMunicipales = ({
   const [circuloSeguimiento, setCirculoSeguimiento] = useState(null);
   const [circulosAnteriores, setCirculosAnteriores] = useState([]);
   const [camarasCercanas, setCamarasCercanas] = useState([]);
+  const { hasModuleOp } = useAuth();
+  // Las cámaras ocultas (caídas) solo se dibujan, atenuadas, para quien puede editarlas
+  const puedeVerOcultas = hasModuleOp('camaras-municipales', 'edit');
   const [historialSeguimiento, setHistorialSeguimiento] = useState([]);
   const markersRef = useRef({});
   const ctrlPressedRef = useRef(false);
@@ -189,6 +193,7 @@ const GoogleCapaCamarasMunicipales = ({
               megafono: camara.megaphone,
               boton: camara.buttom,
               jurisdiccion: 'Municipal',
+              oculta: !!camara.map_hidden,
               // Coordenadas para generar el campo de visión
               latitude: camara.latitude,
               longitude: camara.longitude,
@@ -204,7 +209,8 @@ const GoogleCapaCamarasMunicipales = ({
           };
         });
 
-        setCamaras(camarasTransformadas);
+        // Sin permiso las cámaras ocultas (caídas) no se dibujan
+        setCamaras(puedeVerOcultas ? camarasTransformadas : camarasTransformadas.filter(f => !f.properties.oculta));
         setCargando(false);
       } catch (err) {
         console.error('Error cargando cámaras municipales:', err);
@@ -809,7 +815,9 @@ const GoogleCapaCamarasMunicipales = ({
         position: { lat, lng },
         map: map,
         icon: iconConfig,
-        zIndex: esSeleccionada ? 2000 : (enSeguimiento ? 1500 : 1000)
+        opacity: props.oculta && !esSeleccionada ? 0.45 : 1,
+        title: props.oculta ? 'Oculta en el mapa para los demás usuarios' : undefined,
+        zIndex: esSeleccionada ? 2000 : (enSeguimiento ? 1500 : (props.oculta ? 500 : 1000))
       });
 
       // Calcular información de distancia si está en seguimiento

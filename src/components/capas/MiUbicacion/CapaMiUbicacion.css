@@ -1,0 +1,77 @@
+/* El pin nunca recibe toques: los puntos que estén debajo o al lado siguen siendo clicables */
+.mi-ubicacion-icon {
+  background: none;
+  border: none;
+  pointer-events: none !important;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+}
+
+.mi-ubicacion-icon svg {
+  display: block;
+}
+
+/* Botón "centrar en mi ubicación": mismo estilo que el FAB de la leyenda (.ls-fab, 52px a 20px
+   del borde). Con la leyenda visible se apila encima de ella (20 + 52 + 12). */
+.mi-ubicacion-fab {
+  --mi-ubicacion-size: 52px;
+  --mi-ubicacion-bottom: 20px;
+  position: fixed;
+  z-index: 1999;
+  bottom: calc(var(--mi-ubicacion-bottom) + env(safe-area-inset-bottom, 0px));
+  width: var(--mi-ubicacion-size);
+  height: var(--mi-ubicacion-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--theme-border);
+  background: var(--theme-surface);
+  color: #2563eb;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, right 0.3s ease, bottom 0.2s ease;
+}
+
+.mi-ubicacion-fab.mi-ubicacion-fab-sobre-leyenda {
+  --mi-ubicacion-bottom: 84px;
+}
+
+/* Hover solo con mouse: en pantallas táctiles el efecto se quedaba "pegado" tras tocar */
+@media (hover: hover) {
+  .mi-ubicacion-fab:hover:not(:disabled) {
+    transform: scale(1.06);
+    box-shadow: 0 6px 26px rgba(0, 0, 0, 0.24);
+  }
+}
+
+.mi-ubicacion-fab:active:not(:disabled) {
+  transform: scale(0.94);
+  background: var(--theme-surface-2);
+}
+
+.mi-ubicacion-fab-sin-senal {
+  color: var(--theme-text-3);
+  cursor: default;
+}
+
+/* Celular (navegador o app): misma columna que la leyenda (52px a 12px del borde derecho) */
+@media (max-width: 768px) {
+  .mi-ubicacion-fab {
+    right: 12px !important;
+  }
+}
+
+/* Celular en horizontal: poca altura, botón más chico y pegado a la leyenda */
+@media (max-height: 480px) and (orientation: landscape) {
+  .mi-ubicacion-fab {
+    --mi-ubicacion-size: 44px;
+    --mi-ubicacion-bottom: 12px;
+  }
+  .mi-ubicacion-fab.mi-ubicacion-fab-sobre-leyenda {
+    --mi-ubicacion-bottom: 80px;
+  }
+}

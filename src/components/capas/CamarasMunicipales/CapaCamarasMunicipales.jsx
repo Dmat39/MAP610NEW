@@ -18,6 +18,8 @@ const COLORES_TIPO = {
   'TIPO I': '#3B82F6',
   'TIPO II': '#22C55E',
   'TIPO III': '#8B5CF6',
+  // Cámara caída oculta en el mapa: solo la ve (en gris) quien puede editar cámaras
+  OCULTA: '#9CA3AF',
 };
 const COLOR_DEFAULT = '#3B82F6';
 
@@ -188,7 +190,9 @@ const CapaCamarasMunicipales = ({
   const map = useMap();
   const markersRef = useRef({});
 
-  const { getVisibleFields } = useAuth();
+  const { getVisibleFields, hasModuleOp } = useAuth();
+  // Las cámaras ocultas (caídas) solo se dibujan, en gris, para quien puede editarlas
+  const puedeVerOcultas = hasModuleOp('camaras-municipales', 'edit');
   const visibleFields = getVisibleFields('camaras-municipales');
   const canSee = (field) => !visibleFields || visibleFields.length === 0 || visibleFields.includes(field);
 
@@ -295,6 +299,7 @@ const CapaCamarasMunicipales = ({
               megafono: camara.megaphone,
               boton: camara.buttom,
               jurisdiccion: jurisdiccion,
+              oculta: !!camara.map_hidden,
               // Coordenadas para generar el campo de visión
               latitude: camara.latitude,
               longitude: camara.longitude,
@@ -313,7 +318,9 @@ const CapaCamarasMunicipales = ({
         logger.log('📊 Cámaras transformadas (primeras 3):', camarasTransformadas.slice(0, 3));
         logger.log('📍 Total de cámaras a mostrar:', camarasTransformadas.length);
 
-        setCamaras(camarasTransformadas);
+        // Sin permiso: las ocultas no se dibujan ni entran al seguimiento (los contadores
+        // salen de ControlCamaras y no cambian)
+        setCamaras(puedeVerOcultas ? camarasTransformadas : camarasTransformadas.filter(f => !f.properties.oculta));
         logger.log('🔘 Cámaras con botón de pánico:', camarasTransformadas.filter(f => f.properties.boton).length);
         logger.log('📷 Cámaras LPR (TIPO III):', camarasTransformadas.filter(f => f.properties.tipo === 'TIPO III').length);
         logger.log('📢 Cámaras con megáfono:', camarasTransformadas.filter(f => f.properties.megafono).length);
@@ -597,7 +604,9 @@ const CapaCamarasMunicipales = ({
           infoDistancia = ` (${distanciaKm}km)`;
         }
 
-        const iconoMarcador = crearIconoCamaraModerno(props.tipo, zoomNivel, esSeleccionada, enSeguimiento);
+        const iconoMarcador = crearIconoCamaraModerno(
+          props.oculta ? 'OCULTA' : props.tipo, zoomNivel, esSeleccionada, enSeguimiento
+        );
 
         // Generar campo de visión si corresponde
         let visionPolygonElement = null;
@@ -656,7 +665,8 @@ const CapaCamarasMunicipales = ({
               key={markerId}
               position={[lat, lng]}
               icon={iconoMarcador}
-              zIndexOffset={esSeleccionada ? 2000 : enSeguimiento ? 1500 : 1000}
+              opacity={props.oculta && !esSeleccionada ? 0.7 : 1}
+              zIndexOffset={esSeleccionada ? 2000 : enSeguimiento ? 1500 : props.oculta ? 500 : 1000}
               ref={ref => {
                 if (ref) {
                   markersRef.current[markerId] = ref;
@@ -720,6 +730,12 @@ const CapaCamarasMunicipales = ({
                     {infoDistancia}
                   </strong>
                   <br />
+                  {props.oculta && (
+                    <>
+                      <span style={{ color: '#6b7280', fontWeight: 600 }}>Oculta en el mapa para los demás usuarios</span>
+                      <br />
+                    </>
+                  )}
                   {canSee('address') && <>Dirección: {props.direccion}<br /></>}
                   Jurisdicción: {props.jurisdiccion}
                   {(!visibleFields || visibleFields.length === 0) && (

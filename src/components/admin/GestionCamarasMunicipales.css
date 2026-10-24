@@ -1161,3 +1161,25 @@
   /* Header icon (verde → usar surface) */
   .municipales-header-icon { background: var(--theme-surface-2); border-color: var(--theme-border); }
 }
+
+/* ── Visibilidad en el mapa (cámaras caídas) ── */
+.municipales-map-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #15803d;
+  background: rgba(22, 163, 74, 0.1);
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.municipales-map-toggle:hover:not(:disabled) { border-color: #15803d; }
+.municipales-map-toggle.is-hidden { color: #6b7280; background: rgba(107, 114, 128, 0.12); border-color: rgba(107, 114, 128, 0.35); }
+.municipales-map-toggle.is-hidden:hover:not(:disabled) { border-color: #6b7280; }
+.municipales-map-toggle:disabled { cursor: default; opacity: 0.7; }
+.municipales-table tbody tr.municipales-row-hidden td { color: var(--theme-text-3, #6b7280); }

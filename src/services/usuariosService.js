@@ -237,6 +237,79 @@ const usuariosService = {
       throw new Error(error.message || 'Error al restablecer el dispositivo');
     }
   },
+
+  /**
+   * Sesiones abiertas de un usuario (web y app móvil)
+   * @param {string} id - ID del usuario
+   * @returns {Promise<Array>} Sesiones: { id, user_agent, ip, created_at, is_mobile, current }
+   */
+  async getSessions(id) {
+    try {
+      validateId(id);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+
+      const response = await fetch(`${API_URL}user/${id}/sessions`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al cargar las sesiones');
+      }
+
+      const result = await response.json();
+      return result.data || [];
+    } catch (error) {
+      console.error('Error al obtener sesiones:', error);
+      throw new Error(error.message || 'Error al cargar las sesiones');
+    }
+  },
+
+  /**
+   * Cerrar una sesión del usuario, o todas si no se indica sessionId.
+   * El dispositivo recibe el aviso al instante y vuelve al login.
+   * @param {string} id - ID del usuario
+   * @param {string} [sessionId] - ID de la sesión
+   * @returns {Promise<Object>} { closed }
+   */
+  async closeSessions(id, sessionId) {
+    try {
+      validateId(id);
+      if (sessionId && !UUID_REGEX.test(String(sessionId))) {
+        throw new Error('ID de sesión inválido');
+      }
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+
+      const path = sessionId ? `user/${id}/sessions/${sessionId}` : `user/${id}/sessions`;
+      const response = await fetch(`${API_URL}${path}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al cerrar la sesión');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      throw new Error(error.message || 'Error al cerrar la sesión');
+    }
+  },
 };
 
 export default usuariosService;
