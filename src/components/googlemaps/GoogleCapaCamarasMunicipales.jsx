@@ -1,8 +1,9 @@
-import { useEffect, useState, useRef, memo } from "react";
+import { useEffect, useMemo, useState, useRef, memo } from "react";
 import { getAngleFromCoords, isValidReferencia, parseReferencia, generateVisionField } from "../../utils";
 import "../capas/CamarasMunicipales/CapaCamarasMunicipales.css"; // Importar estilos de campos de visión
 import camarasService from "../../services/camarasService";
 import { useAuth } from "../../context/AuthContext";
+import { MAP_VISIBILITY_EVENT } from "../../services/sessionGuard";
 
 // Función para crear el campo de visión de una cámara en Google Maps
 const createVisionFieldOverlay = (google, map, feature, lat, lng) => {
@@ -131,7 +132,7 @@ const GoogleCapaCamarasMunicipales = ({
   onDeseleccionarCamara,
   isViewer = false,
 }) => {
-  const [camaras, setCamaras] = useState([]);
+  const [todasCamaras, setTodasCamaras] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState(null);
   const [markers, setMarkers] = useState([]);
@@ -144,6 +145,10 @@ const GoogleCapaCamarasMunicipales = ({
   const { hasModuleOp } = useAuth();
   // Las cámaras ocultas (caídas) solo se dibujan, atenuadas, para quien puede editarlas
   const puedeVerOcultas = hasModuleOp('camaras-municipales', 'edit');
+  const camaras = useMemo(
+    () => (puedeVerOcultas ? todasCamaras : todasCamaras.filter(f => !f.properties.oculta)),
+    [todasCamaras, puedeVerOcultas]
+  );
   const [historialSeguimiento, setHistorialSeguimiento] = useState([]);
   const markersRef = useRef({});
   const ctrlPressedRef = useRef(false);
@@ -193,6 +198,7 @@ const GoogleCapaCamarasMunicipales = ({
               megafono: camara.megaphone,
               boton: camara.buttom,
               jurisdiccion: 'Municipal',
+              id: camara.id,
               oculta: !!camara.map_hidden,
               // Coordenadas para generar el campo de visión
               latitude: camara.latitude,
@@ -209,8 +215,7 @@ const GoogleCapaCamarasMunicipales = ({
           };
         });
 
-        // Sin permiso las cámaras ocultas (caídas) no se dibujan
-        setCamaras(puedeVerOcultas ? camarasTransformadas : camarasTransformadas.filter(f => !f.properties.oculta));
+        setTodasCamaras(camarasTransformadas);
         setCargando(false);
       } catch (err) {
         console.error('Error cargando cámaras municipales:', err);
@@ -220,6 +225,17 @@ const GoogleCapaCamarasMunicipales = ({
     };
 
     cargarCamaras();
+  }, []);
+
+  // Cámara ocultada/mostrada por el admin: se actualiza al instante, sin recargar
+  useEffect(() => {
+    const onVisibility = ({ detail }) => {
+      setTodasCamaras(prev => prev.map(f => (
+        f.properties.id === detail.id ? { ...f, properties: { ...f.properties, oculta: detail.map_hidden } } : f
+      )));
+    };
+    window.addEventListener(MAP_VISIBILITY_EVENT, onVisibility);
+    return () => window.removeEventListener(MAP_VISIBILITY_EVENT, onVisibility);
   }, []);
 
   // Agregar listener para obtener coordenadas con Ctrl+Click (herramienta de ayuda)

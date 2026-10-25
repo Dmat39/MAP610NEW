@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { MAP_VISIBILITY_EVENT } from '../../../services/sessionGuard';
 import { Marker, Popup, LayerGroup, Circle, Polygon } from 'react-leaflet';
 import { useMap } from 'react-leaflet';
 import './CapaCamarasMunicipales.css';
@@ -178,7 +179,7 @@ const CapaCamarasMunicipales = ({
   setCamaraConVision,
   onDeseleccionarCamara,
 }) => {
-  const [camaras, setCamaras] = useState([]);
+  const [todasCamaras, setTodasCamaras] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [seguimientoActivo, setSeguimientoActivo] = useState(false);
@@ -193,6 +194,12 @@ const CapaCamarasMunicipales = ({
   const { getVisibleFields, hasModuleOp } = useAuth();
   // Las cámaras ocultas (caídas) solo se dibujan, en gris, para quien puede editarlas
   const puedeVerOcultas = hasModuleOp('camaras-municipales', 'edit');
+  // Sin permiso: las ocultas no se dibujan ni entran al seguimiento (los contadores
+  // salen de ControlCamaras y no cambian)
+  const camaras = useMemo(
+    () => (puedeVerOcultas ? todasCamaras : todasCamaras.filter(f => !f.properties.oculta)),
+    [todasCamaras, puedeVerOcultas]
+  );
   const visibleFields = getVisibleFields('camaras-municipales');
   const canSee = (field) => !visibleFields || visibleFields.length === 0 || visibleFields.includes(field);
 
@@ -299,6 +306,7 @@ const CapaCamarasMunicipales = ({
               megafono: camara.megaphone,
               boton: camara.buttom,
               jurisdiccion: jurisdiccion,
+              id: camara.id,
               oculta: !!camara.map_hidden,
               // Coordenadas para generar el campo de visión
               latitude: camara.latitude,
@@ -318,9 +326,7 @@ const CapaCamarasMunicipales = ({
         logger.log('📊 Cámaras transformadas (primeras 3):', camarasTransformadas.slice(0, 3));
         logger.log('📍 Total de cámaras a mostrar:', camarasTransformadas.length);
 
-        // Sin permiso: las ocultas no se dibujan ni entran al seguimiento (los contadores
-        // salen de ControlCamaras y no cambian)
-        setCamaras(puedeVerOcultas ? camarasTransformadas : camarasTransformadas.filter(f => !f.properties.oculta));
+        setTodasCamaras(camarasTransformadas);
         logger.log('🔘 Cámaras con botón de pánico:', camarasTransformadas.filter(f => f.properties.boton).length);
         logger.log('📷 Cámaras LPR (TIPO III):', camarasTransformadas.filter(f => f.properties.tipo === 'TIPO III').length);
         logger.log('📢 Cámaras con megáfono:', camarasTransformadas.filter(f => f.properties.megafono).length);
@@ -340,6 +346,17 @@ const CapaCamarasMunicipales = ({
     };
 
     cargarCamaras();
+  }, []);
+
+  // Cámara ocultada/mostrada por el admin: se actualiza al instante, sin recargar
+  useEffect(() => {
+    const onVisibility = ({ detail }) => {
+      setTodasCamaras(prev => prev.map(f => (
+        f.properties.id === detail.id ? { ...f, properties: { ...f.properties, oculta: detail.map_hidden } } : f
+      )));
+    };
+    window.addEventListener(MAP_VISIBILITY_EVENT, onVisibility);
+    return () => window.removeEventListener(MAP_VISIBILITY_EVENT, onVisibility);
   }, []);
 
   // Efecto para navegar a la cámara seleccionada

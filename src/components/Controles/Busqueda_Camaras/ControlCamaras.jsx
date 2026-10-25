@@ -4,6 +4,7 @@ import './ControlCamaras.css';
 import { logger } from '../../../utils/logger.js';
 import camarasService from '../../../services/camarasService';
 import { useAuth } from '../../../context/AuthContext';
+import { MAP_VISIBILITY_EVENT } from '../../../services/sessionGuard';
 import { obtenerJurisdiccion, normalizarNombreJurisdiccion } from '../../../utils/geoUtils';
 
 const ControlCamaras = ({
@@ -44,6 +45,15 @@ const ControlCamaras = ({
   // editarlas las encuentra en la búsqueda
   const { hasModuleOp } = useAuth();
   const puedeVerOcultas = hasModuleOp('camaras-municipales', 'edit');
+
+  // Cámara ocultada/mostrada por el admin: deja de (o vuelve a) salir en la búsqueda al instante
+  useEffect(() => {
+    const onVisibility = ({ detail }) => {
+      setCamaras(prev => prev.map(c => (c.id === detail.id ? { ...c, oculta: detail.map_hidden } : c)));
+    };
+    window.addEventListener(MAP_VISIBILITY_EVENT, onVisibility);
+    return () => window.removeEventListener(MAP_VISIBILITY_EVENT, onVisibility);
+  }, []);
   const [filtros, setFiltros] = useState({
     megafono: false,
     boton: false,

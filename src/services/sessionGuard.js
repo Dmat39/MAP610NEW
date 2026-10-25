@@ -12,6 +12,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 export const SESSION_ENDED_EVENT = 'auth:session-ended';
 export const PERMS_CHANGED_EVENT = 'auth:perms-changed';
+export const MAP_VISIBILITY_EVENT = 'map:visibility';
 
 const NOTICES = {
   SESSION_REPLACED: 'Tu sesión se cerró porque hubo otro inicio de sesión con tu usuario en otro dispositivo.',
@@ -67,6 +68,12 @@ export const watchSession = () => {
     // El admin cambió el rol o sus permisos: AuthContext los vuelve a cargar al instante
     source.addEventListener('perms-changed', () => {
       window.dispatchEvent(new CustomEvent(PERMS_CHANGED_EVENT));
+    });
+    // El admin ocultó/mostró una cámara caída: las capas quitan o dibujan su pin al instante
+    source.addEventListener('map-visibility', (e) => {
+      let detail = null;
+      try { detail = JSON.parse(e.data); } catch { /* sin datos */ }
+      if (detail?.id) window.dispatchEvent(new CustomEvent(MAP_VISIBILITY_EVENT, { detail }));
     });
     // El backend cierra el canal cuando vence el token. En la app móvil se renueva y
     // se reconecta; en la web el token dura toda la jornada.
