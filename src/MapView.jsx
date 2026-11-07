@@ -4,7 +4,7 @@ import { useTheme } from './context/ThemeContext';
 import L from 'leaflet';
 
 const TILE_LIGHT = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+const TILE_DARK  = 'https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=cb1_549o_1_4e881ee6d132602e17b240f4';
 const MAP_MAX_ZOOM = 20;
 // Último zoom con tiles reales en el servidor (OSM y CARTO: 19). Más allá, Leaflet
 // amplía esos tiles en lugar de pedir unos que no existen (quedaba el mapa en blanco).
