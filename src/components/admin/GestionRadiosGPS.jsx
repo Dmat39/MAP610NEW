@@ -8,9 +8,9 @@ import './GestionCamarasMunicipales.css';
 import './GestionRadiosGPS.css';
 import {
   Radio, MapPin, Route, BarChart2, RefreshCw, Download,
-  X, Eye, EyeOff, Trash2, Plus, Check, Save, Filter, Pencil,
+  X, Eye, EyeOff, Trash2, Plus, Check, Save, Filter, Pencil, Truck,
 } from 'lucide-react';
-import { obtenerRadios, obtenerHistoricoRadio, obtenerKmDias, buscarInfoRadio, actualizarRadio } from '../../services/radiosService';
+import { obtenerRadios, obtenerHistoricoRadio, obtenerKmDias, buscarInfoRadio, actualizarRadio, asignarRadioMovil, quitarAsignacionRadio } from '../../services/radiosService';
 import { obtenerZonas, crearZona, actualizarZona, eliminarZona } from '../../services/zonaService';
 import SearchInput from '../Table/SearchInput';
 import TablePagination from '../Table/TablePagination';
@@ -22,6 +22,37 @@ const BADGE_COLOR = {
   rojo:     { label: 'APAGADO', bg: 'rgba(220,38,38,0.18)',   color: 'var(--badge-apagado)' },
 };
 const badgeRadio = (r) => BADGE_COLOR[r.color] ?? { label: r.color || '—', bg: '#f3f4f6', color: '#6b7280' };
+// Búsqueda por ISSI o código: ignora mayúsculas, tildes y espacios ("orion 91" encuentra "ORION91").
+const normalizar = (v) => String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '').toLowerCase();
+const coincideRadio = (r, texto) => {
+  const t = normalizar(texto);
+  return !t || normalizar(r.issi).includes(t) || normalizar(r.unicocodigo).includes(t) || normalizar(r.unicocodigo_dolphin).includes(t);
+};
+
+// Tipos de unidad de Dolphin (id, descripción, abreviatura).
+const TIPOS_UNIDAD = [
+  { id: 1, desc: 'CAMION', abre: 'CAM' },
+  { id: 2, desc: 'AUTOMOVIL', abre: 'AUT' },
+  { id: 3, desc: 'MOTO', abre: 'MOT' },
+  { id: 5, desc: 'AMBULANCIA', abre: 'AMB' },
+  { id: 6, desc: 'BICICLETA', abre: 'BIC' },
+  { id: 7, desc: 'PERSONA', abre: 'PER' },
+  { id: 8, desc: 'POLICIA', abre: 'POL' },
+];
+
+// Asignación local en SIVECAM (no modifica Dolphin)
+const CLASES_MOVIL = [
+  { value: 'CAMIONETA', label: 'Camioneta' },
+  { value: 'MOTO', label: 'Moto' },
+  { value: 'A_PIE', label: 'A pie (portátil)' },
+];
+const claseDesdeDolphin = (idtipunidad) => {
+  const id = Number(idtipunidad);
+  if (id === 3) return 'MOTO';
+  if (id === 7 || id === 0) return 'A_PIE';
+  return 'CAMIONETA';
+};
+
 const COLORES_ZONA = ['#6366f1','#22c55e','#ef4444','#f59e0b','#3b82f6','#ec4899','#8b5cf6','#14b8a6'];
 
 const exportXLS = (filas, nombre) => {
@@ -115,7 +146,7 @@ const RadiosPicker = ({ radios, selected, onChange }) => {
   const filtrados = radios.filter(r => {
     if (!q) return true;
     const t = q.toLowerCase();
-    return String(r.issi).includes(t) || String(r.unicocodigo || '').toLowerCase().includes(t);
+    return coincideRadio(r, t);
   });
   const labelR = r => r.unicocodigo ? `${r.unicocodigo} — ISSI ${r.issi}` : `ISSI ${r.issi}`;
   const toggle = issi => {
@@ -167,9 +198,10 @@ const RadiosPicker = ({ radios, selected, onChange }) => {
 /* ════════════════════════════════════════════════════════════════════
    TAB RADIOS — toolbar separado + tabla
    ════════════════════════════════════════════════════════════════════ */
-const ToolbarRadios = ({ radios, loading, onRecargar, filtros, setFiltros }) => {
+const ToolbarRadios = ({ radios, loading, onRecargar, filtros, setFiltros, onAgregar }) => {
   const { busqueda, filtroEstado, filtroTipo } = filtros;
-  const tipos = ['TODOS', ...new Set(radios.map(r => r.tipo).filter(Boolean))];
+  // Dolphin tiene un tipo de unidad llamado "TODOS": no se repite con la opción "todos los tipos"
+  const tipos = ['TODOS', ...new Set(radios.map(r => r.tipo).filter(t => t && t !== 'TODOS'))];
   const totales = {
     ok:      radios.filter(r => r.color === 'verde').length,
     sinGps:  radios.filter(r => r.color === 'amarillo').length,
@@ -181,7 +213,7 @@ const ToolbarRadios = ({ radios, loading, onRecargar, filtros, setFiltros }) => 
     const b = badgeRadio(r);
     const t = busqueda.toLowerCase().trim();
     return (
-      (!t || String(r.issi).includes(t) || String(r.unicocodigo||'').toLowerCase().includes(t)) &&
+      coincideRadio(r, t) &&
       (filtroEstado === 'TODOS' || b.label === filtroEstado) &&
       (filtroTipo   === 'TODOS' || r.tipo === filtroTipo)
     );
@@ -238,19 +270,22 @@ const ToolbarRadios = ({ radios, loading, onRecargar, filtros, setFiltros }) => 
         <button className="btn-municipales-excel" onClick={exportar} disabled={!filtrados.length}>
           <Download size={13}/> XLS
         </button>
+        {onAgregar && (
+          <button className="btn-rgps-primary" onClick={onAgregar}><Plus size={13}/> Agregar radio</button>
+        )}
       </div>
     </div>
   );
 };
 
-const TablaRadios = ({ radios, filtros, setFiltros, onEditar }) => {
+const TablaRadios = ({ radios, filtros, setFiltros, onEditar, onAsignar }) => {
   const { busqueda, filtroEstado, filtroTipo, pagina, pageSize } = filtros;
 
   const filtrados = radios.filter(r => {
     const b = badgeRadio(r);
     const t = busqueda.toLowerCase().trim();
     return (
-      (!t || String(r.issi).includes(t) || String(r.unicocodigo||'').toLowerCase().includes(t)) &&
+      coincideRadio(r, t) &&
       (filtroEstado==='TODOS' || b.label===filtroEstado) &&
       (filtroTipo==='TODOS'   || r.tipo===filtroTipo)
     );
@@ -279,7 +314,15 @@ const TablaRadios = ({ radios, filtros, setFiltros, onEditar }) => {
                 <tr key={r.issi}>
                   <td style={{color:'#94a3b8',fontSize:12}}>{(pagina-1)*pageSize+i+1}</td>
                   <td><strong>{r.issi}</strong></td>
-                  <td>{r.unicocodigo||'—'}</td>
+                  <td>
+                    {r.unicocodigo || '-'}
+                    {r.asignacion && (
+                      <span title={`Asignada en SIVECAM${r.unicocodigo_dolphin ? `. En Dolphin: ${r.unicocodigo_dolphin}` : ''}`}
+                        style={{marginLeft:6,background:'#eef2ff',color:'#4f46e5',padding:'1px 6px',borderRadius:6,fontSize:10.5,fontWeight:700}}>
+                        SIVECAM
+                      </span>
+                    )}
+                  </td>
                   <td><span className="municipales-badge municipales-badge-type">{r.tipo||'—'}</span></td>
                   <td>
                     <span className="municipales-badge" style={{background:b.bg,color:b.color}}>
@@ -292,7 +335,8 @@ const TablaRadios = ({ radios, filtros, setFiltros, onEditar }) => {
                   <td style={{whiteSpace:'nowrap'}}>{r.fechaHora||'—'}</td>
                   <td>
                     <div className="municipales-action-buttons">
-                      <button className="btn-icon-municipales btn-edit" onClick={() => onEditar(r)} title="Editar"><Pencil size={13}/></button>
+                      <button className="btn-icon-municipales btn-edit" onClick={() => onAsignar(r)} title="Asignar a una móvil (solo SIVECAM)"><Truck size={13}/></button>
+                      <button className="btn-icon-municipales btn-edit" onClick={() => onEditar(r)} title="Editar datos en Dolphin"><Pencil size={13}/></button>
                     </div>
                   </td>
                 </tr>
@@ -339,7 +383,7 @@ const TablaZonas = ({ zonas, onEditar, onToggle, onBorrar }) => {
         <tbody>
           {zonas.map((z,i) => {
             let issiCount = 0;
-            try { issiCount = JSON.parse(z.radios_issi || '[]').length; } catch {}
+            try { issiCount = JSON.parse(z.radios_issi || '[]').length; } catch { issiCount = 0; }
             return (
             <tr key={z.id} style={{opacity:z.activo?1:0.55}}>
               <td style={{color:'#94a3b8',fontSize:12}}>{i+1}</td>
@@ -373,7 +417,7 @@ const RadioSelector = ({ radios, value, onChange }) => {
   const label = (r) => r.unicocodigo ? `${r.unicocodigo} — ISSI ${r.issi}` : `ISSI ${r.issi}`;
   const filtrados = radios.filter(r => {
     const t = q.toLowerCase();
-    return !t || String(r.issi).includes(t) || String(r.unicocodigo||'').toLowerCase().includes(t);
+    return coincideRadio(r, t);
   });
 
   useEffect(() => {
@@ -567,6 +611,8 @@ const TABS = [
 
 const GestionRadiosGPS = () => {
   const [tab, setTab]       = useState('radios');
+  // Error de carga o consulta (radios, zonas, historial, kilometraje): antes se ignoraba en silencio
+  const [errorGeneral, setErrorGeneral] = useState(null);
   const [radios, setRadios] = useState([]);
   const [loadingRadios, setLoadingRadios] = useState(false);
 
@@ -579,7 +625,16 @@ const GestionRadiosGPS = () => {
   const [savingRadio, setSavingRadio] = useState(false);
   const [errorRadio, setErrorRadio] = useState(null);
   const [successRadio, setSuccessRadio] = useState(null);
-  const [formRadio, setFormRadio] = useState({ issi:'', tipdesc:'', tipabre:'', unicodigo:'', unidesc:'', uniplaca:'', unimodelo:'', imei:'', idtipunidad:0 });
+  const FORM_VACIO = { issi:'', tipdesc:'', tipabre:'', unicodigo:'', unidesc:'', uniplaca:'', unimodelo:'', imei:'', idtipunidad:0 };
+  const [formRadio, setFormRadio] = useState(FORM_VACIO);
+  // 'editar' (desde la fila) o 'agregar' (buscar un ISSI en Dolphin y asignarle sus datos)
+  const [modoRadio, setModoRadio] = useState('editar');
+  const [issiNuevo, setIssiNuevo] = useState('');
+  const [radioEncontrado, setRadioEncontrado] = useState(false);
+  // Asignación local (modos 'agregar' y 'asignar'): código de móvil, clase, placa y notas
+  const [formAsig, setFormAsig] = useState({ codigo:'', tipo:'CAMIONETA', placa:'', notas:'' });
+  const [tieneAsig, setTieneAsig] = useState(false);
+  const esLocal = modoRadio !== 'editar';
 
   // ── zonas tab state ──
   const [zonas, setZonas]           = useState([]);
@@ -610,12 +665,14 @@ const GestionRadiosGPS = () => {
   /* ── carga inicial ── */
   const cargarRadios = async () => {
     setLoadingRadios(true);
-    try { setRadios(await obtenerRadios()); } catch {}
+    try { setRadios(await obtenerRadios()); setErrorGeneral(null); }
+    catch (e) { setErrorGeneral(e.message || 'No se pudieron cargar las radios desde Dolphin'); }
     setLoadingRadios(false);
   };
   const cargarZonas = async () => {
     setLoadingZonas(true);
-    try { setZonas(await obtenerZonas()); } catch {}
+    try { setZonas(await obtenerZonas()); }
+    catch (e) { setErrorGeneral(e.message || 'No se pudieron cargar las zonas'); }
     setLoadingZonas(false);
   };
 
@@ -641,7 +698,7 @@ const GestionRadiosGPS = () => {
   const abrirEditar = (z) => {
     if (radios.length === 0) cargarRadios();
     let issis = [];
-    try { issis = JSON.parse(z.radios_issi || '[]'); } catch {}
+    try { issis = JSON.parse(z.radios_issi || '[]'); } catch { issis = []; }
     setFormZona({ nombre:z.nombre, descripcion:z.descripcion||'', color:z.color, radios_issi: issis });
     setEditandoZona(z); resetPoly(z); setShowModalZona(true); setErrorZona(null);
   };
@@ -667,36 +724,101 @@ const GestionRadiosGPS = () => {
         setZonas(p=>[n,...p]);
       }
       cerrarModal(); setSuccessZona(editandoZona?'Zona actualizada':'Zona creada'); setTimeout(()=>setSuccessZona(null),3000);
-    } catch { setErrorZona('Error al guardar'); }
+    } catch (e) { setErrorZona(e.message || 'Error al guardar'); }
   };
   const toggleZona = async (z) => {
-    try { await actualizarZona(z.id,{activo:!z.activo}); setZonas(p=>p.map(x=>x.id===z.id?{...x,activo:!x.activo}:x)); } catch {}
+    try { await actualizarZona(z.id,{activo:!z.activo}); setZonas(p=>p.map(x=>x.id===z.id?{...x,activo:!x.activo}:x)); }
+    catch (e) { setErrorZona(e.message || 'No se pudo cambiar el estado de la zona'); }
   };
   const borrarZona = async (id) => {
     if (!confirm('¿Eliminar esta zona GPS?')) return;
-    try { await eliminarZona(id); setZonas(p=>p.filter(z=>z.id!==id)); } catch {}
+    try { await eliminarZona(id); setZonas(p=>p.filter(z=>z.id!==id)); }
+    catch (e) { setErrorZona(e.message || 'No se pudo eliminar la zona'); }
   };
 
   /* ── historial handler ── */
   const buscarHistorial = async () => {
     setLoadingHist(true);
-    try { setPuntos(await obtenerHistoricoRadio(formHist.issi,formHist.fechaInicio,formHist.horaInicio,formHist.fechaFin,formHist.horaFin)); setBuscadoHist(true); setPaginaHist(1); }
-    catch {}
+    try { setPuntos(await obtenerHistoricoRadio(formHist.issi,formHist.fechaInicio,formHist.horaInicio,formHist.fechaFin,formHist.horaFin)); setBuscadoHist(true); setPaginaHist(1); setErrorGeneral(null); }
+    catch (e) { setErrorGeneral(e.message || 'No se pudo obtener el recorrido'); }
     setLoadingHist(false);
   };
 
   /* ── km handler ── */
   const buscarKm = async () => {
     setLoadingKm(true);
-    try { setDatos(await obtenerKmDias(formKm.issi,formKm.fechaInicio,formKm.fechaFin)); setBuscadoKm(true); }
-    catch {}
+    try { setDatos(await obtenerKmDias(formKm.issi,formKm.fechaInicio,formKm.fechaFin)); setBuscadoKm(true); setErrorGeneral(null); }
+    catch (e) { setErrorGeneral(e.message || 'No se pudo obtener el kilometraje'); }
     setLoadingKm(false);
   };
 
   /* ── editar radio (Dolphin) ── */
+  /* ── agregar radio: buscar el ISSI en Dolphin y completar sus datos ── */
+  const abrirAgregarRadio = () => {
+    setErrorRadio(null); setSuccessRadio(null);
+    setModoRadio('agregar'); setIssiNuevo(''); setRadioEncontrado(false);
+    setFormRadio(FORM_VACIO);
+    setShowModalRadio(true);
+  };
+  const buscarIssiNuevo = async () => {
+    const issi = issiNuevo.trim();
+    if (!/^\d{3,10}$/.test(issi)) { setErrorRadio('Escribe un ISSI válido (solo números).'); return; }
+    setErrorRadio(null); setLoadingInfoRadio(true);
+    try {
+      const info = await buscarInfoRadio(issi);
+      setFormRadio({
+        issi:        info.issi,
+        idtipunidad: info.idtipunidad ?? 0,
+        tipdesc:     info.tipdesc    ?? '',
+        tipabre:     info.tipabre    ?? '',
+        unicodigo:   info.unicodigo  ?? '',
+        unidesc:     info.unidesc    ?? '',
+        uniplaca:    info.uniplaca   ?? '',
+        unimodelo:   info.unimodelo  ?? '',
+        imei:        info.imei       ?? '',
+      });
+      const enLista = radios.find(r => String(r.issi) === String(info.issi));
+      setTieneAsig(!!enLista?.asignacion);
+      setFormAsig({
+        codigo: enLista?.asignacion?.codigo || info.unicodigo || '',
+        tipo:   enLista?.asignacion?.tipo || claseDesdeDolphin(info.idtipunidad),
+        placa:  enLista?.asignacion?.placa || info.uniplaca || '',
+        notas:  enLista?.asignacion?.notas || '',
+      });
+      setRadioEncontrado(true);
+    } catch (e) { setErrorRadio(e.message || 'No se pudo consultar el ISSI en Dolphin'); }
+    setLoadingInfoRadio(false);
+  };
+
+  /* ── asignar a móvil desde la fila (solo SIVECAM) ── */
+  const abrirAsignarRadio = (r) => {
+    setErrorRadio(null); setSuccessRadio(null);
+    setModoRadio('asignar'); setRadioEncontrado(true);
+    setFormRadio({ ...FORM_VACIO, issi: r.issi });
+    setTieneAsig(!!r.asignacion);
+    setFormAsig({
+      codigo: r.asignacion?.codigo || r.unicocodigo || '',
+      tipo:   r.asignacion?.tipo || (['CAMIONETA','MOTO','A_PIE'].includes(r.clase) ? r.clase : 'CAMIONETA'),
+      placa:  r.asignacion?.placa || '',
+      notas:  r.asignacion?.notas || '',
+    });
+    setShowModalRadio(true);
+  };
+  const quitarAsig = async () => {
+    if (!confirm('¿Quitar la asignación de esta radio? Volverá a mostrarse con los datos de Dolphin.')) return;
+    setSavingRadio(true); setErrorRadio(null);
+    try {
+      await quitarAsignacionRadio(formRadio.issi);
+      setSuccessRadio(`Se quitó la asignación de la radio ${formRadio.issi}`);
+      setShowModalRadio(false); cargarRadios();
+    } catch (e) { setErrorRadio(e.message || 'No se pudo quitar la asignación'); }
+    setSavingRadio(false);
+  };
+
   const abrirEditarRadio = async (radio) => {
     setErrorRadio(null); setSuccessRadio(null);
-    setFormRadio({ issi: radio.issi, tipdesc:'', tipabre:'', unicodigo:'', unidesc:'', uniplaca:'', unimodelo:'', imei:'', idtipunidad:0 });
+    setModoRadio('editar'); setRadioEncontrado(true);
+    setFormRadio({ ...FORM_VACIO, issi: radio.issi });
     setShowModalRadio(true);
     setLoadingInfoRadio(true);
     try {
@@ -712,11 +834,23 @@ const GestionRadiosGPS = () => {
         unimodelo:   info.unimodelo  ?? '',
         imei:        info.imei       ?? '',
       });
-    } catch { setErrorRadio('No se pudo cargar la información de la radio'); }
+    } catch (e) { setErrorRadio(e.message || 'No se pudo cargar la información de la radio'); }
     setLoadingInfoRadio(false);
   };
 
   const guardarRadio = async () => {
+    if (esLocal) {
+      if (!formAsig.codigo.trim()) { setErrorRadio('Escribe el código de la móvil (ej.: ORION 91).'); return; }
+      setSavingRadio(true); setErrorRadio(null);
+      try {
+        await asignarRadioMovil(formRadio.issi, formAsig);
+        setSuccessRadio(`Radio ${formRadio.issi} asignada a ${formAsig.codigo.trim()} en SIVECAM`);
+        setShowModalRadio(false); cargarRadios();
+      } catch (e) { setErrorRadio(e.message || 'No se pudo guardar la asignación'); }
+      setSavingRadio(false);
+      return;
+    }
+    if (!formRadio.idtipunidad) { setErrorRadio('Elige el tipo de unidad.'); return; }
     setSavingRadio(true); setErrorRadio(null);
     try {
       await actualizarRadio(formRadio.issi, {
@@ -729,10 +863,10 @@ const GestionRadiosGPS = () => {
         unimodelo:   formRadio.unimodelo,
         imei:        formRadio.imei,
       });
-      setSuccessRadio('Radio actualizada correctamente');
+      setSuccessRadio(modoRadio === 'agregar' ? `Radio ${formRadio.issi} registrada con sus datos` : 'Radio actualizada correctamente');
       setShowModalRadio(false);
       cargarRadios();
-    } catch { setErrorRadio('Error al guardar los cambios'); }
+    } catch (e) { setErrorRadio(e.message || 'Error al guardar los cambios'); }
     setSavingRadio(false);
   };
 
@@ -756,7 +890,7 @@ const GestionRadiosGPS = () => {
             <button className="municipales-alert-close" onClick={() => setSuccessRadio(null)}><X size={12}/></button>
           </div>
         )}
-        <ToolbarRadios radios={radios} loading={loadingRadios} onRecargar={cargarRadios} filtros={filtros} setFiltros={setFiltros} />
+        <ToolbarRadios radios={radios} loading={loadingRadios} onRecargar={cargarRadios} filtros={filtros} setFiltros={setFiltros} onAgregar={abrirAgregarRadio} />
       </>
     );
     if (tab === 'zonas') return (
@@ -783,7 +917,7 @@ const GestionRadiosGPS = () => {
     if (tab === 'radios') return (
       loadingRadios
         ? <div className="municipales-loading-state"><RefreshCw size={28} className="spinning"/><p>Cargando radios GPS...</p></div>
-        : <TablaRadios radios={radios} filtros={filtros} setFiltros={setFiltros} onEditar={abrirEditarRadio}/>
+        : <TablaRadios radios={radios} filtros={filtros} setFiltros={setFiltros} onEditar={abrirEditarRadio} onAsignar={abrirAsignarRadio}/>
     );
     if (tab === 'zonas') return (
       loadingZonas
@@ -816,7 +950,14 @@ const GestionRadiosGPS = () => {
         ))}
       </div>
 
-      {/* Toolbar — FUERA del card, encima de la tabla */}
+      {errorGeneral && (
+        <div className="municipales-alert municipales-alert-error" style={{margin:'0 0 8px'}}>
+          <X size={14}/><span>{errorGeneral}</span>
+          <button className="municipales-alert-close" onClick={() => setErrorGeneral(null)}><X size={12}/></button>
+        </div>
+      )}
+
+      {/* Toolbar, fuera del card y encima de la tabla */}
       {renderToolbar()}
 
       {/* Card de tabla — empieza directo con el header índigo */}
@@ -829,23 +970,85 @@ const GestionRadiosGPS = () => {
         <div className="municipales-modal-overlay">
           <div className="municipales-modal-content" style={{maxWidth:480}}>
             <div className="municipales-modal-header">
-              <h2><Pencil size={18}/><span>Editar Radio — ISSI {formRadio.issi}</span></h2>
+              <h2>{modoRadio === 'agregar'
+                ? <><Plus size={18}/><span>Agregar radio{radioEncontrado ? ` (ISSI ${formRadio.issi})` : ''}</span></>
+                : modoRadio === 'asignar'
+                  ? <><Truck size={18}/><span>Asignar a móvil, ISSI {formRadio.issi}</span></>
+                  : <><Pencil size={18}/><span>Editar en Dolphin, ISSI {formRadio.issi}</span></>}</h2>
               <button className="btn-icon-municipales" onClick={() => setShowModalRadio(false)}><X size={16}/></button>
             </div>
             <div className="municipales-modal-body">
               {errorRadio && <div className="municipales-alert municipales-alert-error"><X size={13}/><span>{errorRadio}</span></div>}
-              {loadingInfoRadio ? (
+              {modoRadio === 'agregar' && !radioEncontrado && (
+                <div className="municipales-form-group">
+                  <label><span>ISSI de la radio</span></label>
+                  <div style={{display:'flex',gap:8}}>
+                    <input inputMode="numeric" value={issiNuevo} autoFocus
+                      onChange={e => setIssiNuevo(e.target.value.replace(/\D/g, ''))}
+                      onKeyDown={e => { if (e.key === 'Enter') buscarIssiNuevo(); }} />
+                    <button className="btn-rgps-primary" onClick={buscarIssiNuevo} disabled={loadingInfoRadio || !issiNuevo}>
+                      {loadingInfoRadio ? <RefreshCw size={13} className="spinning"/> : 'Buscar en Dolphin'}
+                    </button>
+                  </div>
+                  <small style={{color:'var(--theme-text-3)',fontSize:12,marginTop:4}}>
+                    Se busca en Dolphin solo para confirmar que la radio existe. La asignación a la móvil se guarda en SIVECAM y no modifica Dolphin.
+                  </small>
+                  {radios.some(r => String(r.issi) === issiNuevo.trim()) && (
+                    <small style={{color:'#b45309',fontSize:12,marginTop:4}}>Esta radio ya está en la lista. Al buscarla podrás editar sus datos.</small>
+                  )}
+                </div>
+              )}
+              {esLocal && radioEncontrado && !loadingInfoRadio && (
+                <>
+                  <div className="municipales-alert" style={{background:'#eef2ff',color:'#3730a3',border:'1px solid #c7d2fe',marginBottom:10}}>
+                    <Truck size={14}/><span>Se guarda solo en SIVECAM. En el mapa y en el despacho la radio se verá con el símbolo y el código de la móvil.</span>
+                  </div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                    <div className="municipales-form-group">
+                      <label><span>Código de la móvil *</span></label>
+                      <input value={formAsig.codigo} maxLength={60} autoFocus placeholder="Ej.: ORION 91"
+                        onChange={e => setFormAsig(p => ({ ...p, codigo: e.target.value }))}/>
+                    </div>
+                    <div className="municipales-form-group">
+                      <label><span>Tipo</span></label>
+                      <select value={formAsig.tipo} onChange={e => setFormAsig(p => ({ ...p, tipo: e.target.value }))}>
+                        {CLASES_MOVIL.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                      </select>
+                    </div>
+                    <div className="municipales-form-group">
+                      <label><span>Placa</span></label>
+                      <input value={formAsig.placa} maxLength={20} placeholder="Opcional"
+                        onChange={e => setFormAsig(p => ({ ...p, placa: e.target.value }))}/>
+                    </div>
+                    <div className="municipales-form-group">
+                      <label><span>Notas</span></label>
+                      <input value={formAsig.notas} maxLength={500} placeholder="Opcional"
+                        onChange={e => setFormAsig(p => ({ ...p, notas: e.target.value }))}/>
+                    </div>
+                  </div>
+                </>
+              )}
+              {!esLocal && (loadingInfoRadio && radioEncontrado ? (
                 <div className="municipales-loading-state"><RefreshCw size={24} className="spinning"/><p>Cargando datos...</p></div>
-              ) : (
+              ) : radioEncontrado && (
                 <>
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                     <div className="municipales-form-group">
-                      <label><span>Tipo (desc)</span></label>
-                      <input value={formRadio.tipdesc} onChange={e => setFormRadio(p=>({...p,tipdesc:e.target.value}))} placeholder="Ej: POLICIA"/>
+                      <label><span>Tipo de unidad</span></label>
+                      <select value={formRadio.idtipunidad || ''} onChange={e => {
+                        const t = TIPOS_UNIDAD.find(x => x.id === Number(e.target.value));
+                        setFormRadio(p => ({ ...p, idtipunidad: t?.id ?? 0, tipdesc: t?.desc ?? '', tipabre: t?.abre ?? '' }));
+                      }}>
+                        <option value="">Elegir tipo</option>
+                        {TIPOS_UNIDAD.map(t => <option key={t.id} value={t.id}>{t.desc}</option>)}
+                        {!!formRadio.idtipunidad && !TIPOS_UNIDAD.some(t => t.id === Number(formRadio.idtipunidad)) && (
+                          <option value={formRadio.idtipunidad}>{formRadio.tipdesc || `Tipo ${formRadio.idtipunidad}`}</option>
+                        )}
+                      </select>
                     </div>
                     <div className="municipales-form-group">
-                      <label><span>Tipo (abrev)</span></label>
-                      <input value={formRadio.tipabre} onChange={e => setFormRadio(p=>({...p,tipabre:e.target.value}))} placeholder="Ej: POL"/>
+                      <label><span>Abreviatura</span></label>
+                      <input value={formRadio.tipabre} onChange={e => setFormRadio(p=>({...p,tipabre:e.target.value}))} placeholder="Ej: CAM"/>
                     </div>
                     <div className="municipales-form-group">
                       <label><span>Código único</span></label>
@@ -863,14 +1066,23 @@ const GestionRadiosGPS = () => {
                       <label><span>Modelo</span></label>
                       <input value={formRadio.unimodelo} onChange={e => setFormRadio(p=>({...p,unimodelo:e.target.value}))} placeholder="Modelo"/>
                     </div>
+                    <div className="municipales-form-group" style={{gridColumn:'1 / -1'}}>
+                      <label><span>IMEI</span></label>
+                      <input value={formRadio.imei} onChange={e => setFormRadio(p=>({...p,imei:e.target.value}))} placeholder="IMEI (opcional)"/>
+                    </div>
                   </div>
                 </>
-              )}
+              ))}
             </div>
             <div className="municipales-modal-footer" style={{paddingTop:8, paddingBottom:12, justifyContent:'flex-end', paddingRight:10}}>
+              {esLocal && tieneAsig && (
+                <button className="btn-cancel" style={{marginRight:'auto',color:'#b91c1c'}} onClick={quitarAsig} disabled={savingRadio}>
+                  Quitar asignación
+                </button>
+              )}
               <button className="btn-cancel" onClick={() => setShowModalRadio(false)}>Cancelar</button>
-              <button className="btn-save" onClick={guardarRadio} disabled={savingRadio||loadingInfoRadio}>
-                {savingRadio ? <><RefreshCw size={13} className="spinning"/> Guardando...</> : <><Save size={13}/> Guardar</>}
+              <button className="btn-save" onClick={guardarRadio} disabled={savingRadio||loadingInfoRadio||!radioEncontrado}>
+                {savingRadio ? <><RefreshCw size={13} className="spinning"/> Guardando...</> : <><Save size={13}/> {esLocal ? 'Guardar en SIVECAM' : 'Guardar en Dolphin'}</>}
               </button>
             </div>
           </div>

@@ -1,5 +1,17 @@
 const API_URL = import.meta.env.VITE_API_URL;
 
+
+// Lee la respuesta y lanza un error con el mensaje del backend si la operación falló.
+const leer = async (res, porDefecto) => {
+  let json = null;
+  try { json = await res.json(); } catch { /* sin cuerpo */ }
+  if (!res.ok) {
+    const msg = Array.isArray(json?.message) ? json.message.join(', ') : json?.message;
+    throw new Error(msg || porDefecto);
+  }
+  return json?.data ?? json;
+};
+
 let _radiosCache = null;
 let _radiosCacheAt = 0;
 const RADIOS_TTL = 12000; // 12 s — mismo ciclo que el polling
@@ -22,16 +34,14 @@ export const obtenerHistoricoRadio = async (issi, fechaInicio, horaInicio, fecha
   const token = localStorage.getItem('token');
   const url = `${API_URL}gps-radio/historico?issi=${encodeURIComponent(issi)}&fechaInicio=${fechaInicio}&horaInicio=${encodeURIComponent(horaInicio)}&fechaFin=${fechaFin}&horaFin=${encodeURIComponent(horaFin)}`;
   const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  const json = await response.json();
-  return json.data ?? json;
+  return leer(response, 'No se pudo obtener el recorrido');
 };
 
 export const obtenerKmDias = async (issi, fechaInicio, fechaFin) => {
   const token = localStorage.getItem('token');
   const url = `${API_URL}gps-radio/km-dias?issi=${encodeURIComponent(issi)}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`;
   const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  const json = await response.json();
-  return json.data ?? json;
+  return leer(response, 'No se pudo obtener el kilometraje');
 };
 
 export const buscarInfoRadio = async (issi) => {
@@ -39,8 +49,7 @@ export const buscarInfoRadio = async (issi) => {
   const res = await fetch(`${API_URL}gps-radio/info?issi=${encodeURIComponent(issi)}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  const json = await res.json();
-  return json.data ?? json;
+  return leer(res, 'No se pudo consultar la radio en Dolphin');
 };
 
 export const actualizarRadio = async (issi, data) => {
@@ -50,8 +59,9 @@ export const actualizarRadio = async (issi, data) => {
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
   });
-  const json = await res.json();
-  return json.data ?? json;
+  const r = await leer(res, 'Dolphin no aceptó los cambios');
+  _radiosCache = null; // la lista se vuelve a pedir con el cambio
+  return r;
 };
 
 let _pendingRadios = null;
@@ -86,4 +96,28 @@ export const obtenerRadios = async () => {
   }).catch(err => { _pendingRadios = null; throw err; });
 
   return _pendingRadios;
+};
+
+// ─── Asignación local radio -> móvil (solo SIVECAM, no modifica Dolphin) ─────
+export const asignarRadioMovil = async (issi, { codigo, tipo, placa, notas }) => {
+  const token = localStorage.getItem('token');
+  const res = await fetch(`${API_URL}gps-radio/${encodeURIComponent(issi)}/asignacion`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ codigo, tipo, placa, notas }),
+  });
+  const r = await leer(res, 'No se pudo guardar la asignación');
+  _radiosCache = null;
+  return r;
+};
+
+export const quitarAsignacionRadio = async (issi) => {
+  const token = localStorage.getItem('token');
+  const res = await fetch(`${API_URL}gps-radio/${encodeURIComponent(issi)}/asignacion`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const r = await leer(res, 'No se pudo quitar la asignación');
+  _radiosCache = null;
+  return r;
 };

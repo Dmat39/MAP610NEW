@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Marker, Popup, LayerGroup, useMapEvents } from 'react-leaflet';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { IconoVehiculo } from '../../despacho/iconos';
 import { obtenerRadios } from '../../../services/radiosService';
 import { computeJurisdiccion, pasaFiltroJurisdiccion } from '../../../utils/jurisdicciones';
 import { haversineM } from '../../../utils/geoUtils';
@@ -29,7 +31,27 @@ const mapRadioColor = (r) => {
   return r?.hexacolor || '#3b82f6';
 };
 
+// Radio que va en una móvil (por tipo de Dolphin o asignada en SIVECAM): símbolo de camioneta o moto
+// en vez del de radio, con el color del estado (azul OK, naranja sin GPS, gris apagado).
+const crearIconoMovil = (r) => {
+  const color = mapRadioColor(r);
+  const moto = r.clase === 'MOTO';
+  const key = `movil-${moto ? 'moto' : 'camioneta'}-${color}`;
+  if (_iconCacheRadios.has(key)) return _iconCacheRadios.get(key);
+  const svg = renderToStaticMarkup(<IconoVehiculo subtipo={moto ? 'MOTO' : 'CAMION'} size={16} color="#fff" />);
+  const icon = new L.DivIcon({
+    html: `<div style="width:30px;height:30px;border-radius:50%;background:${color};border:2.5px solid #fff;box-sizing:border-box;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(15,23,42,0.35)">${svg}</div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -15],
+    className: '',
+  });
+  _iconCacheRadios.set(key, icon);
+  return icon;
+};
+
 const crearIcono = (r) => {
+  if (r.es_movil) return crearIconoMovil(r);
   const color = mapRadioColor(r);
   if (_iconCacheRadios.has(color)) return _iconCacheRadios.get(color);
   const icon = new L.DivIcon({
@@ -162,10 +184,12 @@ const CapaRadios = ({
             <Popup>
               <div style={{ fontSize: '13px', minWidth: '170px' }}>
                 <strong style={{ color: mapRadioColor(r) }}>
-                  📡 Radio: {r.unicocodigo || r.issi}
+                  {r.es_movil ? `${r.clase === 'MOTO' ? 'Moto' : 'Móvil'}: ` : 'Radio: '}{r.unicocodigo || r.issi}
                 </strong><br />
                 <strong>ISSI:</strong> {r.issi}<br />
-                <strong>Tipo:</strong> {r.tipo}<br />
+                {r.asignacion
+                  ? <><strong>Asignada en SIVECAM</strong>{r.asignacion.placa ? `, placa ${r.asignacion.placa}` : ''}{r.unicocodigo_dolphin ? ` (Dolphin: ${r.unicocodigo_dolphin})` : ''}<br /></>
+                  : <><strong>Tipo:</strong> {r.tipo}<br /></>}
                 <strong>Estado:</strong>{' '}
                 <span style={{ color: mapRadioColor(r) }}>{r.estado}</span><br />
                 <strong>Velocidad:</strong> {r.velocidad} km/h<br />
