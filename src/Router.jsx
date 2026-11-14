@@ -22,6 +22,7 @@ import GestionSubtiposIncidencia    from './components/admin/GestionSubtiposInci
 import GestionModalidadesIncidencia from './components/admin/GestionModalidadesIncidencia';
 import GestionRadiosGPS from './components/admin/GestionRadiosGPS';
 import GestionBodycams from './components/admin/GestionBodycams';
+import CentroDespacho from './components/despacho/CentroDespacho';
 
 const SIDEBAR_COLLAPSED = '70px';
 const SIDEBAR_EXPANDED  = '220px';
@@ -88,6 +89,12 @@ const AppLayout = ({ sidebarExpanded, onToggle, onClose, isMobile }) => {
           <Route path="/admin/incidencias-pnp" element={
             <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR', 'PNP']} moduleKey="incidencias-pnp">
               <GestionIncidenciasPNP />
+            </ProtectedRoute>
+          } />
+          <Route path="/despacho" element={
+            // Acceso si el rol tiene 'patrullaje', 'despacho' o 'rutas-manuales' (lo valida la pantalla)
+            <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMINISTRATOR']}>
+              <CentroDespacho />
             </ProtectedRoute>
           } />
           <Route path="/admin/roles" element={

@@ -31,6 +31,9 @@ const AVAILABLE_MODULES = [
   { key: 'comisarias',           label: 'Comisarías' },
   { key: 'puntos-campana',       label: 'Puntos de Obra' },
   { key: 'radios-gps',           label: 'Radios GPS' },
+  { key: 'despacho',             label: 'Despacho de móviles' },
+  { key: 'patrullaje',           label: 'Patrullaje — rutas inteligentes' },
+  { key: 'rutas-manuales',       label: 'Patrullaje — rutas manuales (orden de autoridad)' },
 ];
 
 const AVAILABLE_LAYERS = [

@@ -6,7 +6,7 @@ import {
   LogOut, MapPin, Camera, Map, Video, Users,
   Calendar, ChevronRight, ChevronLeft, Shield, ClipboardList,
   LayoutDashboard, ShieldCheck, KeyRound, Building2, Tag, Layers, GitBranch, FileBarChart, Flag, Radio, Smartphone,
-  Sun, Moon,
+  Sun, Moon, Siren,
 } from 'lucide-react';
 import ConfirmModal from '../Modal/ConfirmModal';
 import './Sidebar.css';
@@ -96,6 +96,7 @@ const Sidebar = ({ isExpanded, onToggle, isMobile, onClose }) => {
 
   const navItems = [
     { path: '/',                          icon: Map,            label: 'Mapa',                show: true },
+    { path: '/despacho',                  icon: Siren,          label: 'Despacho y Patrullaje', show: canSeeModule('despacho', isAdmin) || canSeeModule('patrullaje', isAdmin) || canSeeModule('rutas-manuales', isAdmin) },
     { path: '/dashboard/serenos',         icon: LayoutDashboard,label: 'Dashboard Serenos',   show: canSeeModule('dashboard-serenos',  isAdmin || isCodisec) },
     { path: '/dashboard/pnp',             icon: ShieldCheck,    label: 'Dashboard PNP',       show: canSeeModule('dashboard-pnp',      isAdmin || isPnp) },
     { path: '/reportes/incidencias',      icon: FileBarChart,   label: 'Reportes',             show: canSeeModule('reportes-incidencias', isAdmin || isCodisec) },

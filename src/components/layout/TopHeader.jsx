@@ -14,6 +14,7 @@ const PAGE_META = {
   '/admin/usuarios':           { title: 'Usuarios',               sub: 'Gestión de usuarios del sistema' },
   '/admin/auditoria':          { title: 'Auditoría del Sistema',  sub: 'Registro de cambios y acciones' },
   '/admin/radios-gps':         { title: 'Radios GPS',             sub: 'Unidades · Zonas · Historial · Kilometraje' },
+  '/despacho':                 { title: 'Despacho y Patrullaje',  sub: 'Rutas por turno, despacho y rutas manuales' },
   '/admin/comisarias':         { title: 'Comisarías',             sub: 'Gestión de comisarías' },
   '/admin/puntos-campana':     { title: 'Puntos de Obra',         sub: 'Gestión de puntos de campaña' },
   '/admin/tipos-incidencia':   { title: 'Tipos de Incidencia',    sub: 'Gestión de tipos de incidencia' },
