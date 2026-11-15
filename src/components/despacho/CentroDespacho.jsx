@@ -3,11 +3,12 @@ import { Navigate } from 'react-router-dom';
 import {
   PiChartBar, PiPath, PiSiren, PiPencilSimpleLine, PiArrowClockwise, PiNavigationArrow, PiWhatsappLogo,
   PiCheckCircle, PiXCircle, PiStack, PiCrosshair, PiTrash, PiFloppyDisk, PiShieldCheck, PiWarning,
-  PiFootprints, PiSecurityCamera, PiEye, PiMegaphone,
+  PiFootprints, PiSecurityCamera, PiEye, PiMegaphone, PiSpeakerHigh, PiSpeakerSlash, PiCopy, PiUsersThree,
+  PiBellRinging, PiCaretDown, PiCaretUp, PiCheck,
 } from 'react-icons/pi';
 import { COLOR, ESTADOS } from '../mapa/estados';
 import {
-  IconoAPie, IconoCamara, IconoIncidencia, IconoVehiculo, IconoSirena,
+  IconoAPie, IconoCamara, IconoCategoria, IconoVehiculo, IconoSirena,
   SimboloAPie, SimboloCamara, SimboloMovil, SimboloZona,
 } from '../mapa/simbolos';
 import { useAuth } from '../../context/AuthContext';
@@ -15,11 +16,20 @@ import { useTheme } from '../../context/ThemeContext';
 import MapaDespacho from './MapaDespacho';
 import * as api from '../../services/patrullajeService';
 import {
-  TURNOS, fmtKm, fmtMin, fmtHora, hoyLima, textoWhatsApp, ESTADO_DESPACHO,
+  TURNOS, fmtKm, fmtMin, fmtHora, hoyLima, textoWhatsApp, ESTADO_DESPACHO, PRIORIDAD, ESTADO_INCIDENCIA,
+  RESULTADOS_CIERRE, RESULTADOS_CANCELACION, textoResultado, fmtCrono, segDesde,
 } from './util';
+import { leerConfigSonido, guardarConfigSonido, sonar } from './sonido';
 import './CentroDespacho.css';
 
 const POLL_MS = 15000;
+// Avisos: una incidencia urgente cuenta como "sin despachar" solo durante sus primeros minutos (las más viejas
+// ya las atendió el flujo normal aunque no pasaran por SIVECAM) y se muestran como máximo estas.
+const URGENTE_MIN = 30;
+const MAX_AVISOS_URGENTES = 5;
+const nuevoGrupo = () => (crypto.randomUUID ? crypto.randomUUID() : `g-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+// Límite de atraso de un despacho: lo que configuró el operador (minutos) o 1.5 veces el tiempo estimado, lo que sea mayor
+const limiteAtraso = (d, cfg) => Math.max((cfg.limite_min || 10) * 60, Math.round((d.eta_s ?? 0) * 1.5));
 
 // Capas que se muestran al entrar a cada pestaña. Luego el operador puede prender o apagar las que quiera.
 const CAPAS_POR_TAB = {
@@ -70,13 +80,24 @@ const CentroDespacho = () => {
   const [ocupado, setOcupado] = useState('');
   const [aviso, setAviso] = useState(null);
   const [encuadre, setEncuadre] = useState(null);
+  const [ahora, setAhora] = useState(Date.now());            // reloj de los cronómetros (1 s)
+  const [sonido, setSonido] = useState(leerConfigSonido);    // { activo, limite_min }
+  const [cierre, setCierre] = useState(null);                // { id, cancelar, resultado, notas }
+  const [tipos, setTipos] = useState(null);                  // prioridad por tipo (se carga al abrir el panel)
+  const [verTipos, setVerTipos] = useState(false);
   const avisoTimer = useRef(null);
+  const incVistas = useRef(null);      // ids de incidencias ya vistas (para sonar solo con las nuevas)
+  const atrasoAvisado = useRef(new Set());
 
   const avisar = useCallback((texto, tipo = 'ok') => {
     setAviso({ texto, tipo });
     clearTimeout(avisoTimer.current);
     avisoTimer.current = setTimeout(() => setAviso(null), 6000);
   }, []);
+
+  const cambiarSonido = (parte) => {
+    setSonido((s) => { const n = { ...s, ...parte }; guardarConfigSonido(n); return n; });
+  };
 
   // ─── Carga de datos ───────────────────────────────────────────────────────
   const cargarEstado = useCallback(async () => {
@@ -121,9 +142,45 @@ const CentroDespacho = () => {
   useEffect(() => { cargarPlanes(); cargarZonas(); }, [cargarPlanes, cargarZonas]);
   useEffect(() => { cargarIncidencias(); }, [cargarIncidencias]);
   useEffect(() => {
-    const t = setInterval(() => { cargarMoviles(); cargarDespachos(); }, POLL_MS);
+    const t = setInterval(() => { cargarMoviles(); cargarDespachos(); cargarIncidencias(); }, POLL_MS);
     return () => clearInterval(t);
-  }, [cargarMoviles, cargarDespachos]);
+  }, [cargarMoviles, cargarDespachos, cargarIncidencias]);
+
+  // Reloj de los cronómetros: solo corre mientras hay despachos abiertos
+  const hayAbiertos = despachos.some((d) => d.status === 'ASIGNADO' || d.status === 'EN_LUGAR');
+  useEffect(() => {
+    if (!hayAbiertos) return undefined;
+    const t = setInterval(() => setAhora(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [hayAbiertos]);
+
+  // Incidencias urgentes sin despachar (recientes) para el panel de avisos
+  const urgentes = incidencias.filter((i) => i.prioridad === 'ALTA' && i.estado === 'PENDIENTE' && segDesde(i.registrado, ahora) <= URGENTE_MIN * 60);
+
+  // Sonido: incidencia nueva de prioridad alta. No suena con las que ya estaban al abrir la pantalla
+  // (la primera carga solo las registra) ni con las viejas que aparecen al ampliar "Últimas".
+  useEffect(() => {
+    if (!incVistas.current) {
+      if (!incidencias.length) return; // todavía no cargó
+      incVistas.current = new Set(incidencias.map((i) => i.id));
+      return;
+    }
+    const nuevas = incidencias.filter((i) =>
+      i.prioridad === 'ALTA' && i.estado === 'PENDIENTE' && !incVistas.current.has(i.id) && segDesde(i.registrado) <= URGENTE_MIN * 60);
+    incVistas.current = new Set(incidencias.map((i) => i.id));
+    if (!nuevas.length) return;
+    sonar('alta');
+    avisar(`Incidencia urgente: ${nuevas[0].corto} (${nuevas[0].codigo}${nuevas[0].jurisdiccion ? `, ${nuevas[0].jurisdiccion}` : ''})${nuevas.length > 1 ? ` y ${nuevas.length - 1} más` : ''}.`, 'alerta');
+  }, [incidencias, avisar]);
+
+  // Sonido: despacho que pasó el límite sin llegar (una sola vez por despacho)
+  const atrasados = despachos.filter((d) => d.status === 'ASIGNADO' && segDesde(d.assigned_at, ahora) > limiteAtraso(d, sonido));
+  useEffect(() => {
+    const nuevos = atrasados.filter((d) => !atrasoAvisado.current.has(d.id));
+    if (!nuevos.length) return;
+    nuevos.forEach((d) => atrasoAvisado.current.add(d.id));
+    sonar('atraso');
+  }, [atrasados]);
 
   // ─── Acciones ─────────────────────────────────────────────────────────────
   const generar = async () => {
@@ -167,15 +224,29 @@ const CentroDespacho = () => {
     if (CAPAS_POR_TAB[key]) setCapas(CAPAS_POR_TAB[key]);
   };
 
+  // p: { lat, lng, incidencia?, group_id?, referencia?, enviados? }. Todas las unidades enviadas desde esta
+  // tarjeta comparten group_id (refuerzos incluidos).
   const elegirPunto = async (p) => {
-    setPunto(p);
+    const inc = p.incidencia;
+    const punto0 = { ...p, group_id: p.group_id ?? (inc ? `inc-${inc.id}` : nuevoGrupo()), enviados: p.enviados ?? [] };
+    setPunto(punto0);
     setSugerencia(null);
+    setCierre(null);
     setVerMas({ moviles: false, aPie: false, camaras: false });
     cambiarTab('despacho');
     setEncuadre([[p.lat, p.lng]]);
     setOcupado('sugerir');
     try { setSugerencia(await api.sugerirMoviles(p.lat, p.lng)); } catch (e) { avisar(e.message, 'error'); } finally { setOcupado(''); }
   };
+
+  // Pedir refuerzo: misma emergencia (mismo grupo), vuelve a sugerir con las unidades que quedan libres
+  const pedirRefuerzo = (d, unidades) => elegirPunto({
+    lat: d.lat, lng: d.lng, group_id: d.group_id, referencia: d.reference ?? '',
+    incidencia: d.incident_id
+      ? { id: d.incident_id, codigo: d.incident_code, tipo: d.incident_type, corto: d.incident_corto, prioridad: d.priority, registrado: d.incident_registered_at }
+      : null,
+    enviados: unidades.map((u) => ({ codigo: u.unit_code, tipo: u.resource_type, id: u.unit_issi })),
+  });
 
   // tipoRecurso: 'MOVIL' (radio fija del vehículo), 'RADIO' (portátil) o 'BODYCAM'
   const asignar = async (r, tipoRecurso = 'MOVIL') => {
@@ -188,19 +259,47 @@ const CentroDespacho = () => {
         tipo: tipoRecurso, issi: rid, lat: punto.lat, lng: punto.lng,
         incident_id: inc ? String(inc.id) : undefined,
         incident_code: inc?.codigo, incident_type: inc?.tipo,
+        incident_registered_at: inc?.registrado || undefined,
+        prioridad: inc?.prioridad || undefined,
+        group_id: punto.group_id,
         referencia: punto.referencia || undefined,
         rank: r.rank, eta_s: r.duration_s, distance_m: r.distance_m,
         forzar: r.ocupada || undefined,
       });
-      avisar(`${r.codigo} enviado${inc ? ` a ${inc.codigo}` : ''}. La llegada se marcará sola cuando su GPS reporte a menos de 75 m.`);
-      setPunto(null);
-      setSugerencia(null);
-      await Promise.all([cargarDespachos(), cargarMoviles()]);
+      const primero = !punto.enviados.length;
+      avisar(`${r.codigo} enviado${inc ? ` a ${inc.codigo}` : ''}${primero ? '. Puedes enviar más unidades o pulsar Listo.' : ' como refuerzo.'}`);
+      // La tarjeta sigue abierta para enviar más unidades a la misma emergencia
+      setPunto((p) => (p ? { ...p, enviados: [...p.enviados, { codigo: r.codigo, tipo: tipoRecurso, id: rid }] } : p));
+      await Promise.all([cargarDespachos(), cargarMoviles(), cargarIncidencias()]);
     } catch (e) { avisar(e.message, 'error'); } finally { setOcupado(''); }
   };
 
-  const accionDespacho = async (fn, id) => {
-    try { await fn(id); await Promise.all([cargarDespachos(), cargarMoviles()]); } catch (e) { avisar(e.message, 'error'); }
+  const accionDespacho = async (fn, id, body) => {
+    try { await fn(id, body); await Promise.all([cargarDespachos(), cargarMoviles(), cargarIncidencias()]); } catch (e) { avisar(e.message, 'error'); }
+  };
+
+  const confirmarCierre = async () => {
+    if (!cierre) return;
+    setOcupado(`c-${cierre.id}`);
+    const body = { resultado: cierre.resultado, notas: cierre.notas?.trim() || undefined };
+    await accionDespacho(cierre.cancelar ? api.cancelarDespacho : api.cerrarDespacho, cierre.id, body);
+    setCierre(null);
+    setOcupado('');
+  };
+
+  const cargarTipos = async () => {
+    try { setTipos((await api.obtenerTiposIncidencia()).map((t) => ({ ...t, corto_guardado: t.corto }))); } catch (e) { avisar(e.message, 'error'); }
+  };
+  const guardarTipo = async (t, cambios) => {
+    try {
+      await api.guardarTipoIncidencia({ tipo: t.tipo, corto: t.corto, prioridad: t.prioridad, categoria: t.categoria, ...cambios });
+      setTipos((lista) => lista.map((x) => (x.tipo === t.tipo ? { ...x, ...cambios, corto_guardado: cambios.corto ?? x.corto_guardado, configurado: true } : x)));
+      cargarIncidencias();
+    } catch (e) { avisar(e.message, 'error'); }
+  };
+
+  const copiar = async (texto) => {
+    try { await navigator.clipboard.writeText(texto); avisar(`Copiado: ${texto}`); } catch { avisar('No se pudo copiar', 'error'); }
   };
 
   const guardarManual = async () => {
@@ -310,6 +409,17 @@ const CentroDespacho = () => {
   };
 
   const abiertos = despachos.filter((d) => d.status === 'ASIGNADO' || d.status === 'EN_LUGAR');
+  // Despachos agrupados por emergencia (group_id): los grupos con alguna unidad activa van primero
+  const gruposDespacho = Object.values(
+    despachos.reduce((acc, d) => {
+      const k = d.group_id ?? d.id;
+      (acc[k] ??= { id: k, unidades: [], activo: false }).unidades.push(d);
+      if (d.status === 'ASIGNADO' || d.status === 'EN_LUGAR') acc[k].activo = true;
+      return acc;
+    }, {}),
+  )
+    .map((g) => ({ ...g, unidades: g.unidades.sort((a, b) => new Date(a.assigned_at) - new Date(b.assigned_at)) }))
+    .sort((a, b) => Number(b.activo) - Number(a.activo) || new Date(b.unidades.at(-1).assigned_at) - new Date(a.unidades.at(-1).assigned_at));
   const tabs = [
     { key: 'resumen', label: 'Resumen', icon: PiChartBar, show: true },
     { key: 'rutas', label: 'Rutas', icon: PiPath, show: puede.patrullaje || puede.manual || puede.despacho },
@@ -444,14 +554,28 @@ const CentroDespacho = () => {
                   <div className="cdp-emergencia-head">
                     <span className="cdp-emergencia-ico"><IconoSirena size={18} /></span>
                     <div>
-                      <b>{punto.incidencia ? punto.incidencia.tipo : 'Punto marcado en el mapa'}</b>
-                      <small>{punto.incidencia ? `${punto.incidencia.codigo}, ${punto.incidencia.jurisdiccion}, ${fmtHora(punto.incidencia.registrado)}` : `${punto.lat.toFixed(5)}, ${punto.lng.toFixed(5)}`}</small>
+                      <b title={punto.incidencia?.tipo}>
+                        {punto.incidencia ? (punto.incidencia.corto || punto.incidencia.tipo) : 'Punto marcado en el mapa'}
+                        {punto.incidencia?.prioridad && <ChipPrioridad p={punto.incidencia.prioridad} />}
+                      </b>
+                      <small>
+                        {punto.incidencia
+                          ? [punto.incidencia.codigo, punto.incidencia.jurisdiccion, punto.incidencia.registrado ? `registrada ${fmtHora(punto.incidencia.registrado)}` : null].filter(Boolean).join(', ')
+                          : `${punto.lat.toFixed(5)}, ${punto.lng.toFixed(5)}${sugerencia?.jurisdiccion ? `, ${sugerencia.jurisdiccion.nombre}` : ''}`}
+                      </small>
                     </div>
                     <button className="cdp-icon-btn" aria-label="Cerrar" onClick={() => { setPunto(null); setSugerencia(null); }}><PiXCircle size={17} /></button>
                   </div>
                   <label className="cdp-field">Referencia para quien va (opcional)
                     <input value={punto.referencia ?? ''} onChange={(e) => setPunto((p) => ({ ...p, referencia: e.target.value }))} />
                   </label>
+                  {punto.enviados.length > 0 && (
+                    <div className="cdp-enviados">
+                      {punto.enviados.map((u) => <b key={`${u.tipo}-${u.id}`}><PiCheck size={12} /> {u.codigo}</b>)}
+                      <span>{punto.enviados.length === 1 ? 'en camino' : 'en camino'}. ¿Hace falta otra unidad?</span>
+                      <button className="cdp-btn mini primario" onClick={() => { setPunto(null); setSugerencia(null); }}>Listo</button>
+                    </div>
+                  )}
 
                   {ocupado === 'sugerir' && <Cargando />}
                   {sugerencia && (
@@ -460,9 +584,10 @@ const CentroDespacho = () => {
                         total={sugerencia.ranking.length} abierto={verMas.moviles} onToggle={() => setVerMas((v) => ({ ...v, moviles: !v.moviles }))}
                         vacio="No hay móviles con GPS en línea.">
                         {sugerencia.ranking.slice(0, verMas.moviles ? 8 : 3).map((r) => (
-                          <FilaRecurso key={`m-${r.issi}`} r={r} destacado={r.rank === 1}
-                            icono={<SimboloMovil subtipo={r.tipo} estado={r.ocupada ? 'ocupada' : 'disponible'} />}
-                            sub={r.jurisdiccion} puede={puede.asignar} ocupado={ocupado}
+                          <FilaRecurso key={`m-${r.issi}`} r={r} destacado={r.rank === 1 && !punto.enviados.length}
+                            enviada={punto.enviados.some((u) => u.tipo === 'MOVIL' && u.id === r.issi)}
+                            icono={<SimboloMovil subtipo={r.tipo} estado={r.ocupada ? 'ocupada' : r.gps_viejo ? 'gps_viejo' : 'disponible'} />}
+                            sub={r.razon || r.jurisdiccion} puede={puede.asignar} ocupado={ocupado}
                             ocupadoKey={`a-MOVIL-${r.issi}`} onAsignar={() => asignar(r, 'MOVIL')} />
                         ))}
                       </Bloque>
@@ -472,6 +597,7 @@ const CentroDespacho = () => {
                         vacio="Nadie a pie cerca con GPS en línea.">
                         {(sugerencia.a_pie ?? []).slice(0, verMas.aPie ? 8 : 3).map((r) => (
                           <FilaRecurso key={`p-${r.tipo}-${r.id}`} r={r}
+                            enviada={punto.enviados.some((u) => u.tipo === r.tipo && u.id === r.id)}
                             icono={<SimboloAPie tipo={r.tipo} estado={r.ocupada ? 'ocupada' : 'disponible'} size={24} />}
                             sub={r.acompanante ? `Radio y bodycam` : (r.tipo === 'BODYCAM' ? 'Bodycam' : 'Sereno con radio')}
                             puede={puede.asignar} ocupado={ocupado} ocupadoKey={`a-${r.tipo}-${r.id}`} onAsignar={() => asignar(r, r.tipo)} />
@@ -493,6 +619,9 @@ const CentroDespacho = () => {
                               <small>{c.tipo === 'VECINAL' ? 'Vecinal' : c.modelo}{c.megafono ? ', megáfono' : ''}</small>
                             </div>
                             {c.megafono && <PiMegaphone size={14} className="cdp-muted" title="Tiene megáfono" />}
+                            <button className="cdp-icon-btn" title="Copiar el código para buscarla en el visor de cámaras" aria-label="Copiar código" onClick={() => copiar(c.codigo)}>
+                              <PiCopy size={14} />
+                            </button>
                           </div>
                         ))}
                       </Bloque>
@@ -502,38 +631,36 @@ const CentroDespacho = () => {
                 </div>
               )}
 
-              <div className="cdp-list-head"><span>Despachos de las últimas 24 h</span></div>
+              <PanelAvisos
+                atrasados={atrasados} ahora={ahora} sonido={sonido} cambiarSonido={cambiarSonido} urgentes={urgentes}
+                onIncidencia={(i) => elegirPunto({ lat: i.lat, lng: i.lon, incidencia: i })}
+                onDespacho={(d) => setEncuadre([[d.lat, d.lng]])}
+              />
+
+              <div className="cdp-list-head"><span>Despachos de las últimas 24 h ({gruposDespacho.length} {gruposDespacho.length === 1 ? 'emergencia' : 'emergencias'})</span></div>
               {!despachos.length && <Vacio texto="Todavía no hay despachos." />}
-              {despachos.map((d) => {
-                const st = ESTADO_DESPACHO[d.status];
-                const activo = d.status === 'ASIGNADO' || d.status === 'EN_LUGAR';
+              {gruposDespacho.map(({ id, unidades, activo }) => {
+                const d0 = unidades[0];
+                const grupoAtrasado = unidades.some((u) => atrasados.includes(u));
                 return (
-                  <div key={d.id} className={`cdp-desp${activo ? '' : ' cerrado'}`}>
+                  <div key={id} className={`cdp-desp${activo ? '' : ' cerrado'}${grupoAtrasado ? ' atrasado' : ''}`}>
                     <div className="cdp-desp-head">
-                      <span className="cdp-desp-ico">
-                        {d.resource_type === 'MOVIL' ? <IconoVehiculo subtipo="AUTOMOVIL" size={14} /> : <IconoAPie tipo={d.resource_type} size={14} />}
-                      </span>
-                      <b>{d.unit_code}</b>
-                      <span className="cdp-muted">hacia {d.incident_code ?? 'punto marcado'}</span>
-                      <span className="cdp-estado" style={{ '--c': st.color }}>{st.label}</span>
+                      <span className="cdp-desp-ico sirena"><IconoSirena size={13} /></span>
+                      <b title={d0.incident_type}>{d0.incident_code ?? 'Punto marcado'}</b>
+                      {d0.incident_corto && <span className="cdp-muted">{d0.incident_corto}</span>}
+                      {d0.priority && <ChipPrioridad p={d0.priority} />}
+                      {activo && puede.asignar && (
+                        <button className="cdp-btn mini" title="Enviar otra unidad a esta misma emergencia" onClick={() => pedirRefuerzo(d0, unidades)}>
+                          <PiUsersThree size={13} /> Refuerzo
+                        </button>
+                      )}
+                      <small>
+                        {d0.incident_registered_at ? `Registrada ${fmtHora(d0.incident_registered_at)}, ` : ''}
+                        despachada {fmtHora(d0.assigned_at)} por {d0.assigned_by ?? 'sin usuario'}{d0.reference ? `. Ref.: ${d0.reference}` : ''}
+                      </small>
                     </div>
-                    <small className="cdp-muted">
-                      {fmtHora(d.assigned_at)}, {d.assigned_by ?? 'sin usuario'}.{' '}
-                      {(d.respuesta_s ?? null) !== null
-                        ? <b>Llegó en {fmtMin(d.respuesta_s)}.</b>
-                        : activo && (d.ruta
-                          ? <>Lleva {fmtMin(d.transcurrido_s)}. Le faltan {fmtMin(d.ruta.duration_s)} ({fmtKm(d.ruta.distance_m)} por calles).</>
-                          : <>Lleva {fmtMin(d.transcurrido_s)}, está a {fmtKm(d.distancia_actual_m)}.</>)}
-                    </small>
-                    {activo && (
-                      <div className="cdp-row">
-                        <a className="cdp-btn mini" href={d.enlaces.waze} target="_blank" rel="noreferrer"><PiNavigationArrow size={13} /> Waze</a>
-                        <a className="cdp-btn mini" href={textoWhatsApp(d)} target="_blank" rel="noreferrer"><PiWhatsappLogo size={13} /> WhatsApp</a>
-                        {puede.cerrar && d.status === 'ASIGNADO' && <button className="cdp-btn mini" onClick={() => accionDespacho(api.marcarLlegada, d.id)}>Llegó</button>}
-                        {puede.cerrar && <button className="cdp-btn mini" onClick={() => accionDespacho(api.cerrarDespacho, d.id)}>Cerrar</button>}
-                        {puede.cerrar && <button className="cdp-btn mini peligro" onClick={() => accionDespacho(api.cancelarDespacho, d.id)}>Cancelar</button>}
-                      </div>
-                    )}
+                    {unidades.map((d) => <Unidad key={d.id} d={d} ahora={ahora} sonido={sonido} puede={puede} cierre={cierre} setCierre={setCierre}
+                      confirmarCierre={confirmarCierre} ocupado={ocupado} onLlegada={() => accionDespacho(api.marcarLlegada, d.id)} />)}
                   </div>
                 );
               })}
@@ -541,16 +668,67 @@ const CentroDespacho = () => {
               <div className="cdp-list-head"><span>Incidencias recientes ({incidencias.length})</span></div>
               {!incidencias.length && <Vacio texto={`Sin incidencias en las últimas ${horasInc} h.`} />}
               <div className="cdp-incs">
-                {incidencias.slice(0, 40).map((i) => (
-                  <button key={i.id} className="cdp-inc" onClick={() => elegirPunto({ lat: i.lat, lng: i.lon, incidencia: i })}>
-                    <IconoIncidencia size={14} className="cdp-inc-ico" />
-                    <span>
-                      <b>{i.tipo}</b>
-                      <small>{i.codigo}, {i.jurisdiccion}</small>
-                    </span>
-                    <small className="cdp-inc-hora">{fmtHora(i.registrado)}</small>
-                  </button>
-                ))}
+                {incidencias.slice(0, 60).map((i) => {
+                  const pendiente = !i.estado || i.estado === 'PENDIENTE';
+                  const est = ESTADO_INCIDENCIA[i.estado];
+                  return (
+                    <button key={i.id} className={`cdp-inc${i.prioridad === 'ALTA' && pendiente ? ' alta' : ''}${pendiente ? '' : ' atendida'}`}
+                      title={`${i.tipo}${pendiente ? '' : `. ${est?.label}${i.unidades?.length ? `: ${i.unidades.join(', ')}` : ''}`}`}
+                      onClick={() => elegirPunto({ lat: i.lat, lng: i.lon, incidencia: i, group_id: i.group_id ?? undefined })}>
+                      <IconoCategoria categoria={i.categoria} size={15} className="cdp-inc-ico" />
+                      <span>
+                        <b>{i.corto || i.tipo}</b>
+                        <small>
+                          {i.codigo}{i.jurisdiccion ? `, ${i.jurisdiccion}` : ''}
+                          {!pendiente && est && <span className="cdp-chip" style={{ '--c': est.color }}>{est.label}{i.unidades?.length ? `: ${i.unidades.join(', ')}` : ''}</span>}
+                        </small>
+                      </span>
+                      <span className="cdp-inc-der">
+                        <small className="cdp-inc-hora">{fmtHora(i.registrado)}</small>
+                        {i.prioridad && <ChipPrioridad p={i.prioridad} />}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="cdp-card">
+                <button className="cdp-toggle" onClick={() => { setVerTipos((v) => !v); if (!tipos) cargarTipos(); }} aria-expanded={verTipos}>
+                  <h3>Prioridad por tipo de incidencia</h3>
+                  {verTipos ? <PiCaretUp size={15} /> : <PiCaretDown size={15} />}
+                </button>
+                {verTipos && (
+                  <>
+                    <p className="cdp-muted">
+                      La prioridad ordena las incidencias pendientes y decide cuáles suenan. El nombre corto es el que se ve en la lista y el mapa.
+                      {!puede.cerrar && ' Tu rol solo puede verlas.'}
+                    </p>
+                    {!tipos && <Cargando />}
+                    {tipos && (
+                      <table className="cdp-tipos">
+                        <tbody>
+                          {tipos.map((t) => (
+                            <tr key={t.tipo} className={t.configurado ? 'configurado' : ''}>
+                              <td>
+                                <input value={t.corto} maxLength={40} disabled={!puede.cerrar} aria-label={`Nombre corto de ${t.tipo}`}
+                                  onChange={(e) => setTipos((l) => l.map((x) => (x.tipo === t.tipo ? { ...x, corto: e.target.value } : x)))}
+                                  onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== t.corto_guardado) guardarTipo(t, { corto: v }); }} />
+                                <p className="cdp-muted" title={t.tipo}>{t.tipo}</p>
+                              </td>
+                              <td>
+                                <select value={t.prioridad} disabled={!puede.cerrar} aria-label={`Prioridad de ${t.tipo}`} style={{ '--c': PRIORIDAD[t.prioridad]?.color, color: 'var(--c)', fontWeight: 600 }}
+                                  onChange={(e) => guardarTipo(t, { prioridad: e.target.value })}>
+                                  {Object.entries(PRIORIDAD).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                                </select>
+                              </td>
+                              <td className="cdp-muted" title="Vistas en los últimos 3 días">{t.vistos || ''}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </>
+                )}
               </div>
             </section>
           )}
@@ -630,25 +808,137 @@ const Bloque = ({ titulo, icono, nota, total, abierto, onToggle, vacio, children
   </div>
 );
 
-// Fila de un recurso sugerido: quién y en cuánto llega.
-const FilaRecurso = ({ r, icono, sub, puede, ocupado, ocupadoKey, onAsignar, destacado }) => (
-  <div className={`cdp-fila${r.ocupada ? ' ocupada' : ''}${destacado ? ' destacado' : ''}`}>
+// Fila de un recurso sugerido: quién, en cuánto llega y por qué se sugiere. `enviada`: ya se mandó a esta emergencia.
+const FilaRecurso = ({ r, icono, sub, puede, ocupado, ocupadoKey, onAsignar, destacado, enviada }) => (
+  <div className={`cdp-fila${r.ocupada && !enviada ? ' ocupada' : ''}${destacado ? ' destacado' : ''}${enviada ? ' enviada' : ''}`}>
     {icono}
     <div className="cdp-fila-txt">
       <b>{r.codigo}</b>
-      <small>{r.ocupada ? 'Ya tiene un despacho' : sub}</small>
+      <small className="cdp-fila-razon">{enviada ? 'Ya va a esta emergencia' : r.ocupada ? `Ya atiende otro despacho${r.gps_viejo ? ', posición vieja' : ''}` : sub}</small>
     </div>
     <div className="cdp-fila-eta">
       <b>{fmtMin(r.duration_s)}{r.fuente === 'estimado' ? '*' : ''}</b>
       <small>{fmtKm(r.distance_m)}</small>
     </div>
-    {puede && (
-      <button className={`cdp-btn mini${destacado ? ' primario' : ''}`} disabled={!!ocupado} onClick={onAsignar}>
-        {ocupado === ocupadoKey ? 'Enviando' : 'Enviar'}
-      </button>
-    )}
+    {puede && (enviada
+      ? <span className="ok-txt"><PiCheck size={14} /> Enviada</span>
+      : (
+        <button className={`cdp-btn mini${destacado ? ' primario' : ''}`} disabled={!!ocupado} onClick={onAsignar}>
+          {ocupado === ocupadoKey ? 'Enviando' : 'Enviar'}
+        </button>
+      ))}
   </div>
 );
+
+const ChipPrioridad = ({ p }) => {
+  const v = PRIORIDAD[p];
+  return v ? <span className="cdp-chip" style={{ '--c': v.color }}>{v.label}</span> : null;
+};
+
+// Una unidad dentro de un grupo de despacho: estado, cronómetros por tramo, acciones y cierre con motivo.
+const Unidad = ({ d, ahora, sonido, puede, cierre, setCierre, confirmarCierre, ocupado, onLlegada }) => {
+  const st = ESTADO_DESPACHO[d.status];
+  const activo = d.status === 'ASIGNADO' || d.status === 'EN_LUGAR';
+  const enCamino = d.status === 'ASIGNADO' ? segDesde(d.assigned_at, ahora) : d.tramos?.despacho_a_llegada_s ?? d.respuesta_s;
+  const enLugar = d.status === 'EN_LUGAR' ? segDesde(d.arrived_at, ahora) : d.tramos?.llegada_a_cierre_s;
+  const atrasado = d.status === 'ASIGNADO' && enCamino > limiteAtraso(d, sonido);
+  const abriendoCierre = cierre?.id === d.id;
+  return (
+    <div className="cdp-unidad">
+      <div className="cdp-unidad-head">
+        <span className="cdp-desp-ico">
+          {d.resource_type === 'MOVIL' ? <IconoVehiculo subtipo="AUTOMOVIL" size={14} /> : <IconoAPie tipo={d.resource_type} size={14} />}
+        </span>
+        <b>{d.unit_code}</b>
+        <span className="cdp-chip" style={{ '--c': st.color }}>{st.label}</span>
+        {d.status === 'ASIGNADO' && (
+          <span className={`cdp-crono${atrasado ? ' atrasado' : ''}`} title={atrasado ? 'Pasó el límite sin llegar' : 'Tiempo desde que se despachó'}>
+            {fmtCrono(enCamino)}{atrasado ? ' !' : ''}
+          </span>
+        )}
+        {d.status === 'EN_LUGAR' && <span className="cdp-crono" title="Tiempo en el lugar">{fmtCrono(enLugar)}</span>}
+      </div>
+      <div className="cdp-tramos">
+        {(d.tramos?.recepcion_a_despacho_s ?? null) !== null && <span>Recepción a despacho <b>{fmtCrono(d.tramos.recepcion_a_despacho_s)}</b></span>}
+        <span className={d.arrived_at ? 'ok-txt' : ''}>Despacho a llegada <b>{d.arrived_at ? fmtCrono(enCamino) : d.status === 'ASIGNADO' ? 'en curso' : '-'}</b></span>
+        {(d.arrived_at || d.status === 'EN_LUGAR') && <span>En el lugar <b>{fmtCrono(enLugar)}</b></span>}
+        {d.status === 'ASIGNADO' && d.ruta && <span>Le faltan <b>{fmtMin(d.ruta.duration_s)}</b> ({fmtKm(d.ruta.distance_m)} por calles)</span>}
+        {d.status === 'ASIGNADO' && !d.ruta && (d.distancia_actual_m ?? null) !== null && <span>Está a <b>{fmtKm(d.distancia_actual_m)}</b></span>}
+      </div>
+      {!activo && (
+        <div className="cdp-resultado">
+          {st.label} {fmtHora(d.closed_at)}{d.result ? `: ${textoResultado(d.result)}` : ''}{d.notes ? `. ${d.notes}` : ''}
+        </div>
+      )}
+      {activo && !abriendoCierre && (
+        <div className="cdp-row">
+          <a className="cdp-btn mini" href={d.enlaces.waze} target="_blank" rel="noreferrer"><PiNavigationArrow size={13} /> Waze</a>
+          <a className="cdp-btn mini" href={textoWhatsApp(d)} target="_blank" rel="noreferrer"><PiWhatsappLogo size={13} /> WhatsApp</a>
+          {puede.cerrar && d.status === 'ASIGNADO' && <button className="cdp-btn mini" onClick={onLlegada}>Llegó</button>}
+          {puede.cerrar && <button className="cdp-btn mini" onClick={() => setCierre({ id: d.id, cancelar: false, resultado: 'ATENDIDO', notas: '' })}>Cerrar</button>}
+          {puede.cerrar && <button className="cdp-btn mini peligro" onClick={() => setCierre({ id: d.id, cancelar: true, resultado: 'REASIGNADO', notas: '' })}>Cancelar</button>}
+        </div>
+      )}
+      {abriendoCierre && (
+        <div className="cdp-cierre">
+          <select aria-label="Resultado" value={cierre.resultado} onChange={(e) => setCierre((c) => ({ ...c, resultado: e.target.value }))}>
+            {(cierre.cancelar ? RESULTADOS_CANCELACION : RESULTADOS_CIERRE).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          </select>
+          <input aria-label="Nota" placeholder="Nota corta (opcional)" maxLength={300} value={cierre.notas} onChange={(e) => setCierre((c) => ({ ...c, notas: e.target.value }))}
+            onKeyDown={(e) => { if (e.key === 'Enter') confirmarCierre(); }} />
+          <div className="cdp-row">
+            <button className={`cdp-btn mini ${cierre.cancelar ? 'peligro' : 'primario'}`} disabled={ocupado === `c-${d.id}`} onClick={confirmarCierre}>
+              {ocupado === `c-${d.id}` ? 'Guardando' : cierre.cancelar ? 'Confirmar cancelación' : 'Confirmar cierre'}
+            </button>
+            <button className="cdp-btn mini" onClick={() => setCierre(null)}>Volver</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Avisos que no desaparecen: incidencias urgentes sin despachar y despachos que pasaron el límite sin llegar.
+// El sonido (y el límite en minutos) se configura aquí y se recuerda por operador.
+const PanelAvisos = ({ urgentes, atrasados, ahora, sonido, cambiarSonido, onIncidencia, onDespacho }) => {
+  const n = urgentes.length + atrasados.length;
+  return (
+    <div className={`cdp-avisos${n ? ' con-avisos' : ''}`}>
+      <div className="cdp-avisos-head">
+        <PiBellRinging size={15} /> Avisos {n > 0 && <span className="cdp-contador">{n}</span>}
+        <label className="cdp-inline" title="Avisar cuando una unidad en camino pase este tiempo sin llegar (o 1.5 veces lo estimado, lo que sea mayor)">Atraso a los
+          <select value={sonido.limite_min} onChange={(e) => cambiarSonido({ limite_min: Number(e.target.value) })}>
+            {[5, 8, 10, 15, 20, 30].map((m) => <option key={m} value={m}>{m} min</option>)}
+          </select>
+        </label>
+        <button className={`cdp-icon-btn${sonido.activo ? '' : ' apagado'}`} onClick={() => { cambiarSonido({ activo: !sonido.activo }); if (!sonido.activo) setTimeout(() => sonar('alta'), 50); }}
+          title={sonido.activo ? 'Sonido activado: clic para silenciar' : 'Sonido silenciado: clic para activar'} aria-label="Sonido de avisos">
+          {sonido.activo ? <PiSpeakerHigh size={15} /> : <PiSpeakerSlash size={15} />}
+        </button>
+      </div>
+      {urgentes.slice(0, MAX_AVISOS_URGENTES).map((i) => (
+        <button key={`u-${i.id}`} className="cdp-aviso-item alta" onClick={() => onIncidencia(i)}>
+          <PiSiren size={15} />
+          <span>
+            Urgente sin despachar: {i.corto || i.tipo}
+            <small>{i.codigo}{i.jurisdiccion ? `, ${i.jurisdiccion}` : ''}, hace {fmtCrono(segDesde(i.registrado, ahora))}. Clic para despachar.</small>
+          </span>
+        </button>
+      ))}
+      {atrasados.map((d) => (
+        <button key={`a-${d.id}`} className="cdp-aviso-item atraso" onClick={() => onDespacho(d)}>
+          <PiWarning size={15} />
+          <span>
+            {d.unit_code} no ha llegado a {d.incident_code ?? 'punto marcado'}
+            <small>Lleva {fmtCrono(segDesde(d.assigned_at, ahora))} en camino{d.ruta ? `, le faltan ${fmtMin(d.ruta.duration_s)}` : ''}. Clic para ver en el mapa.</small>
+          </span>
+        </button>
+      ))}
+      {urgentes.length > MAX_AVISOS_URGENTES && <div className="cdp-avisos-vacio">Y {urgentes.length - MAX_AVISOS_URGENTES} urgentes más en la lista de incidencias.</div>}
+      {!n && <div className="cdp-avisos-vacio">Sin avisos: no hay urgentes de los últimos {URGENTE_MIN} min sin despachar ni unidades atrasadas.</div>}
+    </div>
+  );
+};
 
 const Vacio = ({ texto }) => <p className="cdp-empty">{texto}</p>;
 
@@ -780,11 +1070,16 @@ const Resumen = ({ estado, enLinea, metricas, planes, zonas, cobertura, turno, o
           <h3>Despacho en los últimos 7 días</h3>
           <table className="cdp-tabla">
             <tbody>
-              <tr><td>Despachos</td><td><b>{metricas.despachos}</b></td></tr>
+              <tr><td>Emergencias atendidas</td><td><b>{metricas.emergencias ?? metricas.despachos}</b></td></tr>
+              <tr><td>Unidades despachadas</td><td><b>{metricas.despachos}</b></td></tr>
               <tr><td>Con llegada detectada</td><td><b>{metricas.con_llegada}</b></td></tr>
+              {(metricas.recepcion_a_despacho_mediana_s ?? null) !== null && <tr><td>De recibida a despachada (mediana)</td><td><b>{fmtMin(metricas.recepcion_a_despacho_mediana_s)}</b></td></tr>}
               <tr><td>Tiempo de respuesta mediano</td><td><b>{fmtMin(metricas.respuesta_mediana_s)}</b></td></tr>
               <tr><td>Tiempo de respuesta p90</td><td><b>{fmtMin(metricas.respuesta_p90_s)}</b></td></tr>
               <tr><td>Se eligió la primera sugerencia</td><td><b>{metricas.eligieron_primera_sugerencia}</b></td></tr>
+              {metricas.por_prioridad?.ALTA > 0 && <tr><td>De prioridad alta</td><td><b>{metricas.por_prioridad.ALTA}</b></td></tr>}
+              {metricas.por_resultado?.FALSA_ALARMA > 0 && <tr><td>Falsas alarmas</td><td><b>{metricas.por_resultado.FALSA_ALARMA}</b></td></tr>}
+              {metricas.por_resultado?.DERIVADO_PNP > 0 && <tr><td>Derivados a PNP</td><td><b>{metricas.por_resultado.DERIVADO_PNP}</b></td></tr>}
             </tbody>
           </table>
         </div>

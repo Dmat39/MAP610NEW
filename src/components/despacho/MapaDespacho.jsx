@@ -12,6 +12,7 @@ const ZOOM_ETIQUETAS = 15; // desde este zoom se muestra el indicativo junto a c
 const estiloJur = { color: '#475569', weight: 1.4, dashArray: '5 5', fillColor: '#64748b', fillOpacity: 0.03 };
 const nombreVehiculo = { MOTO: 'Moto', CAMION: 'Camioneta', AUTOMOVIL: 'Camioneta' };
 const nombreEstado = { disponible: 'Disponible', ocupada: 'Atendiendo un despacho', en_lugar: 'En el lugar del despacho', sin_reporte: 'Sin reporte' };
+const ESTADO_INC = { DESPACHADA: 'Despachada', EN_ATENCION: 'En atención', CERRADA: 'Cerrada' };
 
 /**
  * Tarjeta flotante del mapa. Sale hacia el lado con más espacio, con ancho máximo y texto que salta de línea.
@@ -132,17 +133,30 @@ const MapaDespacho = ({
         );
       })}
 
-      {/* Incidencias recientes */}
-      {capas.incidencias && incidencias.map((i) => (
-        <CircleMarker key={i.id} center={[i.lat, i.lon]} radius={5}
-          pathOptions={{ color: '#5b21b6', fillColor: COLOR.incidencia, fillOpacity: 0.95, weight: 1.5 }}
-          eventHandlers={{ click: () => onSelectIncidencia?.(i) }}>
-          <Tip titulo={i.tipo || 'Incidencia'} tono="incidencia" sep={8}>
-            <div className="cdp-tip-m">{i.codigo}{i.jurisdiccion ? `, ${i.jurisdiccion}` : ''}</div>
-            <div className="cdp-tip-acc">Clic para despachar</div>
-          </Tip>
-        </CircleMarker>
-      ))}
+      {/* Incidencias recientes: morado = incidencia; el tamaño y el borde dicen la prioridad (alta más grande,
+          con borde rojo); las ya despachadas o cerradas van huecas */}
+      {capas.incidencias && incidencias.map((i) => {
+        const pendiente = !i.estado || i.estado === 'PENDIENTE';
+        const alta = i.prioridad === 'ALTA';
+        return (
+          <CircleMarker key={i.id} center={[i.lat, i.lon]} radius={alta ? 7 : i.prioridad === 'BAJA' ? 4 : 5}
+            pathOptions={{
+              color: alta && pendiente ? COLOR.emergencia : '#5b21b6', fillColor: COLOR.incidencia,
+              fillOpacity: pendiente ? 0.95 : 0.2, weight: alta ? 2.5 : 1.5, opacity: pendiente ? 1 : 0.6,
+            }}
+            eventHandlers={{ click: () => onSelectIncidencia?.(i) }}>
+            <Tip titulo={i.corto || i.tipo || 'Incidencia'} tono="incidencia" sep={10}>
+              {i.corto && i.tipo && i.corto !== i.tipo && <div className="cdp-tip-m">{i.tipo}</div>}
+              <div className="cdp-tip-m">{i.codigo}{i.jurisdiccion ? `, ${i.jurisdiccion}` : ''}</div>
+              <div>
+                {i.prioridad ? `Prioridad ${i.prioridad.toLowerCase()}` : ''}
+                {i.estado && i.estado !== 'PENDIENTE' ? `. ${ESTADO_INC[i.estado] ?? i.estado}${i.unidades?.length ? `: ${i.unidades.join(', ')}` : ''}` : ''}
+              </div>
+              <div className="cdp-tip-acc">{pendiente ? 'Clic para despachar' : 'Clic para enviar refuerzo'}</div>
+            </Tip>
+          </CircleMarker>
+        );
+      })}
 
       {/* Despachos abiertos: recorrido por calles de la móvil hacia el punto (recta si aún no hay ruta) */}
       {abiertos.filter((d) => d.status === 'ASIGNADO' && d.movil_actual?.lat).map((d) => (
@@ -153,6 +167,7 @@ const MapaDespacho = ({
       {abiertos.map((d) => (
         <Marker key={`dp-${d.id}`} position={[d.lat, d.lng]} icon={pinDespacho(d.status === 'EN_LUGAR', d.unit_code)} zIndexOffset={900}>
           <Tip titulo={`${d.unit_code} hacia ${d.incident_code ?? 'punto marcado'}`} tono={d.status === 'EN_LUGAR' ? 'en_lugar' : 'ocupada'} sep={14} dy={-16}>
+            {d.incident_corto && <div className="cdp-tip-m">{d.incident_corto}{d.priority ? `, prioridad ${d.priority.toLowerCase()}` : ''}</div>}
             <div className="cdp-tip-m">
               {d.status === 'EN_LUGAR'
                 ? 'En el lugar'
