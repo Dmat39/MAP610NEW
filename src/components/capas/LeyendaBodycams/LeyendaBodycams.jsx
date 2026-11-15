@@ -1,6 +1,8 @@
 // LeyendaBodycams.jsx
 import React, { useEffect, useRef } from 'react';
 import { useMapLayout } from '../../../context/MapLayoutContext';
+import { COLOR } from '../../mapa/estados';
+import { SimboloAPie } from '../../mapa/simbolos';
 import './LeyendaBodycams.css';
 
 const PANEL_ID = 'leyendaBodycams';
@@ -8,19 +10,11 @@ const PANEL_ORDER = 3;
 const PANEL_HEIGHT = 200;
 const BASE_RIGHT = 20;
 
-const PIN_BODYCAM = ({ color }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="26" viewBox="0 0 28 36" className="leyenda-bodycams-pin">
-    <path d="M14 0C6.27 0 0 6.27 0 14c0 9.75 14 22 14 22S28 23.75 28 14C28 6.27 21.73 0 14 0z" fill="white" stroke={color} strokeWidth="2.5"/>
-    <circle cx="14" cy="13" r="9" fill="white" stroke={color} strokeWidth="1.5"/>
-    <rect x="10.5" y="8" width="7" height="10" rx="1.5" fill={color}/>
-    <circle cx="14" cy="11.5" r="2" fill="white"/>
-  </svg>
-);
-
+// Mismo símbolo que en Despacho; el color es el estado.
 const ESTADOS = [
-  { color: '#16a34a', label: 'ACTIVA',        desc: 'Activa (últimos 30 min)' },
-  { color: '#eab308', label: 'INACTIVA',       desc: 'Sin movimiento (30–60 min)' },
-  { color: '#9ca3af', label: 'DESCONECTADA',   desc: 'Sin señal (más de 60 min)' },
+  { estado: 'disponible',  label: 'ACTIVA',       desc: 'Activa (últimos 30 min)' },
+  { estado: 'gps_viejo',   label: 'INACTIVA',     desc: 'Sin movimiento (30 a 60 min)' },
+  { estado: 'sin_reporte', label: 'DESCONECTADA', desc: 'Sin señal (más de 60 min)' },
 ];
 
 const LeyendaBodycams = ({ visible }) => {
@@ -55,11 +49,11 @@ const LeyendaBodycams = ({ visible }) => {
       </div>
 
       <div className="leyenda-bodycams-content">
-        {ESTADOS.map(({ color, label, desc }) => (
+        {ESTADOS.map(({ estado, label, desc }) => (
           <div key={label} className="leyenda-bodycams-item">
-            <PIN_BODYCAM color={color} />
+            <SimboloAPie tipo="BODYCAM" estado={estado} size={20} />
             <div className="leyenda-bodycams-info">
-              <span className="leyenda-bodycams-label" style={{ color }}>{label}</span>
+              <span className="leyenda-bodycams-label" style={{ color: COLOR[estado] }}>{label}</span>
               <span className="leyenda-bodycams-desc">{desc}</span>
             </div>
           </div>

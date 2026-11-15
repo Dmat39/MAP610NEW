@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Marker, Popup, LayerGroup, useMapEvents } from 'react-leaflet';
 import { useMap } from 'react-leaflet';
-import L from 'leaflet';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { IconoVehiculo } from '../../despacho/iconos';
+import { COLOR, estadoRadioDolphin } from '../../mapa/estados';
+import { pinAPie, pinMovil } from '../../mapa/pines';
 import { obtenerRadios } from '../../../services/radiosService';
 import { computeJurisdiccion, pasaFiltroJurisdiccion } from '../../../utils/jurisdicciones';
 import { haversineM } from '../../../utils/geoUtils';
@@ -14,64 +13,14 @@ const COLOR_ESTADO = {
   rojo:     'APAGADO',
 };
 
-// Cache de iconos por color para evitar recrear DivIcon en cada polling update
-const _iconCacheRadios = new Map();
-
-// Mapa de colores frontend para diferenciar de las bodycams
-const mapRadioColor = (r) => {
-  const cName = r?.color?.toLowerCase() || '';
-  if (cName === 'verde') return '#3b82f6'; // Azul
-  if (cName === 'amarillo') return '#f97316'; // Naranja
-  if (cName === 'rojo') return '#6b7280'; // Gris
-  
-  const c = r?.hexacolor?.toLowerCase() || '';
-  if (c === '#16a34a' || c === '#22c55e' || c === 'green') return '#3b82f6'; // Verde -> Azul
-  if (c === '#eab308' || c === '#facc15' || c === 'yellow') return '#f97316'; // Amarillo -> Naranja
-  if (c === '#ef4444' || c === '#f87171' || c === 'red') return '#6b7280'; // Rojo -> Gris
-  return r?.hexacolor || '#3b82f6';
-};
-
-// Radio que va en una móvil (por tipo de Dolphin o asignada en SIVECAM): símbolo de camioneta o moto
-// en vez del de radio, con el color del estado (azul OK, naranja sin GPS, gris apagado).
-const crearIconoMovil = (r) => {
-  const color = mapRadioColor(r);
-  const moto = r.clase === 'MOTO';
-  const key = `movil-${moto ? 'moto' : 'camioneta'}-${color}`;
-  if (_iconCacheRadios.has(key)) return _iconCacheRadios.get(key);
-  const svg = renderToStaticMarkup(<IconoVehiculo subtipo={moto ? 'MOTO' : 'CAMION'} size={16} color="#fff" />);
-  const icon = new L.DivIcon({
-    html: `<div style="width:30px;height:30px;border-radius:50%;background:${color};border:2.5px solid #fff;box-sizing:border-box;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(15,23,42,0.35)">${svg}</div>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-    popupAnchor: [0, -15],
-    className: '',
-  });
-  _iconCacheRadios.set(key, icon);
-  return icon;
-};
-
+// Mismos símbolos que Despacho: la radio de una móvil (tipo de Dolphin o asignada en SIVECAM) se ve como
+// camioneta o moto; la portátil, como sereno a pie. El color es el estado (azul OK, amarillo sin GPS, gris apagado).
+const mapRadioColor = (r) => COLOR[estadoRadioDolphin(r)];
 const crearIcono = (r) => {
-  if (r.es_movil) return crearIconoMovil(r);
-  const color = mapRadioColor(r);
-  if (_iconCacheRadios.has(color)) return _iconCacheRadios.get(color);
-  const icon = new L.DivIcon({
-    html: `<div>
-      <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26" style="display:block; filter: drop-shadow(0px 3px 3px rgba(0,0,0,0.3));">
-        <rect x="2" y="2" width="22" height="22" rx="6" fill="white" stroke="${color}" stroke-width="2.5"/>
-        <rect x="14.5" y="5.5" width="1.5" height="4" rx="0.75" fill="${color}"/>
-        <rect x="9" y="8" width="8" height="12" rx="1.5" fill="${color}"/>
-        <rect x="10.5" y="9.5" width="5" height="3.5" rx="0.5" fill="white" opacity="0.9"/>
-        <circle cx="13" cy="16" r="1.5" fill="white"/>
-        <rect x="11" y="18.5" width="4" height="0.6" rx="0.3" fill="white" opacity="0.6"/>
-      </svg>
-    </div>`,
-    iconSize: [26, 26],
-    iconAnchor: [13, 13],
-    popupAnchor: [0, -13],
-    className: '',
-  });
-  _iconCacheRadios.set(color, icon);
-  return icon;
+  const estado = estadoRadioDolphin(r);
+  return r.es_movil
+    ? pinMovil({ subtipo: r.clase === 'MOTO' ? 'MOTO' : 'CAMION', estado })
+    : pinAPie({ tipo: 'RADIO', estado });
 };
 
 const CapaRadios = ({

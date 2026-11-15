@@ -1,6 +1,8 @@
 // LeyendaRadios.jsx
 import React, { useEffect, useRef } from 'react';
 import { useMapLayout } from '../../../context/MapLayoutContext';
+import { COLOR } from '../../mapa/estados';
+import { SimboloAPie, SimboloMovil } from '../../mapa/simbolos';
 import './LeyendaRadios.css';
 
 const PANEL_ID = 'leyendaRadios';
@@ -8,21 +10,16 @@ const PANEL_ORDER = 2;
 const PANEL_HEIGHT = 192;
 const BASE_RIGHT = 20;
 
-const PIN_RADIO = ({ color }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 26 26" className="leyenda-radios-pin">
-    <rect x="2" y="2" width="22" height="22" rx="6" fill="white" stroke={color} strokeWidth="2.5"/>
-    <rect x="14.5" y="5.5" width="1.5" height="4" rx="0.75" fill={color}/>
-    <rect x="9" y="8" width="8" height="12" rx="1.5" fill={color}/>
-    <rect x="10.5" y="9.5" width="5" height="3.5" rx="0.5" fill="white" opacity="0.9"/>
-    <circle cx="13" cy="16" r="1.5" fill="white"/>
-    <rect x="11" y="18.5" width="4" height="0.6" rx="0.3" fill="white" opacity="0.6"/>
-  </svg>
-);
-
+// Forma = qué es (camioneta, moto o sereno a pie); color = estado. Igual que en Despacho.
+const FORMAS = [
+  { key: 'camioneta', simbolo: <SimboloMovil subtipo="CAMION" size={20} />, label: 'Móvil (camioneta)' },
+  { key: 'moto',      simbolo: <SimboloMovil subtipo="MOTO" size={20} />,   label: 'Moto' },
+  { key: 'apie',      simbolo: <SimboloAPie tipo="RADIO" size={20} />,      label: 'Sereno a pie con radio' },
+];
 const ESTADOS = [
-  { color: '#3b82f6', label: 'OK',       desc: 'Radio activo con GPS' },
-  { color: '#f97316', label: 'SIN GPS',  desc: 'Encendido sin señal GPS' },
-  { color: '#6b7280', label: 'APAGADO',  desc: 'Radio desconectado' },
+  { estado: 'disponible',  label: 'OK',      desc: 'Radio activo con GPS' },
+  { estado: 'gps_viejo',   label: 'SIN GPS', desc: 'Encendido sin señal GPS' },
+  { estado: 'sin_reporte', label: 'APAGADO', desc: 'Radio desconectado' },
 ];
 
 const LeyendaRadios = ({ visible }) => {
@@ -57,11 +54,19 @@ const LeyendaRadios = ({ visible }) => {
       </div>
 
       <div className="leyenda-radios-content">
-        {ESTADOS.map(({ color, label, desc }) => (
-          <div key={label} className="leyenda-radios-item">
-            <PIN_RADIO color={color} />
+        {FORMAS.map(({ key, simbolo, label }) => (
+          <div key={key} className="leyenda-radios-item">
+            {simbolo}
             <div className="leyenda-radios-info">
-              <span className="leyenda-radios-label" style={{ color }}>{label}</span>
+              <span className="leyenda-radios-desc">{label}</span>
+            </div>
+          </div>
+        ))}
+        {ESTADOS.map(({ estado, label, desc }) => (
+          <div key={label} className="leyenda-radios-item">
+            <span className="leyenda-estado" style={{ background: COLOR[estado] }} />
+            <div className="leyenda-radios-info">
+              <span className="leyenda-radios-label" style={{ color: COLOR[estado] }}>{label}</span>
               <span className="leyenda-radios-desc">{desc}</span>
             </div>
           </div>

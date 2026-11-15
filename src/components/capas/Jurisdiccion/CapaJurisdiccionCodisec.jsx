@@ -43,8 +43,8 @@ const CapaJurisdiccionCodisec = ({
 
   const estiloPorDefecto = feature => ({
     color: feature.properties.color || '#34b429',
-    weight: 2,
-    fillOpacity: esInactivo ? 0.1 : 0.25,
+    weight: 2.5,
+    fillOpacity: esInactivo ? 0.04 : 0.08,
     interactive: !esInactivo && !ubicadorActivo,
     bubblingMouseEvents: esInactivo || ubicadorActivo ? false : true,
   });

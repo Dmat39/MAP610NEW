@@ -41,8 +41,8 @@ const CapaJurisdiccion = ({
 
     return {
       color: feature.properties.color || '#34b429',
-      weight: 2,
-      fillOpacity: esInactivo ? 0.1 : 0.2, // Menos opacidad cuando está inactivo
+      weight: 2.5,
+      fillOpacity: esInactivo ? 0.04 : 0.07, // Relleno suave: que se lean las calles; el borde marca el límite
       interactive: !esInactivo && !ubicadorActivo, // No interactivo si ubicador está activo o está inactivo
       bubblingMouseEvents: esInactivo || ubicadorActivo ? false : true, // Prevenir bubbling cuando inactivo o ubicador activo
     };
