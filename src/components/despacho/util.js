@@ -37,3 +37,49 @@ export const ESTADO_DESPACHO = {
   CERRADO: { label: 'Cerrado', color: '#64748b' },
   CANCELADO: { label: 'Cancelado', color: '#94a3b8' },
 };
+
+// Prioridad por tipo de incidencia (la define el backend; aquí solo cómo se muestra).
+// Rojo = urgente (mismo tono que emergencia), ámbar = media, gris = baja.
+export const PRIORIDAD = {
+  ALTA: { label: 'Alta', color: '#dc2626', orden: 0 },
+  MEDIA: { label: 'Media', color: '#b45309', orden: 1 },
+  BAJA: { label: 'Baja', color: '#64748b', orden: 2 },
+};
+
+// Estado de una incidencia según sus despachos
+export const ESTADO_INCIDENCIA = {
+  PENDIENTE: { label: 'Pendiente', color: '#7c3aed' },
+  DESPACHADA: { label: 'Despachada', color: '#f97316' },
+  EN_ATENCION: { label: 'En atención', color: '#15803d' },
+  CERRADA: { label: 'Cerrada', color: '#64748b' },
+};
+
+// Resultado al cerrar o cancelar un despacho (mismos valores que el backend)
+export const RESULTADOS_CIERRE = [
+  ['ATENDIDO', 'Atendido'],
+  ['SIN_NOVEDAD', 'Sin novedad al llegar'],
+  ['FALSA_ALARMA', 'Falsa alarma'],
+  ['DERIVADO_PNP', 'Derivado a PNP'],
+  ['DERIVADO_BOMBEROS', 'Derivado a Bomberos'],
+  ['DERIVADO_SAMU', 'Derivado a SAMU'],
+  ['NO_UBICADO', 'No se ubicó el lugar'],
+  ['OTRO', 'Otro'],
+];
+export const RESULTADOS_CANCELACION = [
+  ['REASIGNADO', 'Se reasignó a otra unidad'],
+  ['FALSA_ALARMA', 'Falsa alarma'],
+  ['DERIVADO_PNP', 'Lo atiende la PNP'],
+  ['OTRO', 'Otro'],
+];
+export const textoResultado = (r) =>
+  [...RESULTADOS_CIERRE, ...RESULTADOS_CANCELACION].find(([k]) => k === r)?.[1] ?? r ?? '';
+
+// Cronómetro: 0:45, 12:03, 1:05:10
+export const fmtCrono = (s) => {
+  if ((s ?? null) === null || s < 0) return '-';
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = Math.floor(s % 60);
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(x).padStart(2, '0')}` : `${m}:${String(x).padStart(2, '0')}`;
+};
+
+// Segundos desde una fecha ISO hasta `ahora` (ms)
+export const segDesde = (iso, ahora = Date.now()) => (iso ? Math.max(0, Math.round((ahora - new Date(iso).getTime()) / 1000)) : null);

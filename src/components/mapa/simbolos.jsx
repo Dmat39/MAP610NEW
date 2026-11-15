@@ -2,7 +2,8 @@
 // forma = qué es, color = estado. Los pines del mapa (DivIcon) están en pines.jsx.
 import {
   PiJeepFill, PiMotorcycleFill, PiPersonSimpleWalkFill, PiVideoCameraFill,
-  PiSecurityCameraFill, PiSirenFill, PiWarningFill,
+  PiSecurityCameraFill, PiSirenFill, PiWarningFill, PiUserFill, PiBagFill, PiFirstAidFill, PiCarFill,
+  PiMegaphoneFill, PiBeerBottleFill, PiScrollFill, PiDotsThreeCircleFill,
 } from 'react-icons/pi';
 import { COLOR, COLOR_RIESGO } from './estados';
 import './simbolos.css';
@@ -15,6 +16,16 @@ export const IconoAPie = ({ tipo, ...p }) =>
 export const IconoCamara = (p) => <PiSecurityCameraFill {...p} />;
 export const IconoSirena = (p) => <PiSirenFill {...p} />;
 export const IconoIncidencia = (p) => <PiWarningFill {...p} />;
+
+// Categoría de una incidencia (la decide el backend según el tipo): un ícono por categoría, mismo color morado.
+const ICONO_CATEGORIA = {
+  PERSONA: PiUserFill, PATRIMONIO: PiBagFill, AUXILIO: PiFirstAidFill, TRANSITO: PiCarFill,
+  TRANQUILIDAD: PiMegaphoneFill, COSTUMBRES: PiBeerBottleFill, ORDENANZAS: PiScrollFill, OTROS: PiDotsThreeCircleFill,
+};
+export const IconoCategoria = ({ categoria, ...p }) => {
+  const I = ICONO_CATEGORIA[categoria] ?? PiWarningFill;
+  return <I {...p} />;
+};
 
 // ─── Símbolos inline (leyendas y listas: mismo dibujo que en el mapa) ─────────
 export const SimboloMovil = ({ subtipo = 'CAMION', estado = 'disponible', size = 24 }) => (

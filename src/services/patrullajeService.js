@@ -51,5 +51,9 @@ export const asignarMovil = (body) => req('despacho/asignar', { method: 'POST', 
 export const obtenerDespachos = (horas = 24) => req(`despacho?horas=${horas}`);
 export const obtenerMetricasDespacho = (horas = 168) => req(`despacho/metricas?horas=${horas}`);
 export const marcarLlegada = (id) => req(`despacho/${id}/llegada`, { method: 'PATCH' });
-export const cerrarDespacho = (id, notas) => req(`despacho/${id}/cerrar`, { method: 'PATCH', body: { notas } });
-export const cancelarDespacho = (id, notas) => req(`despacho/${id}/cancelar`, { method: 'PATCH', body: { notas } });
+// body: { resultado, notas } (resultado: ATENDIDO, FALSA_ALARMA, DERIVADO_PNP, ...)
+export const cerrarDespacho = (id, body = {}) => req(`despacho/${id}/cerrar`, { method: 'PATCH', body });
+export const cancelarDespacho = (id, body = {}) => req(`despacho/${id}/cancelar`, { method: 'PATCH', body });
+// Prioridad y nombre corto por tipo de incidencia
+export const obtenerTiposIncidencia = () => req('despacho/tipos');
+export const guardarTipoIncidencia = (body) => req('despacho/tipos', { method: 'PUT', body });
