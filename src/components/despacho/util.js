@@ -9,21 +9,6 @@ export const TURNOS = [
 ];
 export const turnoLabel = (v) => TURNOS.find((t) => t.value === v)?.label ?? v;
 
-// Colores distinguibles para las rutas de cada móvil.
-const PALETA = [
-  '#2563eb', '#16a34a', '#db2777', '#ea580c', '#7c3aed', '#0891b2', '#ca8a04', '#dc2626',
-  '#4f46e5', '#059669', '#c026d3', '#65a30d', '#0284c7', '#b45309', '#9333ea', '#e11d48',
-];
-export const colorPorIndice = (i) => PALETA[i % PALETA.length];
-// Color estable por móvil (no cambia entre recargas aunque cambie el orden de la lista).
-export const colorPorIssi = (issi) => {
-  let h = 0;
-  for (const c of String(issi)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return PALETA[h % PALETA.length];
-};
-
-export const NIVEL_COLOR = { alto: '#dc2626', medio: '#f97316', bajo: '#eab308' };
-
 export const fmtMin = (s) => ((s ?? null) === null ? '-' : s < 60 ? `${Math.round(s)} s` : `${(s / 60).toFixed(1)} min`);
 export const fmtKm = (m) => ((m ?? null) === null ? '-' : m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`);
 export const fmtHora = (iso) =>
@@ -45,9 +30,10 @@ export const textoWhatsApp = (d) => {
   return `https://wa.me/?text=${encodeURIComponent(lineas.join('\n'))}`;
 };
 
+// Colores de estado: los mismos de mapa/simbolos (naranja en camino, verde en el lugar)
 export const ESTADO_DESPACHO = {
-  ASIGNADO: { label: 'En camino', color: '#2563eb' },
-  EN_LUGAR: { label: 'En el lugar', color: '#16a34a' },
+  ASIGNADO: { label: 'En camino', color: '#f97316' },
+  EN_LUGAR: { label: 'En el lugar', color: '#15803d' },
   CERRADO: { label: 'Cerrado', color: '#64748b' },
   CANCELADO: { label: 'Cancelado', color: '#94a3b8' },
 };

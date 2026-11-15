@@ -1,23 +1,26 @@
-import { Fragment, useEffect, useMemo } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   MapContainer, TileLayer, CircleMarker, Circle, Polyline, Marker, Tooltip, GeoJSON, useMap, useMapEvents,
 } from 'react-leaflet';
 import L from 'leaflet';
-import { CENTRO_SJL, NIVEL_COLOR, fmtKm, fmtMin } from './util';
-import { pinAPie, pinCamara, pinDespacho, pinEmergencia, pinMovil, pinParada } from './pines';
+import { CENTRO_SJL, fmtKm, fmtMin } from './util';
+import { COLOR, COLOR_RIESGO, OPACIDAD_RIESGO, MINUTOS_GPS_VIEJO, estadoRecurso } from '../mapa/estados';
+import { pinAPie, pinCamara, pinDespacho, pinEmergencia, pinMovil, pinParada } from '../mapa/pines';
 
+const TILE = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'; // en tema oscuro se invierte con CSS (ver index.css)
+const ZOOM_ETIQUETAS = 15; // desde este zoom se muestra el indicativo junto a cada móvil
 const estiloJur = { color: '#475569', weight: 1.4, dashArray: '5 5', fillColor: '#64748b', fillOpacity: 0.03 };
 const nombreVehiculo = { MOTO: 'Moto', CAMION: 'Camioneta', AUTOMOVIL: 'Camioneta' };
+const nombreEstado = { disponible: 'Disponible', ocupada: 'Atendiendo un despacho', en_lugar: 'En el lugar del despacho', sin_reporte: 'Sin reporte' };
 
 /**
- * Tarjeta flotante del mapa. Sale hacia el lado del mapa con más espacio (izquierda o derecha del punto),
- * con ancho máximo y texto que salta de línea: así nunca queda una franja larga cortada en el borde.
+ * Tarjeta flotante del mapa. Sale hacia el lado con más espacio, con ancho máximo y texto que salta de línea.
  * `sep` es la distancia al borde del ícono, para que la tarjeta no lo tape.
  */
 const Tip = ({ titulo, tono, sep = 10, dy = 0, sticky, children }) => (
   <Tooltip className="cdp-tip" direction="auto" offset={[sep, dy]} opacity={1} sticky={sticky}>
     <div className="cdp-tip-t">
-      {tono && <i className={`cdp-tip-dot ${tono}`} />}
+      {tono && <i className="cdp-tip-dot" style={{ background: COLOR[tono] ?? COLOR_RIESGO[tono] ?? tono }} />}
       <span>{titulo}</span>
     </div>
     {children && <div className="cdp-tip-b">{children}</div>}
@@ -26,6 +29,12 @@ const Tip = ({ titulo, tono, sep = 10, dy = 0, sticky, children }) => (
 
 const ClickMapa = ({ onClick }) => {
   useMapEvents({ click: (e) => onClick?.(e.latlng) });
+  return null;
+};
+
+const ZoomActual = ({ onZoom }) => {
+  const map = useMapEvents({ zoomend: () => onZoom(map.getZoom()) });
+  useEffect(() => { onZoom(map.getZoom()); }, [map, onZoom]);
   return null;
 };
 
@@ -39,18 +48,27 @@ const Encuadrar = ({ puntos }) => {
 };
 
 const MapaDespacho = ({
-  moviles, zonas, planes, colores, incidencias, despachos, sugerencia, punto, borrador, jurisdicciones,
-  capas, planSeleccionado, onMapClick, onSelectIncidencia, onSelectPlan, cursorCruz, encuadre,
+  moviles, zonas, planes, incidencias, despachos, sugerencia, punto, borrador, jurisdicciones,
+  capas, planSeleccionado, planResaltado, onResaltarPlan, onMapClick, onSelectIncidencia, onSelectPlan,
+  cursorCruz, encuadre, oscuro,
 }) => {
+  const [zoom, setZoom] = useState(13);
   const enLinea = useMemo(() => moviles.filter((m) => m.en_linea), [moviles]);
   const offline = useMemo(() => moviles.filter((m) => !m.en_linea && (m.lat ?? null) !== null), [moviles]);
-  const planesVisibles = planSeleccionado ? planes.filter((p) => p.id === planSeleccionado) : planes;
+  const abiertos = useMemo(() => despachos.filter((d) => d.status === 'ASIGNADO' || d.status === 'EN_LUGAR'), [despachos]);
+  const despachoPorRecurso = useMemo(() => new Map(abiertos.map((d) => [`${d.resource_type}:${d.unit_issi}`, d])), [abiertos]);
   const hayEmergencia = !!punto;
+  const planActivo = planSeleccionado ?? planResaltado ?? null;
+  // Paradas: solo de la ruta activa; si no hay ninguna activa y son pocas rutas, de todas.
+  const mostrarParadasDe = (p) => (planActivo ? p.id === planActivo : planes.length <= 3 && !hayEmergencia);
+  const planesVisibles = planSeleccionado ? planes.filter((p) => p.id === planSeleccionado) : planes;
+  const etiquetas = zoom >= ZOOM_ETIQUETAS;
 
   return (
-    <MapContainer center={CENTRO_SJL} zoom={13} className={`cdp-map${cursorCruz ? ' cdp-map-cruz' : ''}`}>
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" maxZoom={19} />
+    <MapContainer center={CENTRO_SJL} zoom={13} className={`cdp-map${cursorCruz ? ' cdp-map-cruz' : ''}${oscuro ? ' oscuro' : ''}`}>
+      <TileLayer url={TILE} attribution="&copy; OpenStreetMap" maxZoom={19} />
       <ClickMapa onClick={onMapClick} />
+      <ZoomActual onZoom={setZoom} />
       <Encuadrar puntos={encuadre} />
 
       {/* Límites de jurisdicción: el nombre aparece al pasar el mouse */}
@@ -64,37 +82,47 @@ const MapaDespacho = ({
         />
       )}
 
-      {/* Zonas de riesgo del turno */}
+      {/* Zonas de riesgo del turno (rojo; más intenso = más riesgo) */}
       {capas.zonas && zonas.map((z) => (
         <Circle key={z.id} center={[z.lat, z.lon]} radius={100}
-          pathOptions={{ color: NIVEL_COLOR[z.nivel] ?? '#eab308', fillOpacity: hayEmergencia ? 0.08 : 0.2, weight: 1.2, opacity: hayEmergencia ? 0.4 : 1 }}>
-          <Tip titulo={`Zona de riesgo ${z.nivel}`} tono={`nivel-${z.nivel}`} sticky sep={14}>
+          pathOptions={{
+            color: COLOR_RIESGO[z.nivel] ?? COLOR_RIESGO.bajo, weight: 1.2,
+            fillOpacity: hayEmergencia ? 0.06 : (OPACIDAD_RIESGO[z.nivel] ?? 0.14), opacity: hayEmergencia ? 0.35 : 0.9,
+          }}>
+          <Tip titulo={`Zona de riesgo ${z.nivel}`} tono={z.nivel} sticky sep={14}>
             <div className="cdp-tip-m">{z.jurisdiccion}</div>
             {z.mensaje && <div>{z.mensaje}</div>}
           </Tip>
         </Circle>
       ))}
 
-      {/* Rutas de patrullaje (se atenúan cuando hay una emergencia en curso) */}
+      {/* Rutas de patrullaje: tenues por defecto; se resalta la seleccionada o la que está bajo el cursor */}
       {capas.rutas && planesVisibles.map((p) => {
-        const color = colores[p.unit_issi] ?? '#475569';
-        const tenue = hayEmergencia && !planSeleccionado;
+        const activa = planActivo === p.id;
+        const tenue = (planActivo && !activa) || (hayEmergencia && !planSeleccionado);
         return (
           <Fragment key={p.id}>
             {Array.isArray(p.route) && p.route.length > 1 && (
               <Polyline
                 positions={p.route}
-                pathOptions={{ color, weight: planSeleccionado ? 5 : 3, opacity: tenue ? 0.25 : 0.85, dashArray: p.source === 'MANUAL' ? '8 6' : null }}
-                eventHandlers={{ click: () => onSelectPlan?.(p.id) }}
+                pathOptions={{
+                  color: COLOR.ruta, weight: activa ? 5 : 3, opacity: tenue ? 0.18 : activa ? 0.95 : 0.5,
+                  dashArray: p.source === 'MANUAL' ? '8 6' : null,
+                }}
+                eventHandlers={{
+                  click: () => onSelectPlan?.(p.id),
+                  mouseover: () => onResaltarPlan?.(p.id),
+                  mouseout: () => onResaltarPlan?.(null),
+                }}
               >
-                <Tip titulo={p.unit_code} sticky sep={14}>
-                  <div className="cdp-tip-m">{p.source === 'MANUAL' ? 'Ruta manual' : 'Ruta inteligente'}. Clic para verla sola.</div>
+                <Tip titulo={p.unit_code} tono="ruta" sticky sep={14}>
+                  <div className="cdp-tip-m">{p.source === 'MANUAL' ? 'Ruta manual' : 'Ruta inteligente'}, {p.stops.length} paradas. Clic para verla sola.</div>
                 </Tip>
               </Polyline>
             )}
-            {!tenue && p.stops.map((s) => (
-              <Marker key={s.id} position={[s.lat, s.lng]} icon={pinParada(s.order, color, !!s.visited_at)}>
-                <Tip titulo={`${p.unit_code}, parada ${s.order}`} tono={s.visited_at ? 'ok' : null} sep={12}>
+            {mostrarParadasDe(p) && p.stops.map((s) => (
+              <Marker key={s.id} position={[s.lat, s.lng]} icon={pinParada(s.order, !!s.visited_at, false)}>
+                <Tip titulo={`${p.unit_code}, parada ${s.order}`} tono={s.visited_at ? 'en_lugar' : 'ruta'} sep={12}>
                   <div className="cdp-tip-m">Permanecer {s.dwell_min} min{s.visited_at ? '. Ya visitada' : ''}</div>
                   {s.reason && <div>{s.reason}</div>}
                 </Tip>
@@ -107,7 +135,7 @@ const MapaDespacho = ({
       {/* Incidencias recientes */}
       {capas.incidencias && incidencias.map((i) => (
         <CircleMarker key={i.id} center={[i.lat, i.lon]} radius={5}
-          pathOptions={{ color: '#6d28d9', fillColor: '#a78bfa', fillOpacity: 0.95, weight: 1.5 }}
+          pathOptions={{ color: '#5b21b6', fillColor: COLOR.incidencia, fillOpacity: 0.95, weight: 1.5 }}
           eventHandlers={{ click: () => onSelectIncidencia?.(i) }}>
           <Tip titulo={i.tipo || 'Incidencia'} tono="incidencia" sep={8}>
             <div className="cdp-tip-m">{i.codigo}{i.jurisdiccion ? `, ${i.jurisdiccion}` : ''}</div>
@@ -116,38 +144,49 @@ const MapaDespacho = ({
         </CircleMarker>
       ))}
 
-      {/* Despachos abiertos */}
-      {despachos.filter((d) => d.status === 'ASIGNADO' && d.movil_actual?.lat).map((d) => (
-        <Polyline key={d.id} positions={[[d.movil_actual.lat, d.movil_actual.lng], [d.lat, d.lng]]}
-          pathOptions={{ color: '#2563eb', weight: 2.5, dashArray: '4 6' }} />
+      {/* Despachos abiertos: recorrido por calles de la móvil hacia el punto (recta si aún no hay ruta) */}
+      {abiertos.filter((d) => d.status === 'ASIGNADO' && d.movil_actual?.lat).map((d) => (
+        <Polyline key={`r-${d.id}`}
+          positions={d.ruta?.geometry?.length > 1 ? d.ruta.geometry : [[d.movil_actual.lat, d.movil_actual.lng], [d.lat, d.lng]]}
+          pathOptions={{ color: COLOR.ocupada, weight: 3.5, opacity: 0.9, dashArray: d.ruta?.fuente === 'osrm' ? null : '4 6' }} />
       ))}
-      {despachos.filter((d) => d.status === 'ASIGNADO' || d.status === 'EN_LUGAR').map((d) => (
-        <Marker key={`dp-${d.id}`} position={[d.lat, d.lng]} icon={pinDespacho(d.status === 'EN_LUGAR')}>
-          <Tip titulo={`${d.unit_code} hacia ${d.incident_code ?? 'punto marcado'}`} tono={d.status === 'EN_LUGAR' ? 'ok' : 'camino'} sep={14} dy={-16}>
-            <div className="cdp-tip-m">{d.status === 'EN_LUGAR' ? 'En el lugar' : `En camino, a ${fmtKm(d.distancia_actual_m)}`}</div>
+      {abiertos.map((d) => (
+        <Marker key={`dp-${d.id}`} position={[d.lat, d.lng]} icon={pinDespacho(d.status === 'EN_LUGAR', d.unit_code)} zIndexOffset={900}>
+          <Tip titulo={`${d.unit_code} hacia ${d.incident_code ?? 'punto marcado'}`} tono={d.status === 'EN_LUGAR' ? 'en_lugar' : 'ocupada'} sep={14} dy={-16}>
+            <div className="cdp-tip-m">
+              {d.status === 'EN_LUGAR'
+                ? 'En el lugar'
+                : d.ruta ? `En camino: ${fmtMin(d.ruta.duration_s)}, ${fmtKm(d.ruta.distance_m)} por calles` : `En camino, a ${fmtKm(d.distancia_actual_m)}`}
+            </div>
           </Tip>
         </Marker>
       ))}
 
       {/* Emergencia elegida: solo se dibujan los recursos sugeridos, no todos */}
-      {punto && <Marker position={[punto.lat, punto.lng]} icon={pinEmergencia()} zIndexOffset={1000} />}
-      {punto && sugerencia?.ranking?.slice(0, 3).map((r) => (
+      {punto && <Marker position={[punto.lat, punto.lng]} icon={pinEmergencia()} zIndexOffset={2000} />}
+      {punto && sugerencia?.ruta_mejor?.geometry?.length > 1 && (
+        <Polyline positions={sugerencia.ruta_mejor.geometry}
+          pathOptions={{ color: COLOR.emergencia, weight: 3.5, opacity: 0.9, dashArray: sugerencia.ruta_mejor.fuente === 'osrm' ? null : '6 6' }} />
+      )}
+      {punto && sugerencia?.ranking?.slice(0, 3).filter((r) => r.rank !== 1 || !sugerencia.ruta_mejor).map((r) => (
         <Polyline key={`s-${r.issi}`} positions={[[r.lat, r.lng], [punto.lat, punto.lng]]}
-          pathOptions={{ color: r.rank === 1 ? '#dc2626' : '#94a3b8', weight: r.rank === 1 ? 2.5 : 1.5, dashArray: '6 6' }} />
+          pathOptions={{ color: r.rank === 1 ? COLOR.emergencia : '#94a3b8', weight: r.rank === 1 ? 2.5 : 1.5, dashArray: '6 6' }} />
       ))}
       {punto && sugerencia?.a_pie?.slice(0, 5).map((r) => (
-        <Marker key={`ap-${r.tipo}-${r.id}`} position={[r.lat, r.lng]} icon={pinAPie({ tipo: r.tipo, rank: r.rank, doble: !!r.acompanante })}>
-          <Tip titulo={`${r.tipo === 'BODYCAM' ? 'Bodycam' : 'Sereno con radio'} ${r.codigo}`} sep={12}>
+        <Marker key={`ap-${r.tipo}-${r.id}`} position={[r.lat, r.lng]} zIndexOffset={700}
+          icon={pinAPie({ tipo: r.tipo, estado: r.ocupada ? 'ocupada' : 'disponible', rank: r.rank, doble: !!r.acompanante, vieja: (r.minutos_sin_reporte ?? 0) > MINUTOS_GPS_VIEJO, etiqueta: r.codigo })}>
+          <Tip titulo={`${r.tipo === 'BODYCAM' ? 'Bodycam' : 'Sereno con radio'} ${r.codigo}`} tono={r.ocupada ? 'ocupada' : 'disponible'} sep={12}>
             <div className="cdp-tip-m">A pie, {fmtMin(r.duration_s)} ({fmtKm(r.recta_m)} en línea recta)</div>
             {r.acompanante && <div>Lleva también {r.acompanante.tipo === 'BODYCAM' ? 'bodycam' : 'radio'} {r.acompanante.codigo}</div>}
+            {(r.minutos_sin_reporte ?? 0) > MINUTOS_GPS_VIEJO && <div>Última posición hace {r.minutos_sin_reporte} min</div>}
           </Tip>
         </Marker>
       ))}
       {punto && sugerencia?.camaras?.rows?.slice(0, 5).map((c) => (
-        <Marker key={`cam-${c.id}`} position={[c.lat, c.lng]} icon={pinCamara({ ve: c.ve_el_punto === true })}>
-          <Tip titulo={`Cámara ${c.codigo}`} tono={c.ve_el_punto ? 'ok' : null} sep={12}>
+        <Marker key={`cam-${c.id}`} position={[c.lat, c.lng]} icon={pinCamara({ ve: c.ve_el_punto === true })} zIndexOffset={600}>
+          <Tip titulo={`Cámara ${c.codigo}`} tono={c.ve_el_punto ? 'ruta' : 'camara'} sep={12}>
             <div className="cdp-tip-m">{c.tipo === 'VECINAL' ? 'Vecinal' : c.modelo}{c.direccion ? `, ${c.direccion}` : ''}</div>
-            <div className={c.ve_el_punto ? 'cdp-tip-ok' : undefined}>
+            <div className={c.ve_el_punto ? 'cdp-tip-acc' : undefined}>
               {c.ve_el_punto ? 'Su campo de visión cubre la emergencia' : `A ${fmtKm(c.distancia_m)} del punto`}
             </div>
           </Tip>
@@ -157,30 +196,43 @@ const MapaDespacho = ({
       {/* Borrador de ruta manual */}
       {borrador.length > 0 && (
         <>
-          <Polyline positions={borrador.map((b) => [b.lat, b.lng])} pathOptions={{ color: '#1e293b', dashArray: '6 6', weight: 2 }} />
-          {borrador.map((b, i) => <Marker key={`b-${i}`} position={[b.lat, b.lng]} icon={pinParada(i + 1, '#1e293b', false)} />)}
+          <Polyline positions={borrador.map((b) => [b.lat, b.lng])} pathOptions={{ color: COLOR.ruta, dashArray: '6 6', weight: 2.5 }} />
+          {borrador.map((b, i) => <Marker key={`b-${i}`} position={[b.lat, b.lng]} icon={pinParada(i + 1, false, false)} />)}
         </>
       )}
 
-      {/* Móviles sin reporte (gris) y en línea (color de su ruta) */}
+      {/* Móviles sin reporte (gris) y en línea (color según su estado; atenuadas si su GPS es viejo) */}
       {capas.offline && offline.map((m) => (
-        <Marker key={`o-${m.issi}`} position={[m.lat, m.lng]} icon={pinMovil({ subtipo: m.subtipo, apagada: true })} opacity={0.7}>
-          <Tip titulo={m.codigo} tono="apagada" sep={15}>
+        <Marker key={`o-${m.issi}`} position={[m.lat, m.lng]} icon={pinMovil({ subtipo: m.subtipo, estado: 'sin_reporte', vieja: true, etiqueta: etiquetas ? m.codigo : '' })}>
+          <Tip titulo={m.codigo} tono="sin_reporte" sep={15}>
             <div className="cdp-tip-m">Sin reporte hace {Math.round((m.minutos_sin_reporte ?? 0) / 60)} h</div>
             {m.estado_radio && <div>{m.estado_radio}</div>}
           </Tip>
         </Marker>
       ))}
-      {capas.moviles && enLinea.map((m) => (
-        <Marker key={m.issi} position={[m.lat, m.lng]} zIndexOffset={500}
-          icon={pinMovil({ subtipo: m.subtipo, color: colores[m.issi] ?? '#2563eb', ocupada: !!m.despacho_abierto })}
-          eventHandlers={{ click: () => { const p = planes.find((x) => x.unit_issi === m.issi); if (p) onSelectPlan?.(p.id); } }}>
-          <Tip titulo={m.codigo} tono={m.despacho_abierto ? 'ocupada' : 'ok'} sep={15}>
-            <div className="cdp-tip-m">{nombreVehiculo[m.subtipo] ?? m.subtipo}, {m.velocidad} km/h, {m.jurisdiccion?.nombre ?? 'sin jurisdicción'}</div>
-            <div>{m.despacho_abierto ? 'Atendiendo un despacho' : 'Disponible'}. Último reporte hace {m.minutos_sin_reporte} min</div>
-          </Tip>
-        </Marker>
-      ))}
+      {capas.moviles && enLinea.map((m) => {
+        const d = despachoPorRecurso.get(`MOVIL:${m.issi}`);
+        const estado = estadoRecurso(m, d);
+        const vieja = (m.minutos_sin_reporte ?? 0) > MINUTOS_GPS_VIEJO;
+        const suPlan = planes.find((x) => x.unit_issi === m.issi);
+        return (
+          <Marker key={m.issi} position={[m.lat, m.lng]} zIndexOffset={500}
+            icon={pinMovil({ subtipo: m.subtipo, estado, vieja, etiqueta: etiquetas ? m.codigo : '' })}
+            eventHandlers={{
+              click: () => { if (suPlan) onSelectPlan?.(suPlan.id); },
+              mouseover: () => { if (suPlan) onResaltarPlan?.(suPlan.id); },
+              mouseout: () => onResaltarPlan?.(null),
+            }}>
+            <Tip titulo={m.codigo} tono={estado} sep={15}>
+              <div className="cdp-tip-m">{nombreVehiculo[m.subtipo] ?? m.subtipo}, {m.velocidad} km/h, {m.jurisdiccion?.nombre ?? 'sin jurisdicción'}</div>
+              <div>
+                {nombreEstado[estado]}{d?.incident_code ? ` (${d.incident_code})` : ''}. Último reporte hace {m.minutos_sin_reporte} min{vieja ? ', posición vieja' : ''}
+              </div>
+              {suPlan && <div className="cdp-tip-m">Ruta: {suPlan.stops.filter((s) => s.visited_at).length} de {suPlan.stops.length} paradas visitadas</div>}
+            </Tip>
+          </Marker>
+        );
+      })}
     </MapContainer>
   );
 };

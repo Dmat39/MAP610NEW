@@ -5,12 +5,17 @@ import {
   PiCheckCircle, PiXCircle, PiStack, PiCrosshair, PiTrash, PiFloppyDisk, PiShieldCheck, PiWarning,
   PiFootprints, PiSecurityCamera, PiEye, PiMegaphone,
 } from 'react-icons/pi';
-import { IconoAPie, IconoCamara, IconoIncidencia, IconoVehiculo, IconoSirena } from './iconos';
+import { COLOR, ESTADOS } from '../mapa/estados';
+import {
+  IconoAPie, IconoCamara, IconoIncidencia, IconoVehiculo, IconoSirena,
+  SimboloAPie, SimboloCamara, SimboloMovil, SimboloZona,
+} from '../mapa/simbolos';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import MapaDespacho from './MapaDespacho';
 import * as api from '../../services/patrullajeService';
 import {
-  TURNOS, colorPorIssi, fmtKm, fmtMin, fmtHora, hoyLima, textoWhatsApp, ESTADO_DESPACHO,
+  TURNOS, fmtKm, fmtMin, fmtHora, hoyLima, textoWhatsApp, ESTADO_DESPACHO,
 } from './util';
 import './CentroDespacho.css';
 
@@ -26,6 +31,7 @@ const CAPAS_POR_TAB = {
 
 const CentroDespacho = () => {
   const { user, hasModuleAccess, hasModuleOp } = useAuth();
+  const { dark } = useTheme();
   const isSuper = user?.role?.toUpperCase() === 'SUPERADMIN';
   const puede = useMemo(() => ({
     patrullaje: isSuper || hasModuleAccess('patrullaje'),
@@ -52,6 +58,7 @@ const CentroDespacho = () => {
   const [fecha, setFecha] = useState(hoyLima());
   const [paradas, setParadas] = useState(6);
   const [planSel, setPlanSel] = useState(null);
+  const [planHover, setPlanHover] = useState(null); // ruta bajo el cursor (en el mapa o en la lista)
   const [punto, setPunto] = useState(null);           // { lat, lng, incidencia? }
   const [sugerencia, setSugerencia] = useState(null);
   const [modoMapa, setModoMapa] = useState('ninguno');  // ninguno | punto | manual
@@ -70,13 +77,6 @@ const CentroDespacho = () => {
     clearTimeout(avisoTimer.current);
     avisoTimer.current = setTimeout(() => setAviso(null), 6000);
   }, []);
-
-  // Colores estables por móvil
-  const colores = useMemo(() => {
-    const out = {};
-    moviles.forEach((m) => { out[m.issi] = colorPorIssi(m.issi); });
-    return out;
-  }, [moviles]);
 
   // ─── Carga de datos ───────────────────────────────────────────────────────
   const cargarEstado = useCallback(async () => {
@@ -261,8 +261,9 @@ const CentroDespacho = () => {
     const abierto = planSel === p.id;
     return (
       <div key={p.id} className={`cdp-plan${abierto ? ' abierto' : ''}`}>
-        <button className="cdp-plan-head" onClick={() => seleccionarPlan(p.id)}>
-          <span className="cdp-veh" style={{ '--c': colores[p.unit_issi] }}><IconoVehiculo subtipo={p.unit_type} size={14} /></span>
+        <button className="cdp-plan-head" onClick={() => seleccionarPlan(p.id)}
+          onMouseEnter={() => setPlanHover(p.id)} onMouseLeave={() => setPlanHover(null)}>
+          <span className="cdp-veh"><IconoVehiculo subtipo={p.unit_type} size={14} /></span>
           <span className="cdp-plan-nombre">
             <b>{p.unit_code}</b>
             <small>{p.source === 'MANUAL' ? `Manual, ordenada por ${p.ordered_by}` : 'Ruta inteligente'}</small>
@@ -280,7 +281,7 @@ const CentroDespacho = () => {
             <ol className="cdp-stops">
               {p.stops.map((s) => (
                 <li key={s.id} className={s.visited_at ? 'visitada' : ''}>
-                  <span className="cdp-stop-n" style={{ '--c': colores[p.unit_issi] }}>{s.order}</span>
+                  <span className="cdp-stop-n">{s.order}</span>
                   <div>
                     <div>{s.reason || 'Parada'}</div>
                     <small>
@@ -321,24 +322,14 @@ const CentroDespacho = () => {
     <div className="cdp-page">
       <div className="cdp-mapwrap">
         <MapaDespacho
-          moviles={moviles} zonas={zonas} planes={planes} colores={colores} incidencias={incidencias}
+          moviles={moviles} zonas={zonas} planes={planes} incidencias={incidencias}
           despachos={despachos} sugerencia={sugerencia} punto={punto} borrador={borrador} capas={capas} jurisdicciones={jurGeo}
-          planSeleccionado={planSel} onMapClick={onMapClick} onSelectPlan={seleccionarPlan}
+          planSeleccionado={planSel} planResaltado={planHover} onResaltarPlan={setPlanHover}
+          onMapClick={onMapClick} onSelectPlan={seleccionarPlan}
           onSelectIncidencia={(i) => elegirPunto({ lat: i.lat, lng: i.lon, incidencia: i })}
-          cursorCruz={modoMapa !== 'ninguno'} encuadre={encuadre}
+          cursorCruz={modoMapa !== 'ninguno'} encuadre={encuadre} oscuro={dark}
         />
-        <div className="cdp-capas">
-          <PiStack size={15} />
-          {[
-            ['jurisdicciones', 'Jurisdicciones'], ['moviles', 'Móviles'], ['offline', 'Sin reporte'],
-            ['zonas', 'Zonas de riesgo'], ['rutas', 'Rutas'], ['incidencias', 'Incidencias'],
-          ].map(([k, l]) => (
-            <label key={k}>
-              <input type="checkbox" checked={capas[k]} onChange={(e) => setCapas((c) => ({ ...c, [k]: e.target.checked }))} /> {l}
-            </label>
-          ))}
-        </div>
-        <Leyenda />
+        <BarraMapa capas={capas} setCapas={setCapas} />
         {modoMapa !== 'ninguno' && (
           <div className="cdp-banner">
             <PiCrosshair size={16} />
@@ -470,7 +461,7 @@ const CentroDespacho = () => {
                         vacio="No hay móviles con GPS en línea.">
                         {sugerencia.ranking.slice(0, verMas.moviles ? 8 : 3).map((r) => (
                           <FilaRecurso key={`m-${r.issi}`} r={r} destacado={r.rank === 1}
-                            icono={<span className="cdp-veh" style={{ '--c': colores[r.issi] }}><IconoVehiculo subtipo={r.tipo} size={14} /></span>}
+                            icono={<SimboloMovil subtipo={r.tipo} estado={r.ocupada ? 'ocupada' : 'disponible'} />}
                             sub={r.jurisdiccion} puede={puede.asignar} ocupado={ocupado}
                             ocupadoKey={`a-MOVIL-${r.issi}`} onAsignar={() => asignar(r, 'MOVIL')} />
                         ))}
@@ -481,7 +472,7 @@ const CentroDespacho = () => {
                         vacio="Nadie a pie cerca con GPS en línea.">
                         {(sugerencia.a_pie ?? []).slice(0, verMas.aPie ? 8 : 3).map((r) => (
                           <FilaRecurso key={`p-${r.tipo}-${r.id}`} r={r}
-                            icono={<span className={`cdp-apie-ico ${r.tipo === 'BODYCAM' ? 'bodycam' : 'radio'}`}><IconoAPie tipo={r.tipo} size={13} /></span>}
+                            icono={<SimboloAPie tipo={r.tipo} estado={r.ocupada ? 'ocupada' : 'disponible'} size={24} />}
                             sub={r.acompanante ? `Radio y bodycam` : (r.tipo === 'BODYCAM' ? 'Bodycam' : 'Sereno con radio')}
                             puede={puede.asignar} ocupado={ocupado} ocupadoKey={`a-${r.tipo}-${r.id}`} onAsignar={() => asignar(r, r.tipo)} />
                         ))}
@@ -492,7 +483,7 @@ const CentroDespacho = () => {
                         vacio={sugerencia.camaras?.sin_permiso ? 'Tu rol no tiene acceso a las capas de cámaras.' : 'No hay cámaras cerca.'}>
                         {camaras.slice(0, verMas.camaras ? 8 : 3).map((c) => (
                           <div key={c.id} className="cdp-fila">
-                            <span className={`cdp-cam-ico${c.ve_el_punto ? ' ve' : ''}`}><IconoCamara size={13} /></span>
+                            <SimboloCamara ve={!!c.ve_el_punto} size={24} />
                             <div className="cdp-fila-txt">
                               <b>{c.codigo}</b>
                               <small>{c.direccion}</small>
@@ -530,7 +521,9 @@ const CentroDespacho = () => {
                       {fmtHora(d.assigned_at)}, {d.assigned_by ?? 'sin usuario'}.{' '}
                       {(d.respuesta_s ?? null) !== null
                         ? <b>Llegó en {fmtMin(d.respuesta_s)}.</b>
-                        : activo && <>Lleva {fmtMin(d.transcurrido_s)}, está a {fmtKm(d.distancia_actual_m)}.</>}
+                        : activo && (d.ruta
+                          ? <>Lleva {fmtMin(d.transcurrido_s)}. Le faltan {fmtMin(d.ruta.duration_s)} ({fmtKm(d.ruta.distance_m)} por calles).</>
+                          : <>Lleva {fmtMin(d.transcurrido_s)}, está a {fmtKm(d.distancia_actual_m)}.</>)}
                     </small>
                     {activo && (
                       <div className="cdp-row">
@@ -605,7 +598,7 @@ const CentroDespacho = () => {
               {!borrador.length && <Vacio texto='Pulsa "Agregar en el mapa" y haz clic en cada punto.' />}
               {borrador.map((b, i) => (
                 <div key={i} className="cdp-parada">
-                  <span className="cdp-stop-n" style={{ '--c': '#1e293b' }}>{i + 1}</span>
+                  <span className="cdp-stop-n">{i + 1}</span>
                   <input aria-label={`Motivo de la parada ${i + 1}`} placeholder="Motivo" value={b.motivo} onChange={(e) => setBorrador((arr) => arr.map((x, k) => (k === i ? { ...x, motivo: e.target.value } : x)))} />
                   <input aria-label="Minutos de permanencia" type="number" min={1} max={240} value={b.permanencia_min} onChange={(e) => setBorrador((arr) => arr.map((x, k) => (k === i ? { ...x, permanencia_min: e.target.value } : x)))} />
                   <button className="cdp-icon-btn" aria-label="Quitar parada" onClick={() => setBorrador((arr) => arr.filter((_, k) => k !== i))}><PiTrash size={15} /></button>
@@ -665,18 +658,57 @@ const Cargando = () => (
   </div>
 );
 
-// Leyenda fija del mapa: sirve para explicar al personal qué es cada símbolo.
-const Leyenda = () => (
-  <div className="cdp-leyenda">
-    <div><span className="cdp-veh" style={{ '--c': '#2563eb' }}><IconoVehiculo subtipo="CAMION" size={11} /></span> Camioneta</div>
-    <div><span className="cdp-veh" style={{ '--c': '#2563eb' }}><IconoVehiculo subtipo="MOTO" size={11} /></span> Moto</div>
-    <div><span className="cdp-apie-ico radio"><IconoAPie tipo="RADIO" size={11} /></span> A pie con radio</div>
-    <div><span className="cdp-apie-ico bodycam"><IconoAPie tipo="BODYCAM" size={11} /></span> Bodycam</div>
-    <div><span className="cdp-cam-ico"><IconoCamara size={11} /></span> Cámara</div>
-    <div><span className="lg-zona" /> Zona de riesgo</div>
-    <div><span className="lg-inc" /> Incidencia</div>
-  </div>
-);
+const CAPAS_MAPA = [
+  ['jurisdicciones', 'Jurisdicciones'], ['moviles', 'Móviles'], ['offline', 'Sin reporte'],
+  ['zonas', 'Zonas de riesgo'], ['rutas', 'Rutas'], ['incidencias', 'Incidencias'],
+];
+const leerLeyenda = () => { try { return localStorage.getItem('cdp.leyenda') === '1'; } catch { return false; } };
+
+// Barra inferior del mapa: capas y leyenda (colapsable). La leyenda explica al personal la regla
+// forma = qué es, color = estado.
+const BarraMapa = ({ capas, setCapas }) => {
+  const [verLeyenda, setVerLeyenda] = useState(leerLeyenda);
+  const alternar = () => {
+    setVerLeyenda((v) => { try { localStorage.setItem('cdp.leyenda', v ? '0' : '1'); } catch { /* sin almacenamiento */ } return !v; });
+  };
+  return (
+    <div className="cdp-barra">
+      {verLeyenda && (
+        <div className="cdp-leyenda" role="region" aria-label="Leyenda del mapa">
+          <div className="cdp-leyenda-col">
+            <b>Qué es</b>
+            <div><SimboloMovil subtipo="CAMION" size={20} /> Camioneta</div>
+            <div><SimboloMovil subtipo="MOTO" size={20} /> Moto</div>
+            <div><SimboloAPie tipo="RADIO" size={20} /> Sereno a pie con radio</div>
+            <div><SimboloAPie tipo="BODYCAM" size={20} /> Bodycam</div>
+            <div><SimboloCamara size={20} /> Cámara fija</div>
+            <div><span className="lg-inc" /> Incidencia reciente</div>
+            <div><SimboloZona nivel="alto" /> Zona de riesgo (más rojo, más riesgo)</div>
+          </div>
+          <div className="cdp-leyenda-col">
+            <b>Estado (color)</b>
+            {ESTADOS.map((e) => (
+              <div key={e.key}><span className="lg-estado" style={{ background: COLOR[e.key] }} /> {e.label}<small>{e.desc}</small></div>
+            ))}
+            <div><span className="lg-estado" style={{ background: COLOR.emergencia }} /> Emergencia</div>
+            <div><span className="lg-linea" /> Ruta de patrullaje<small>Punteada: ruta manual</small></div>
+          </div>
+        </div>
+      )}
+      <div className="cdp-capas">
+        <PiStack size={15} />
+        {CAPAS_MAPA.map(([k, l]) => (
+          <label key={k}>
+            <input type="checkbox" checked={capas[k]} onChange={(e) => setCapas((c) => ({ ...c, [k]: e.target.checked }))} /> {l}
+          </label>
+        ))}
+        <button className={`cdp-leyenda-btn${verLeyenda ? ' activo' : ''}`} onClick={alternar} aria-expanded={verLeyenda}>
+          <PiEye size={14} /> Leyenda
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const Kpi = ({ valor, label, sub, tono }) => (
   <div className={`cdp-kpi ${tono ?? ''}`}>
