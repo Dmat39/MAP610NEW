@@ -4,7 +4,7 @@ import { useTheme } from './context/ThemeContext';
 import L from 'leaflet';
 
 const TILE_LIGHT = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+// Tema oscuro: se usa el mismo OSM invertido con CSS (index.css). Los tiles oscuros de CARTO piden llave de pago.
 const MAP_MAX_ZOOM = 20;
 // Último zoom con tiles reales en el servidor (OSM y CARTO: 19). Más allá, Leaflet
 // amplía esos tiles en lugar de pedir unos que no existen (quedaba el mapa en blanco).
@@ -777,12 +777,9 @@ const MapView = () => {
         >
           <TileLayer
             key={dark ? 'tiles-dark' : 'tiles-light'}
-            url={dark ? TILE_DARK : TILE_LIGHT}
+            url={TILE_LIGHT}
             maxZoom={!dark && RETINA_TILES ? MAP_MAX_ZOOM + 1 : MAP_MAX_ZOOM}
-            attribution={dark
-              ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
-              : '&copy; OpenStreetMap'
-            }
+            attribution="&copy; OpenStreetMap"
             maxNativeZoom={!dark && RETINA_TILES ? TILE_MAX_NATIVE_ZOOM - 1 : TILE_MAX_NATIVE_ZOOM}
             updateWhenZooming={false}
             keepBuffer={4}

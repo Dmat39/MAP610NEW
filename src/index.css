@@ -543,3 +543,9 @@ input::placeholder, textarea::placeholder { color: var(--theme-text-4); }
 /* .leaflet-marker-pane img {
   display: none !important;
 } */
+
+/* Mapa base en tema oscuro: OSM invertido (solo los tiles; pines, líneas y polígonos no cambian).
+   Los tiles oscuros de CARTO devolvían "API KEY REQUIRED". */
+[data-theme="dark"] .leaflet-container .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) saturate(0.45) brightness(0.9) contrast(0.92);
+}
