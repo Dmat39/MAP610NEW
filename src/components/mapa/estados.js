@@ -12,6 +12,7 @@ export const COLOR = {
   en_lugar: '#15803d',
   gps_viejo: '#eab308',
   sin_reporte: '#94a3b8',
+  fuera_servicio: '#57534e',
   emergencia: '#dc2626',
   incidencia: '#7c3aed',
   ruta: '#4f46e5',
@@ -24,6 +25,7 @@ export const ESTADOS = [
   { key: 'en_lugar', label: 'En el lugar', desc: 'Llegó al punto del despacho' },
   { key: 'gps_viejo', label: 'Sin GPS reciente', desc: 'Encendida, pero su posición es vieja' },
   { key: 'sin_reporte', label: 'Sin reporte', desc: 'Apagada o sin señal' },
+  { key: 'fuera_servicio', label: 'Fuera de servicio', desc: 'Marcada por la torre: no se sugiere' },
 ];
 
 // Zonas de riesgo: un solo tono (rojo = riesgo); más intenso = más riesgo.
@@ -34,6 +36,7 @@ export const MINUTOS_GPS_VIEJO = 5;
 
 /** Estado de una móvil o recurso de Despacho. `despacho`: el despacho abierto de ese recurso, si hay. */
 export const estadoRecurso = (r, despacho) => {
+  if (r?.fuera_servicio) return 'fuera_servicio';
   if (!r?.en_linea) return 'sin_reporte';
   if (despacho?.status === 'EN_LUGAR') return 'en_lugar';
   if (r.despacho_abierto || despacho) return 'ocupada';

@@ -19,18 +19,20 @@ const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const etq = (texto) => (texto ? `<span class="pin-etq">${esc(texto)}</span>` : '');
 
 /** Móvil (radio TETRA fija en camioneta o moto). `vieja`: posición con más de unos minutos, se atenúa. */
-export const pinMovil = ({ subtipo, estado = 'disponible', vieja = false, etiqueta = '' }) =>
+export const pinMovil = ({ subtipo, estado = 'disponible', vieja = false, etiqueta = '', seleccionada = false }) =>
   divIcon(
-    `m-${subtipo}-${estado}-${vieja}-${etiqueta}`,
-    `<div class="pin pin-movil${vieja ? ' vieja' : ''}" style="--c:${COLOR[estado]}">${svg(<IconoVehiculo subtipo={subtipo} size={16} />)}${etq(etiqueta)}</div>`,
+    `m-${subtipo}-${estado}-${vieja}-${etiqueta}-${seleccionada}`,
+    `<div class="pin pin-movil${vieja ? ' vieja' : ''}${estado === 'fuera_servicio' ? ' fuera' : ''}${seleccionada ? ' sel' : ''}" style="--c:${COLOR[estado]}">${svg(<IconoVehiculo subtipo={subtipo} size={16} />)}${
+      estado === 'fuera_servicio' ? '<i class="pin-extra fuera">&#x2715;</i>' : ''
+    }${etq(etiqueta)}</div>`,
     [30, 30],
   );
 
 /** Personal a pie: sereno con radio portátil (persona) o bodycam (cámara). `rank`: orden en la sugerencia. */
-export const pinAPie = ({ tipo, estado = 'disponible', rank, doble = false, vieja = false, etiqueta = '' }) =>
+export const pinAPie = ({ tipo, estado = 'disponible', rank, doble = false, vieja = false, etiqueta = '', seleccionada = false }) =>
   divIcon(
-    `p-${tipo}-${estado}-${rank ?? ''}-${doble}-${vieja}-${etiqueta}`,
-    `<div class="pin pin-apie${vieja ? ' vieja' : ''}" style="--c:${COLOR[estado]}">${svg(<IconoAPie tipo={tipo} size={13} />)}${
+    `p-${tipo}-${estado}-${rank ?? ''}-${doble}-${vieja}-${etiqueta}-${seleccionada}`,
+    `<div class="pin pin-apie${vieja ? ' vieja' : ''}${seleccionada ? ' sel' : ''}" style="--c:${COLOR[estado]}">${svg(<IconoAPie tipo={tipo} size={13} />)}${
       doble ? `<i class="pin-extra">${svg(<PiVideoCameraFill size={8} />)}</i>` : ''
     }${rank ? `<b>${rank}</b>` : ''}${etq(etiqueta)}</div>`,
     [24, 24],
