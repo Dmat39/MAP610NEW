@@ -63,6 +63,10 @@ const TopHeader = ({ onMenuToggle, isMobile }) => {
     })
   );
 
+  // Reloj en vivo (hora de Lima): el operador de despacho lo usa como referencia de los tiempos
+  const horaLima = () => new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'America/Lima' });
+  const [horaStr, setHoraStr] = useState(horaLima);
+
   useEffect(() => {
     const update = () =>
       setDateStr(new Date().toLocaleDateString('es-PE', {
@@ -72,7 +76,8 @@ const TopHeader = ({ onMenuToggle, isMobile }) => {
     const now = new Date();
     const msHastaManana = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) - now;
     const timer = setTimeout(() => { update(); }, msHastaManana);
-    return () => clearTimeout(timer);
+    const reloj = setInterval(() => setHoraStr(horaLima()), 1000);
+    return () => { clearTimeout(timer); clearInterval(reloj); };
   }, []);
 
   return (
@@ -89,6 +94,7 @@ const TopHeader = ({ onMenuToggle, isMobile }) => {
 
       <div className="top-header-right">
         <span className="top-header-date">{dateStr}</span>
+        <span className="top-header-clock" aria-label="Hora actual">{horaStr}</span>
 
         <div className="top-header-user">
           <div className="top-header-avatar" style={{ background: avatarColor }}>

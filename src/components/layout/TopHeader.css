@@ -61,6 +61,16 @@
   text-transform: capitalize;
 }
 
+/* Reloj en vivo, junto a la fecha */
+.top-header-clock {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--theme-text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  margin-left: -8px;
+}
+
 /* User pill */
 .top-header-user {
   display: flex;
