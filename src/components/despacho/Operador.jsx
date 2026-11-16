@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   PiMagnifyingGlass, PiXCircle, PiMapPin, PiPath, PiWhatsappLogo, PiWrench, PiCheckCircle, PiCaretUp, PiCaretDown,
-  PiCheck, PiEye, PiSiren,
+  PiCheck, PiEye, PiSiren, PiPlayCircle,
 } from 'react-icons/pi';
 import { COLOR, ESTADOS } from '../mapa/estados';
 import { IconoCategoria, SimboloAPie, SimboloMovil } from '../mapa/simbolos';
@@ -125,7 +125,7 @@ const textoWhatsAppUnidad = (u) => {
 };
 
 /** Flota sobre el mapa al hacer clic en una unidad (marcador, tablero o buscador). */
-export const TarjetaUnidad = ({ u, despacho, plan, puede, hayPunto, recorridoActivo, cargandoRecorrido, onEnviar, onRecorrido, onServicio, onCentrar, onCerrar, onVerDespacho }) => {
+export const TarjetaUnidad = ({ u, despacho, plan, puede, hayPunto, recorridoActivo, cargandoRecorrido, onEnviar, onRecorrido, onReproducir, onServicio, onCentrar, onCerrar, onVerDespacho }) => {
   const [motivo, setMotivo] = useState('');
   const [pidiendoMotivo, setPidiendoMotivo] = useState(false);
   useEffect(() => { setPidiendoMotivo(false); setMotivo(''); }, [u.tipo, u.id]);
@@ -162,6 +162,7 @@ export const TarjetaUnidad = ({ u, despacho, plan, puede, hayPunto, recorridoAct
         <button className={`cdp-btn mini${recorridoActivo ? ' activo' : ''}`} onClick={onRecorrido} disabled={cargandoRecorrido}>
           <PiPath size={13} /> {cargandoRecorrido ? 'Cargando' : recorridoActivo ? 'Ocultar recorrido' : 'Recorrido 2 h'}
         </button>
+        <button className="cdp-btn mini" onClick={onReproducir} title="Reproducir su recorrido con línea de tiempo"><PiPlayCircle size={13} /> Reproducir</button>
         <a className="cdp-btn mini" href={textoWhatsAppUnidad(u)} target="_blank" rel="noreferrer"><PiWhatsappLogo size={13} /> WhatsApp</a>
         {puede.cerrar && !pidiendoMotivo && (
           u.fuera_servicio

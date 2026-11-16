@@ -6,6 +6,7 @@ import L from 'leaflet';
 import { CENTRO_SJL, fmtKm, fmtMin } from './util';
 import { COLOR, COLOR_RIESGO, OPACIDAD_RIESGO, MINUTOS_GPS_VIEJO, estadoRecurso } from '../mapa/estados';
 import { pinAPie, pinCamara, pinDespacho, pinEmergencia, pinMovil, pinParada } from '../mapa/pines';
+import CapaCalor from './CapaCalor';
 
 const TILE = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'; // en tema oscuro se invierte con CSS (ver index.css)
 const ZOOM_ETIQUETAS = 15; // desde este zoom se muestra el indicativo junto a cada móvil
@@ -55,6 +56,8 @@ const MapaDespacho = ({
   cursorCruz, encuadre, oscuro,
   // Fase 3: unidad seleccionada (clave y objeto), recorrido reciente y dirección buscada
   unidadSel, unidadSelObj, onSelectUnidad, recorrido, puntoBusqueda,
+  // Fase 4: reproducción de recorrido y mapa de calor de cobertura del turno
+  reproduccion, calor,
 }) => {
   const [zoom, setZoom] = useState(13);
   const enLinea = useMemo(() => moviles.filter((m) => m.en_linea), [moviles]);
@@ -86,19 +89,26 @@ const MapaDespacho = ({
         />
       )}
 
-      {/* Zonas de riesgo del turno (rojo; más intenso = más riesgo) */}
-      {capas.zonas && zonas.map((z) => (
-        <Circle key={z.id} center={[z.lat, z.lon]} radius={100}
-          pathOptions={{
-            color: COLOR_RIESGO[z.nivel] ?? COLOR_RIESGO.bajo, weight: 1.2,
-            fillOpacity: hayEmergencia ? 0.06 : (OPACIDAD_RIESGO[z.nivel] ?? 0.14), opacity: hayEmergencia ? 0.35 : 0.9,
-          }}>
-          <Tip titulo={`Zona de riesgo ${z.nivel}`} tono={z.nivel} sticky sep={14}>
-            <div className="cdp-tip-m">{z.jurisdiccion}</div>
-            {z.mensaje && <div>{z.mensaje}</div>}
-          </Tip>
-        </Circle>
-      ))}
+      {/* Mapa de calor: dónde patrullaron de verdad las móviles con ruta en el turno */}
+      {calor?.moviles?.length > 0 && <CapaCalor puntos={calor.moviles.flatMap((m) => m.puntos)} />}
+
+      {/* Zonas de riesgo del turno (rojo; más intenso = más riesgo). Con el mapa de calor, las no cubiertas van punteadas */}
+      {capas.zonas && zonas.map((z) => {
+        const cob = calor?.zonas?.find((c) => c.id === z.id);
+        return (
+          <Circle key={z.id} center={[z.lat, z.lon]} radius={100}
+            pathOptions={{
+              color: COLOR_RIESGO[z.nivel] ?? COLOR_RIESGO.bajo, weight: cob ? (cob.cubierta ? 1.2 : 2.5) : 1.2, dashArray: cob && !cob.cubierta ? '4 4' : null,
+              fillOpacity: hayEmergencia ? 0.06 : (OPACIDAD_RIESGO[z.nivel] ?? 0.14), opacity: hayEmergencia ? 0.35 : 0.9,
+            }}>
+            <Tip titulo={`Zona de riesgo ${z.nivel}`} tono={z.nivel} sticky sep={14}>
+              <div className="cdp-tip-m">{z.jurisdiccion}</div>
+              {z.mensaje && <div>{z.mensaje}</div>}
+              {cob && (cob.cubierta ? <div className="cdp-tip-ok">Patrullada en el turno por {cob.moviles.join(', ')}</div> : <div className="cdp-tip-acc">Sin pasar en el turno</div>)}
+            </Tip>
+          </Circle>
+        );
+      })}
 
       {/* Rutas de patrullaje: tenues por defecto; se resalta la seleccionada o la que está bajo el cursor */}
       {capas.rutas && planesVisibles.map((p) => {
@@ -222,6 +232,16 @@ const MapaDespacho = ({
           <CircleMarker center={[recorrido.puntos[0].lat, recorrido.puntos[0].lng]} radius={5} pathOptions={{ color: '#fff', fillColor: '#475569', fillOpacity: 1, weight: 2 }}>
             <Tip titulo="Inicio del recorrido" tono="camara" sep={8}><div className="cdp-tip-m">{fmtHoraCorta(recorrido.puntos[0].t)}</div></Tip>
           </CircleMarker>
+        </>
+      )}
+
+      {/* Reproducción: recorrido completo tenue, lo ya reproducido en gris y la móvil en el punto actual */}
+      {reproduccion && (
+        <>
+          <Polyline positions={reproduccion.todo} pathOptions={{ color: '#475569', weight: 2, opacity: 0.3, dashArray: '4 6' }} />
+          <Polyline positions={reproduccion.cola} pathOptions={{ color: '#475569', weight: 3.5, opacity: 0.9 }} />
+          <Marker position={[reproduccion.actual.lat, reproduccion.actual.lng]} zIndexOffset={1500}
+            icon={pinMovil({ subtipo: 'CAMION', estado: 'disponible', etiqueta: `${reproduccion.codigo} ${fmtHoraCorta(reproduccion.actual.t)}`, seleccionada: true })} />
         </>
       )}
 

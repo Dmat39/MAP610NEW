@@ -4,8 +4,10 @@ import {
   PiChartBar, PiPath, PiSiren, PiPencilSimpleLine, PiArrowClockwise, PiNavigationArrow, PiWhatsappLogo,
   PiCheckCircle, PiXCircle, PiStack, PiCrosshair, PiTrash, PiFloppyDisk, PiShieldCheck, PiWarning,
   PiFootprints, PiSecurityCamera, PiEye, PiMegaphone, PiSpeakerHigh, PiSpeakerSlash, PiCopy, PiUsersThree,
-  PiBellRinging, PiCaretDown, PiCaretUp, PiCheck, PiListBullets, PiBellSimple, PiKeyboard,
+  PiBellRinging, PiCaretDown, PiCaretUp, PiCheck, PiListBullets, PiBellSimple, PiKeyboard, PiFileText, PiFire, PiNotebook,
 } from 'react-icons/pi';
+import Reproductor from './Reproductor';
+import InformeTurno from './InformeTurno';
 import { Buscador, TarjetaUnidad, TableroUnidades, PanelAlertas, AyudaAtajos } from './Operador';
 import { claveUnidad } from './unidades';
 import { COLOR, ESTADOS } from '../mapa/estados';
@@ -19,7 +21,7 @@ import MapaDespacho from './MapaDespacho';
 import * as api from '../../services/patrullajeService';
 import {
   TURNOS, fmtKm, fmtMin, fmtHora, hoyLima, textoWhatsApp, ESTADO_DESPACHO, PRIORIDAD, ESTADO_INCIDENCIA,
-  RESULTADOS_CIERRE, RESULTADOS_CANCELACION, textoResultado, fmtCrono, segDesde,
+  RESULTADOS_CIERRE, RESULTADOS_CANCELACION, textoResultado, fmtCrono, segDesde, distanciaM,
 } from './util';
 import { leerConfigSonido, guardarConfigSonido, sonar } from './sonido';
 import './CentroDespacho.css';
@@ -100,6 +102,15 @@ const CentroDespacho = () => {
   const [puntoBusqueda, setPuntoBusqueda] = useState(null);  // { lat, lng, nombre } (dirección encontrada)
   const [verAtajos, setVerAtajos] = useState(false);
   const buscadorRef = useRef(null);
+  // Fase 4: supervisión y reportes
+  const [repro, setRepro] = useState(null);              // unidad en reproducción { tipo, id, codigo }
+  const [reproEstado, setReproEstado] = useState(null);  // posición actual y cola; lo entrega el reproductor
+  const [calor, setCalor] = useState(null);              // cobertura real del turno (mapa de calor) o null
+  const [verCalor, setVerCalor] = useState(false);
+  const [verInforme, setVerInforme] = useState(false);
+  const [bitacora, setBitacora] = useState(null);        // { rows } de las últimas 24 h
+  const [bitacoraFiltro, setBitacoraFiltro] = useState('');
+  const [bitacoraGrupo, setBitacoraGrupo] = useState(null); // grupo de despacho con su bitácora abierta
   const avisoTimer = useRef(null);
   const incVistas = useRef(null);      // ids de incidencias ya vistas (para sonar solo con las nuevas)
   const atrasoAvisado = useRef(new Set());
@@ -394,6 +405,30 @@ const CentroDespacho = () => {
     setEncuadre([[d.lat, d.lng]]);
   };
 
+  // ─── Fase 4: mapa de calor, reproducción, bitácora, paradas con nombre ───
+  const cargarCalor = async () => {
+    setOcupado('calor');
+    try {
+      const c = await api.obtenerCobertura(fecha, turno);
+      setCalor(c);
+      setVerCalor(true);
+      setCapas((x) => ({ ...x, zonas: true }));
+      if (!c.moviles.length) avisar('Este turno no tiene rutas con móviles: el mapa de calor sale vacío.', 'alerta');
+      else if (c.moviles.every((m) => !m.puntos.length)) avisar('Las móviles con ruta no tienen posiciones GPS en el turno todavía.', 'alerta');
+    } catch (e) { avisar(e.message, 'error'); } finally { setOcupado(''); }
+  };
+  const abrirReproduccion = (u) => { setRepro({ tipo: u.tipo, id: u.id, codigo: u.codigo }); setRecorrido(null); };
+  const cargarBitacora = async () => {
+    try { setBitacora(await api.obtenerBitacora(24)); } catch (e) { avisar(e.message, 'error'); }
+  };
+  // Nombre de la parada: la zona de riesgo cercana o, si no hay, la dirección aproximada (OpenStreetMap)
+  const nombrarParada = async (idx, lat, lng) => {
+    const zona = zonas.map((z) => ({ z, d: distanciaM(lat, lng, z.lat, z.lon) })).filter((x) => x.d <= 150).sort((a, b) => a.d - b.d)[0]?.z;
+    let nombre = zona ? `Zona de riesgo ${zona.nivel}${zona.jurisdiccion ? `, ${zona.jurisdiccion}` : ''}` : null;
+    if (!nombre) { try { nombre = await api.direccionDe(lat, lng); } catch { nombre = null; } }
+    if (nombre) setBorrador((b) => b.map((x, k) => (k === idx && !x.motivo ? { ...x, motivo: nombre } : x)));
+  };
+
   // Atajos de teclado (no actúan mientras se escribe en un campo). Leen el estado actual por una ref.
   const atajosRef = useRef(null);
   atajosRef.current = { punto, sugerencia, despachos, incidencias, puede, modoMapa, unidadSel, verAtajos, cierre };
@@ -456,12 +491,16 @@ const CentroDespacho = () => {
       avisar('Completa móvil, título, quién ordena y al menos una parada en el mapa.', 'error');
       return;
     }
+    if (borrador.some((b) => !b.motivo.trim())) {
+      avisar('Cada parada necesita un nombre o motivo (se completa solo con la dirección o la zona de riesgo; puedes cambiarlo).', 'error');
+      return;
+    }
     setOcupado('manual');
     try {
       const r = await api.crearRutaManual({
         ...manual, turno, fecha,
         documento: manual.documento || undefined, notas: manual.notas || undefined,
-        paradas: borrador.map((b) => ({ lat: b.lat, lng: b.lng, motivo: b.motivo || undefined, permanencia_min: Number(b.permanencia_min) || 10 })),
+        paradas: borrador.map((b) => ({ lat: b.lat, lng: b.lng, motivo: b.motivo.trim(), permanencia_min: Number(b.permanencia_min) || 10 })),
       });
       avisar(`Ruta manual creada para ${r.unit_code}. Reemplaza su ruta del turno.`);
       setBorrador([]);
@@ -476,7 +515,9 @@ const CentroDespacho = () => {
       setModoMapa('ninguno');
       elegirPunto({ lat: ll.lat, lng: ll.lng });
     } else if (modoMapa === 'manual') {
+      const idx = borrador.length;
       setBorrador((b) => [...b, { lat: ll.lat, lng: ll.lng, motivo: '', permanencia_min: 10 }]);
+      nombrarParada(idx, ll.lat, ll.lng);
     }
   };
 
@@ -517,7 +558,9 @@ const CentroDespacho = () => {
             <small>{p.source === 'MANUAL' ? `Manual, ordenada por ${p.ordered_by}` : 'Ruta inteligente'}</small>
           </span>
           <span className="cdp-plan-meta">
-            {verificada ? <b className={visitadas ? 'ok-txt' : ''}>{visitadas}/{p.stops.length}</b> : `${p.stops.length} paradas`}
+            {verificada
+              ? <b className={visitadas ? 'ok-txt' : ''}>{visitadas}/{p.stops.length} <span className="cdp-pct">{Math.round((100 * visitadas) / p.stops.length)}%</span></b>
+              : `${p.stops.length} paradas`}
             <small>{fmtKm(p.distance_m)}</small>
           </span>
         </button>
@@ -535,8 +578,8 @@ const CentroDespacho = () => {
                     <small>
                       {s.dwell_min} min de permanencia
                       {s.checked_at && (s.visited_at
-                        ? `. Visitada a las ${fmtHora(s.visited_at)} (${Math.round((s.dwell_s ?? 0) / 60)} min)`
-                        : `. No visitada, pasó a ${fmtKm(s.min_dist_m)}`)}
+                        ? `. Visitada a las ${fmtHora(s.visited_at)}, permaneció ${Math.round((s.dwell_s ?? 0) / 60)} de ${s.dwell_min} min${(s.dwell_s ?? 0) / 60 >= s.dwell_min ? ' (cumplida)' : ' (menos de lo planificado)'}`
+                        : `. No visitada${(s.min_dist_m ?? null) !== null ? `, lo más cerca que pasó: ${fmtKm(s.min_dist_m)}` : ''}`)}
                     </small>
                   </div>
                 </li>
@@ -593,6 +636,7 @@ const CentroDespacho = () => {
           cursorCruz={modoMapa !== 'ninguno'} encuadre={encuadre} oscuro={dark}
           unidadSel={unidadSel} unidadSelObj={unidadSelObj} onSelectUnidad={(u) => seleccionarUnidad(u, false)}
           recorrido={recorrido} puntoBusqueda={puntoBusqueda}
+          reproduccion={reproEstado} calor={verCalor ? calor : null}
         />
         <BarraMapa capas={capas} setCapas={setCapas} />
         {modoMapa !== 'ninguno' && (
@@ -615,7 +659,7 @@ const CentroDespacho = () => {
           <TarjetaUnidad
             u={unidadSelObj} despacho={despachoPorRecurso.get(unidadSel)} plan={unidadSelObj.tipo === 'MOVIL' ? planes.find((p) => p.unit_issi === unidadSelObj.issi) : null}
             puede={puede} hayPunto={!!punto} recorridoActivo={recorrido?.key === unidadSel} cargandoRecorrido={ocupado === `rec-${unidadSel}`}
-            onEnviar={() => enviarUnidadSel(unidadSelObj)} onRecorrido={() => verRecorrido(unidadSelObj)}
+            onEnviar={() => enviarUnidadSel(unidadSelObj)} onRecorrido={() => verRecorrido(unidadSelObj)} onReproducir={() => abrirReproduccion(unidadSelObj)}
             onServicio={(fuera, motivo) => cambiarServicio(unidadSelObj, fuera, motivo)}
             onCentrar={() => setEncuadre([[unidadSelObj.lat, unidadSelObj.lng]])}
             onCerrar={() => { setUnidadSel(null); setRecorrido(null); }}
@@ -623,6 +667,11 @@ const CentroDespacho = () => {
           />
         )}
         {verAtajos && <AyudaAtajos onCerrar={() => setVerAtajos(false)} />}
+        {repro && (
+          <Reproductor unidad={repro} fecha={fecha} turno={turno} avisar={avisar}
+            onEstado={setReproEstado} onCerrar={() => { setRepro(null); setReproEstado(null); }} />
+        )}
+        {verInforme && <InformeTurno fecha={fecha} turno={turno} onCerrar={() => setVerInforme(false)} avisar={avisar} />}
       </div>
 
       <aside className="cdp-panel">
@@ -643,10 +692,10 @@ const CentroDespacho = () => {
         </header>
 
         <div className="cdp-turno">
-          <select aria-label="Turno" value={turno ?? ''} onChange={(e) => { setTurno(e.target.value); setPlanSel(null); setCobertura(null); }}>
+          <select aria-label="Turno" value={turno ?? ''} onChange={(e) => { setTurno(e.target.value); setPlanSel(null); setCobertura(null); setCalor(null); setVerCalor(false); }}>
             {TURNOS.map((t) => <option key={t.value} value={t.value}>Turno {t.label.toLowerCase()} ({t.horas})</option>)}
           </select>
-          <input aria-label="Fecha" type="date" value={fecha} onChange={(e) => { setFecha(e.target.value); setPlanSel(null); setCobertura(null); }} />
+          <input aria-label="Fecha" type="date" value={fecha} onChange={(e) => { setFecha(e.target.value); setPlanSel(null); setCobertura(null); setCalor(null); setVerCalor(false); }} />
         </div>
 
         <Buscador
@@ -670,6 +719,9 @@ const CentroDespacho = () => {
             <Resumen
               estado={estado} enLinea={enLinea.length} metricas={metricas} planes={planes} zonas={zonas}
               cobertura={cobertura} turno={turno} ocupado={ocupado} onVerificar={verificarTodo} sinMovil={sinMovil}
+              calor={calor} verCalor={verCalor} onCalor={() => (calor ? setVerCalor((v) => !v) : cargarCalor())} onRecargarCalor={cargarCalor}
+              onInforme={() => setVerInforme(true)}
+              bitacora={bitacora} bitacoraFiltro={bitacoraFiltro} setBitacoraFiltro={setBitacoraFiltro} onBitacora={cargarBitacora}
             />
           )}
 
@@ -711,7 +763,13 @@ const CentroDespacho = () => {
                 <div key={jur} className="cdp-grupo">
                   <div className="cdp-grupo-head">
                     <span>{jur}</span>
-                    <small>{ps.length} {ps.length === 1 ? 'móvil' : 'móviles'}, {ps.reduce((n, p) => n + p.stops.length, 0)} paradas</small>
+                    <small>
+                      {ps.length} {ps.length === 1 ? 'móvil' : 'móviles'}, {ps.reduce((n, p) => n + p.stops.length, 0)} paradas
+                      {(() => {
+                        const ver = ps.flatMap((p) => p.stops).filter((s) => s.checked_at);
+                        return ver.length ? `, ${Math.round((100 * ver.filter((s) => s.visited_at).length) / ver.length)}% cumplido` : '';
+                      })()}
+                    </small>
                   </div>
                   {ps.map(renderPlan)}
                 </div>
@@ -836,11 +894,16 @@ const CentroDespacho = () => {
                       <b title={d0.incident_type}>{d0.incident_code ?? 'Punto marcado'}</b>
                       {d0.incident_corto && <span className="cdp-muted">{d0.incident_corto}</span>}
                       {d0.priority && <ChipPrioridad p={d0.priority} />}
-                      {activo && puede.asignar && (
-                        <button className="cdp-btn mini" title="Enviar otra unidad a esta misma emergencia" onClick={() => pedirRefuerzo(d0, unidades)}>
-                          <PiUsersThree size={13} /> Refuerzo
+                      <span className="cdp-desp-acc">
+                        <button className="cdp-icon-btn" title="Bitácora: quién hizo qué y cuándo" aria-label="Bitácora" onClick={() => { setBitacoraGrupo(bitacoraGrupo === id ? null : id); if (!bitacora) cargarBitacora(); }}>
+                          <PiNotebook size={14} />
                         </button>
-                      )}
+                        {activo && puede.asignar && (
+                          <button className="cdp-btn mini" title="Enviar otra unidad a esta misma emergencia" onClick={() => pedirRefuerzo(d0, unidades)}>
+                            <PiUsersThree size={13} /> Refuerzo
+                          </button>
+                        )}
+                      </span>
                       <small>
                         {d0.incident_registered_at ? `Registrada ${fmtHora(d0.incident_registered_at)}, ` : ''}
                         despachada {fmtHora(d0.assigned_at)} por {d0.assigned_by ?? 'sin usuario'}{d0.reference ? `. Ref.: ${d0.reference}` : ''}
@@ -848,6 +911,11 @@ const CentroDespacho = () => {
                     </div>
                     {unidades.map((d) => <Unidad key={d.id} d={d} ahora={ahora} sonido={sonido} puede={puede} cierre={cierre} setCierre={setCierre}
                       confirmarCierre={confirmarCierre} ocupado={ocupado} onLlegada={() => accionDespacho(api.marcarLlegada, d.id)} />)}
+                    {bitacoraGrupo === id && (
+                      <BitacoraLista cargando={!bitacora} rows={(bitacora?.rows ?? []).filter((r) => (d0.incident_code
+                        ? r.incidencia === d0.incident_code
+                        : unidades.some((u) => u.unit_code === r.unidad) && new Date(r.fecha) >= new Date(new Date(d0.assigned_at).getTime() - 60000)))} />
+                    )}
                   </div>
                 );
               })}
@@ -971,11 +1039,11 @@ const CentroDespacho = () => {
                   {modoMapa === 'manual' ? 'Dejar de agregar' : 'Agregar en el mapa'}
                 </button>
               </div>
-              {!borrador.length && <Vacio texto='Pulsa "Agregar en el mapa" y haz clic en cada punto.' />}
+              {!borrador.length && <Vacio texto='Pulsa "Agregar en el mapa" y haz clic en cada punto. El nombre se completa con la zona de riesgo o la dirección más cercana.' />}
               {borrador.map((b, i) => (
                 <div key={i} className="cdp-parada">
                   <span className="cdp-stop-n">{i + 1}</span>
-                  <input aria-label={`Motivo de la parada ${i + 1}`} placeholder="Motivo" value={b.motivo} onChange={(e) => setBorrador((arr) => arr.map((x, k) => (k === i ? { ...x, motivo: e.target.value } : x)))} />
+                  <input aria-label={`Nombre de la parada ${i + 1}`} placeholder="Nombre o motivo (obligatorio)" value={b.motivo} className={b.motivo.trim() ? '' : 'falta'} onChange={(e) => setBorrador((arr) => arr.map((x, k) => (k === i ? { ...x, motivo: e.target.value } : x)))} />
                   <input aria-label="Minutos de permanencia" type="number" min={1} max={240} value={b.permanencia_min} onChange={(e) => setBorrador((arr) => arr.map((x, k) => (k === i ? { ...x, permanencia_min: e.target.value } : x)))} />
                   <button className="cdp-icon-btn" aria-label="Quitar parada" onClick={() => setBorrador((arr) => arr.filter((_, k) => k !== i))}><PiTrash size={15} /></button>
                 </div>
@@ -1140,6 +1208,26 @@ const PanelAvisos = ({ urgentes, atrasados, ahora, sonido, cambiarSonido, onInci
 
 const Vacio = ({ texto }) => <p className="cdp-empty">{texto}</p>;
 
+// Bitácora: filas de la auditoría ya traducidas por el backend (descripcion, unidad, incidencia, detalle)
+const BitacoraLista = ({ rows, cargando }) => {
+  if (cargando) return <p className="cdp-empty">Cargando bitácora…</p>;
+  if (!rows.length) return <p className="cdp-empty">Sin registros.</p>;
+  return (
+    <div className="cdp-bitacora">
+      {rows.map((r) => (
+        <div key={r.id} className="cdp-bit">
+          <small>{fmtHora(r.fecha)}</small>
+          <span>
+            <b>{r.usuario}</b> {r.descripcion.toLowerCase()}{r.unidad ? ` ${r.unidad}` : ''}{r.incidencia ? ` (${r.incidencia})` : ''}
+            {r.detalle?.resultado ? `: ${textoResultado(r.detalle.resultado)}` : ''}{r.detalle?.notas ? `. ${r.detalle.notas}` : ''}{r.detalle?.motivo ? `: ${r.detalle.motivo}` : ''}
+            {r.detalle?.prioridad && r.accion === 'CONFIGURAR_TIPO_INCIDENCIA' ? ` a ${String(r.detalle.prioridad).toLowerCase()} (${r.entidad === 'IncidentTypeConfig' ? r.detalle.corto ?? '' : ''})` : ''}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const Cargando = () => (
   <div className="cdp-cargando" aria-label="Calculando">
     {[0, 1, 2].map((i) => <div key={i} className="cdp-skel" />)}
@@ -1206,7 +1294,7 @@ const Kpi = ({ valor, label, sub, tono }) => (
   </div>
 );
 
-const Resumen = ({ estado, enLinea, metricas, planes, zonas, cobertura, turno, ocupado, onVerificar, sinMovil }) => {
+const Resumen = ({ estado, enLinea, metricas, planes, zonas, cobertura, turno, ocupado, onVerificar, sinMovil, calor, verCalor, onCalor, onRecargarCalor, onInforme, bitacora, bitacoraFiltro, setBitacoraFiltro, onBitacora }) => {
   const m = estado?.moviles;
   const motor = estado?.motor_predictivo;
   const inicio = TURNOS.find((t) => t.value === turno)?.horas.split('-')[0];
@@ -1256,10 +1344,86 @@ const Resumen = ({ estado, enLinea, metricas, planes, zonas, cobertura, turno, o
           </button>
         </div>
         {cobertura && (
-          <div className="cdp-cobertura">
-            <div className="cdp-kpi-num">{cobertura.pct ?? 0}%</div>
-            <div>{cobertura.visitadas} de {cobertura.paradas} paradas visitadas</div>
-          </div>
+          <>
+            <div className="cdp-cobertura">
+              <div className="cdp-kpi-num">{cobertura.pct ?? 0}%</div>
+              <div>{cobertura.visitadas} de {cobertura.paradas} paradas visitadas</div>
+            </div>
+            {cobertura.por_jurisdiccion?.length > 0 && (
+              <table className="cdp-tabla">
+                <thead><tr><th>Jurisdicción</th><th>Móviles</th><th>Paradas</th><th>Cumplido</th></tr></thead>
+                <tbody>
+                  {cobertura.por_jurisdiccion.map((j) => (
+                    <tr key={j.jurisdiccion}><td>{j.jurisdiccion}</td><td>{j.moviles}</td><td>{j.visitadas}/{j.paradas}</td><td><b className={j.pct >= 70 ? 'ok-txt' : ''}>{j.pct ?? '-'}%</b></td></tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {cobertura.por_movil?.length > 0 && (
+              <details className="cdp-detalle">
+                <summary>Por móvil ({cobertura.por_movil.length})</summary>
+                <table className="cdp-tabla">
+                  <tbody>
+                    {cobertura.por_movil.map((m) => (
+                      <tr key={m.unidad}><td>{m.unidad}</td><td className="cdp-muted">{m.jurisdiccion}</td><td>{m.error ? <span className="cdp-muted">{m.error}</span> : `${m.visitadas}/${m.paradas}`}</td><td><b>{m.pct ?? '-'}%</b></td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </details>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="cdp-card">
+        <h3>Mapa de calor de cobertura</h3>
+        <p className="cdp-muted">Por dónde patrullaron de verdad las móviles con ruta en el turno, sobre las zonas de riesgo. Las zonas sin pasar quedan punteadas.</p>
+        <div className="cdp-row">
+          <button className={`cdp-btn${verCalor ? ' primario' : ''}`} disabled={ocupado === 'calor'} onClick={onCalor}>
+            <PiFire size={15} /> {ocupado === 'calor' ? 'Calculando' : verCalor ? 'Ocultar calor' : 'Ver en el mapa'}
+          </button>
+          {calor && <button className="cdp-btn" disabled={ocupado === 'calor'} onClick={onRecargarCalor}><PiArrowClockwise size={15} /> Actualizar</button>}
+        </div>
+        {calor && (
+          <>
+            <div className="cdp-cobertura">
+              <div className="cdp-kpi-num">{calor.pct ?? 0}%</div>
+              <div>{calor.zonas_cubiertas} de {calor.zonas_total} zonas de riesgo con alguna móvil a menos de {calor.radio_m} m{calor.en_curso ? ' (turno en curso)' : ''}</div>
+            </div>
+            {calor.por_jurisdiccion?.length > 0 && (
+              <table className="cdp-tabla">
+                <thead><tr><th>Jurisdicción</th><th>Móviles con ruta</th><th>Zonas cubiertas</th></tr></thead>
+                <tbody>
+                  {calor.por_jurisdiccion.map((j) => (
+                    <tr key={j.jurisdiccion}><td>{j.jurisdiccion}</td><td>{j.moviles}</td><td><b className={j.pct >= 70 ? 'ok-txt' : ''}>{j.cubiertas}/{j.zonas}</b></td></tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="cdp-card">
+        <h3>Informe del turno</h3>
+        <p className="cdp-muted">Tiempos de despacho y llegada, despachos por jurisdicción y tipo, rutas, alertas y unidades sin reporte. Se descarga en Excel o se imprime a PDF.</p>
+        <div className="cdp-row">
+          <button className="cdp-btn primario" onClick={onInforme}><PiFileText size={15} /> Ver informe</button>
+        </div>
+      </div>
+
+      <div className="cdp-card">
+        <h3>Bitácora</h3>
+        <p className="cdp-muted">Quién despachó, canceló, cerró o cambió una ruta, con hora. Últimas 24 h.</p>
+        <div className="cdp-row">
+          <input className="cdp-filtro" placeholder="Filtrar por incidencia o unidad" aria-label="Filtrar bitácora" value={bitacoraFiltro} onChange={(e) => setBitacoraFiltro(e.target.value)} />
+          <button className="cdp-btn" onClick={onBitacora}><PiNotebook size={15} /> {bitacora ? 'Actualizar' : 'Ver bitácora'}</button>
+        </div>
+        {bitacora && (
+          <BitacoraLista rows={(bitacora.rows ?? []).filter((r) => {
+            const q = bitacoraFiltro.trim().toUpperCase();
+            return !q || String(r.incidencia ?? '').toUpperCase().includes(q) || String(r.unidad ?? '').toUpperCase().includes(q) || String(r.usuario ?? '').toUpperCase().includes(q);
+          }).slice(0, 150)} />
         )}
       </div>
 
