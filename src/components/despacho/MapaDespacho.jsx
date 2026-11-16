@@ -11,8 +11,9 @@ const TILE = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'; // en tema os
 const ZOOM_ETIQUETAS = 15; // desde este zoom se muestra el indicativo junto a cada móvil
 const estiloJur = { color: '#475569', weight: 1.4, dashArray: '5 5', fillColor: '#64748b', fillOpacity: 0.03 };
 const nombreVehiculo = { MOTO: 'Moto', CAMION: 'Camioneta', AUTOMOVIL: 'Camioneta' };
-const nombreEstado = { disponible: 'Disponible', ocupada: 'Atendiendo un despacho', en_lugar: 'En el lugar del despacho', sin_reporte: 'Sin reporte' };
+const nombreEstado = { disponible: 'Disponible', ocupada: 'Atendiendo un despacho', en_lugar: 'En el lugar del despacho', sin_reporte: 'Sin reporte', fuera_servicio: 'Fuera de servicio' };
 const ESTADO_INC = { DESPACHADA: 'Despachada', EN_ATENCION: 'En atención', CERRADA: 'Cerrada' };
+const fmtHoraCorta = (t) => new Date(t).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Lima' });
 
 /**
  * Tarjeta flotante del mapa. Sale hacia el lado con más espacio, con ancho máximo y texto que salta de línea.
@@ -52,6 +53,8 @@ const MapaDespacho = ({
   moviles, zonas, planes, incidencias, despachos, sugerencia, punto, borrador, jurisdicciones,
   capas, planSeleccionado, planResaltado, onResaltarPlan, onMapClick, onSelectIncidencia, onSelectPlan,
   cursorCruz, encuadre, oscuro,
+  // Fase 3: unidad seleccionada (clave y objeto), recorrido reciente y dirección buscada
+  unidadSel, unidadSelObj, onSelectUnidad, recorrido, puntoBusqueda,
 }) => {
   const [zoom, setZoom] = useState(13);
   const enLinea = useMemo(() => moviles.filter((m) => m.en_linea), [moviles]);
@@ -208,6 +211,37 @@ const MapaDespacho = ({
         </Marker>
       ))}
 
+      {/* Recorrido reciente de la unidad seleccionada (gris: es historia, no una ruta planificada) */}
+      {recorrido?.puntos?.length > 1 && (
+        <>
+          <Polyline positions={recorrido.puntos.map((p) => [p.lat, p.lng])} pathOptions={{ color: '#475569', weight: 3, opacity: 0.85 }}>
+            <Tip titulo={`Recorrido de ${recorrido.codigo}`} tono="camara" sticky sep={14}>
+              <div className="cdp-tip-m">Últimas 2 h, {recorrido.puntos.length} posiciones. Empieza {fmtHoraCorta(recorrido.puntos[0].t)}</div>
+            </Tip>
+          </Polyline>
+          <CircleMarker center={[recorrido.puntos[0].lat, recorrido.puntos[0].lng]} radius={5} pathOptions={{ color: '#fff', fillColor: '#475569', fillOpacity: 1, weight: 2 }}>
+            <Tip titulo="Inicio del recorrido" tono="camara" sep={8}><div className="cdp-tip-m">{fmtHoraCorta(recorrido.puntos[0].t)}</div></Tip>
+          </CircleMarker>
+        </>
+      )}
+
+      {/* Dirección encontrada con el buscador */}
+      {puntoBusqueda && (
+        <CircleMarker center={[puntoBusqueda.lat, puntoBusqueda.lng]} radius={9} pathOptions={{ color: COLOR.ruta, fillColor: '#fff', fillOpacity: 0.9, weight: 3 }}>
+          <Tip titulo="Dirección buscada" tono="ruta" sep={10}><div className="cdp-tip-m">{puntoBusqueda.nombre}</div></Tip>
+        </CircleMarker>
+      )}
+
+      {/* Unidad a pie seleccionada desde el tablero o el buscador (las demás a pie solo se dibujan al sugerir) */}
+      {unidadSelObj && unidadSelObj.tipo !== 'MOVIL' && (unidadSelObj.lat ?? null) !== null && !(punto && sugerencia?.a_pie?.some((r) => r.tipo === unidadSelObj.tipo && r.id === unidadSelObj.id)) && (
+        <Marker position={[unidadSelObj.lat, unidadSelObj.lng]} zIndexOffset={800}
+          icon={pinAPie({ tipo: unidadSelObj.tipo, estado: estadoRecurso(unidadSelObj, despachoPorRecurso.get(`${unidadSelObj.tipo}:${unidadSelObj.id}`)), vieja: (unidadSelObj.minutos_sin_reporte ?? 0) > MINUTOS_GPS_VIEJO, etiqueta: unidadSelObj.codigo, seleccionada: true })}>
+          <Tip titulo={unidadSelObj.codigo} tono="disponible" sep={12}>
+            <div className="cdp-tip-m">{unidadSelObj.tipo === 'BODYCAM' ? 'Bodycam' : 'Sereno con radio'}. Último reporte hace {unidadSelObj.minutos_sin_reporte} min</div>
+          </Tip>
+        </Marker>
+      )}
+
       {/* Borrador de ruta manual */}
       {borrador.length > 0 && (
         <>
@@ -218,10 +252,13 @@ const MapaDespacho = ({
 
       {/* Móviles sin reporte (gris) y en línea (color según su estado; atenuadas si su GPS es viejo) */}
       {capas.offline && offline.map((m) => (
-        <Marker key={`o-${m.issi}`} position={[m.lat, m.lng]} icon={pinMovil({ subtipo: m.subtipo, estado: 'sin_reporte', vieja: true, etiqueta: etiquetas ? m.codigo : '' })}>
+        <Marker key={`o-${m.issi}`} position={[m.lat, m.lng]} zIndexOffset={unidadSel === `MOVIL:${m.issi}` ? 900 : 0}
+          icon={pinMovil({ subtipo: m.subtipo, estado: m.fuera_servicio ? 'fuera_servicio' : 'sin_reporte', vieja: true, etiqueta: etiquetas ? m.codigo : '', seleccionada: unidadSel === `MOVIL:${m.issi}` })}
+          eventHandlers={{ click: () => onSelectUnidad?.(m) }}>
           <Tip titulo={m.codigo} tono="sin_reporte" sep={15}>
-            <div className="cdp-tip-m">Sin reporte hace {Math.round((m.minutos_sin_reporte ?? 0) / 60)} h</div>
+            <div className="cdp-tip-m">Sin reporte hace {Math.round((m.minutos_sin_reporte ?? 0) / 60)} h{m.fuera_servicio ? `. Fuera de servicio${m.fuera_servicio_motivo ? `: ${m.fuera_servicio_motivo}` : ''}` : ''}</div>
             {m.estado_radio && <div>{m.estado_radio}</div>}
+            <div className="cdp-tip-acc">Clic para ver la unidad</div>
           </Tip>
         </Marker>
       ))}
@@ -230,20 +267,22 @@ const MapaDespacho = ({
         const estado = estadoRecurso(m, d);
         const vieja = (m.minutos_sin_reporte ?? 0) > MINUTOS_GPS_VIEJO;
         const suPlan = planes.find((x) => x.unit_issi === m.issi);
+        const sel = unidadSel === `MOVIL:${m.issi}`;
         return (
-          <Marker key={m.issi} position={[m.lat, m.lng]} zIndexOffset={500}
-            icon={pinMovil({ subtipo: m.subtipo, estado, vieja, etiqueta: etiquetas ? m.codigo : '' })}
+          <Marker key={m.issi} position={[m.lat, m.lng]} zIndexOffset={sel ? 900 : 500}
+            icon={pinMovil({ subtipo: m.subtipo, estado, vieja, etiqueta: etiquetas || sel ? m.codigo : '', seleccionada: sel })}
             eventHandlers={{
-              click: () => { if (suPlan) onSelectPlan?.(suPlan.id); },
+              click: () => onSelectUnidad?.(m),
               mouseover: () => { if (suPlan) onResaltarPlan?.(suPlan.id); },
               mouseout: () => onResaltarPlan?.(null),
             }}>
             <Tip titulo={m.codigo} tono={estado} sep={15}>
               <div className="cdp-tip-m">{nombreVehiculo[m.subtipo] ?? m.subtipo}, {m.velocidad} km/h, {m.jurisdiccion?.nombre ?? 'sin jurisdicción'}</div>
               <div>
-                {nombreEstado[estado]}{d?.incident_code ? ` (${d.incident_code})` : ''}. Último reporte hace {m.minutos_sin_reporte} min{vieja ? ', posición vieja' : ''}
+                {nombreEstado[estado]}{estado === 'fuera_servicio' && m.fuera_servicio_motivo ? ` (${m.fuera_servicio_motivo})` : ''}{d?.incident_code ? ` (${d.incident_code})` : ''}. Último reporte hace {m.minutos_sin_reporte} min{vieja ? ', posición vieja' : ''}
               </div>
               {suPlan && <div className="cdp-tip-m">Ruta: {suPlan.stops.filter((s) => s.visited_at).length} de {suPlan.stops.length} paradas visitadas</div>}
+              <div className="cdp-tip-acc">Clic para ver la unidad</div>
             </Tip>
           </Marker>
         );

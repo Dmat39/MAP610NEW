@@ -4,8 +4,10 @@ import {
   PiChartBar, PiPath, PiSiren, PiPencilSimpleLine, PiArrowClockwise, PiNavigationArrow, PiWhatsappLogo,
   PiCheckCircle, PiXCircle, PiStack, PiCrosshair, PiTrash, PiFloppyDisk, PiShieldCheck, PiWarning,
   PiFootprints, PiSecurityCamera, PiEye, PiMegaphone, PiSpeakerHigh, PiSpeakerSlash, PiCopy, PiUsersThree,
-  PiBellRinging, PiCaretDown, PiCaretUp, PiCheck,
+  PiBellRinging, PiCaretDown, PiCaretUp, PiCheck, PiListBullets, PiBellSimple, PiKeyboard,
 } from 'react-icons/pi';
+import { Buscador, TarjetaUnidad, TableroUnidades, PanelAlertas, AyudaAtajos } from './Operador';
+import { claveUnidad } from './unidades';
 import { COLOR, ESTADOS } from '../mapa/estados';
 import {
   IconoAPie, IconoCamara, IconoCategoria, IconoVehiculo, IconoSirena,
@@ -36,8 +38,12 @@ const CAPAS_POR_TAB = {
   resumen:  { jurisdicciones: true,  moviles: true, offline: false, zonas: true,  rutas: false, incidencias: false },
   rutas:    { jurisdicciones: true,  moviles: true, offline: false, zonas: false, rutas: true,  incidencias: false },
   despacho: { jurisdicciones: true,  moviles: true, offline: false, zonas: false, rutas: false, incidencias: false },
+  unidades: { jurisdicciones: true,  moviles: true, offline: true,  zonas: false, rutas: false, incidencias: false },
+  alertas:  { jurisdicciones: true,  moviles: true, offline: false, zonas: false, rutas: true,  incidencias: false },
   manual:   { jurisdicciones: true,  moviles: true, offline: false, zonas: true,  rutas: false, incidencias: false },
 };
+const ALERTAS_POLL_MS = 30000;
+const TAB_POR_TECLA = { 1: 'resumen', 2: 'rutas', 3: 'despacho', 4: 'unidades', 5: 'alertas', 6: 'manual' };
 
 const CentroDespacho = () => {
   const { user, hasModuleAccess, hasModuleOp } = useAuth();
@@ -85,6 +91,15 @@ const CentroDespacho = () => {
   const [cierre, setCierre] = useState(null);                // { id, cancelar, resultado, notas }
   const [tipos, setTipos] = useState(null);                  // prioridad por tipo (se carga al abrir el panel)
   const [verTipos, setVerTipos] = useState(false);
+  // Fase 3: vista de operador
+  const [aPie, setAPie] = useState([]);                      // radios portátiles y bodycams (se carga cuando hace falta)
+  const [cargandoAPie, setCargandoAPie] = useState(false);
+  const [unidadSel, setUnidadSel] = useState(null);          // 'MOVIL:issi' | 'RADIO:issi' | 'BODYCAM:codigo'
+  const [recorrido, setRecorrido] = useState(null);          // { key, codigo, puntos }
+  const [alertas, setAlertas] = useState({ activas: [], historial: [] });
+  const [puntoBusqueda, setPuntoBusqueda] = useState(null);  // { lat, lng, nombre } (dirección encontrada)
+  const [verAtajos, setVerAtajos] = useState(false);
+  const buscadorRef = useRef(null);
   const avisoTimer = useRef(null);
   const incVistas = useRef(null);      // ids de incidencias ya vistas (para sonar solo con las nuevas)
   const atrasoAvisado = useRef(new Set());
@@ -145,6 +160,29 @@ const CentroDespacho = () => {
     const t = setInterval(() => { cargarMoviles(); cargarDespachos(); cargarIncidencias(); }, POLL_MS);
     return () => clearInterval(t);
   }, [cargarMoviles, cargarDespachos, cargarIncidencias]);
+
+  // A pie (cientos de radios y bodycams): solo cuando el tablero o el buscador lo piden; luego cada minuto
+  const aPieCargado = useRef(false);
+  const cargandoAPieRef = useRef(false);
+  const cargarAPie = useCallback(async () => {
+    if (cargandoAPieRef.current) return;
+    cargandoAPieRef.current = true;
+    setCargandoAPie(true);
+    try { setAPie(await api.obtenerAPie()); aPieCargado.current = true; } catch { /* siguiente ciclo */ } finally { cargandoAPieRef.current = false; setCargandoAPie(false); }
+  }, []);
+  useEffect(() => {
+    const t = setInterval(() => { if (aPieCargado.current) cargarAPie(); }, 60000);
+    return () => clearInterval(t);
+  }, [cargarAPie]);
+
+  const cargarAlertas = useCallback(async () => {
+    try { setAlertas(await api.obtenerAlertas(24)); } catch { /* siguiente ciclo */ }
+  }, []);
+  useEffect(() => {
+    cargarAlertas();
+    const t = setInterval(cargarAlertas, ALERTAS_POLL_MS);
+    return () => clearInterval(t);
+  }, [cargarAlertas]);
 
   // Reloj de los cronómetros: solo corre mientras hay despachos abiertos
   const hayAbiertos = despachos.some((d) => d.status === 'ASIGNADO' || d.status === 'EN_LUGAR');
@@ -302,6 +340,117 @@ const CentroDespacho = () => {
     try { await navigator.clipboard.writeText(texto); avisar(`Copiado: ${texto}`); } catch { avisar('No se pudo copiar', 'error'); }
   };
 
+  // ─── Fase 3: unidades, recorrido, fuera de servicio, alertas, atajos ─────
+  const seleccionarUnidad = (u, centrar = true) => {
+    const key = claveUnidad(u);
+    setUnidadSel(key);
+    if (recorrido && recorrido.key !== key) setRecorrido(null);
+    if (centrar && (u.lat ?? null) !== null) setEncuadre([[u.lat, u.lng]]);
+  };
+
+  const verRecorrido = async (u) => {
+    const key = claveUnidad(u);
+    if (recorrido?.key === key) { setRecorrido(null); return; }
+    setOcupado(`rec-${key}`);
+    try {
+      const puntos = await api.obtenerRecorrido(u.tipo, u.id, 2);
+      if (!puntos.length) avisar(`${u.codigo} no tiene posiciones en las últimas 2 h.`, 'alerta');
+      else {
+        setRecorrido({ key, codigo: u.codigo, puntos });
+        setEncuadre(puntos.map((p) => [p.lat, p.lng]));
+      }
+    } catch (e) { avisar(e.message, 'error'); } finally { setOcupado(''); }
+  };
+
+  const cambiarServicio = async (u, fuera, motivo) => {
+    try {
+      await api.marcarServicio(u.tipo, u.id, { fuera_servicio: fuera, motivo: motivo || undefined });
+      avisar(fuera ? `${u.codigo} marcada fuera de servicio${motivo ? ` (${motivo})` : ''}. No se sugerirá ni recibirá ruta.` : `${u.codigo} vuelve al servicio.`);
+      await Promise.all([cargarMoviles(), aPieCargado.current ? cargarAPie() : null]);
+    } catch (e) { avisar(e.message, 'error'); }
+  };
+
+  const enviarUnidadSel = (u) => {
+    if (!punto) { avisar('Primero elige una incidencia o marca el punto de la emergencia; luego "Enviar" desde la tarjeta.', 'alerta'); cambiarTab('despacho'); setModoMapa('punto'); return; }
+    asignar({ issi: u.id, id: u.id, codigo: u.codigo, ocupada: !!u.despacho_abierto }, u.tipo);
+  };
+
+  const atenderAlerta = async (a) => {
+    try { await api.atenderAlerta(a.id); await cargarAlertas(); } catch (e) { avisar(e.message, 'error'); }
+  };
+  const verAlerta = (a) => {
+    const u = a.unit_issi ? [...moviles, ...aPie].find((x) => x.tipo === (a.resource_type ?? 'MOVIL') && x.id === a.unit_issi) : null;
+    if (u) seleccionarUnidad(u);
+    else if ((a.lat ?? null) !== null) setEncuadre([[a.lat, a.lng]]);
+    else if (a.jurisdiction) {
+      const f = (jurGeo?.features ?? []).find((x) => x.properties?.nombre === a.jurisdiction);
+      const coords = f?.geometry?.coordinates?.flat(f.geometry.type === 'MultiPolygon' ? 2 : 1) ?? [];
+      if (coords.length) setEncuadre(coords.map(([lng, lat]) => [lat, lng]));
+    }
+  };
+
+  const elegirDireccion = (d) => {
+    setPuntoBusqueda(d);
+    setEncuadre([[d.lat, d.lng]]);
+  };
+
+  // Atajos de teclado (no actúan mientras se escribe en un campo). Leen el estado actual por una ref.
+  const atajosRef = useRef(null);
+  atajosRef.current = { punto, sugerencia, despachos, incidencias, puede, modoMapa, unidadSel, verAtajos, cierre };
+  useEffect(() => {
+    const onKey = (e) => {
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const s = atajosRef.current;
+      const k = e.key;
+      if (k === '?') { setVerAtajos((v) => !v); e.preventDefault(); return; }
+      if (k === 'Escape') {
+        if (s.verAtajos) setVerAtajos(false);
+        else if (s.cierre) setCierre(null);
+        else if (s.modoMapa !== 'ninguno') setModoMapa('ninguno');
+        else if (s.unidadSel) { setUnidadSel(null); setRecorrido(null); }
+        else if (s.punto) { setPunto(null); setSugerencia(null); }
+        else setPuntoBusqueda(null);
+        return;
+      }
+      if (k === '/') { e.preventDefault(); buscadorRef.current?.focus(); return; }
+      if (TAB_POR_TECLA[k]) { cambiarTab(TAB_POR_TECLA[k]); return; }
+      const key = k.toLowerCase();
+      if (key === 'n') { cambiarTab('despacho'); setModoMapa('punto'); return; }
+      if (key === 'e') {
+        const r = s.sugerencia?.ranking?.find((x) => !x.ocupada);
+        if (s.punto && r && s.puede.asignar) asignar(r, 'MOVIL');
+        else avisar('Para "E" primero debe haber una emergencia con móviles sugeridas.', 'alerta');
+        return;
+      }
+      if (key === 'l' || key === 'c') {
+        const activos = s.despachos
+          .filter((d) => (key === 'l' ? d.status === 'ASIGNADO' : d.status === 'ASIGNADO' || d.status === 'EN_LUGAR'))
+          .sort((a, b) => new Date(a.assigned_at) - new Date(b.assigned_at));
+        const d = activos[0];
+        if (!d || !s.puede.cerrar) { avisar(key === 'l' ? 'No hay despachos en camino.' : 'No hay despachos abiertos.', 'alerta'); return; }
+        cambiarTab('despacho');
+        if (key === 'l') accionDespacho(api.marcarLlegada, d.id);
+        else setCierre({ id: d.id, cancelar: false, resultado: 'ATENDIDO', notas: '' });
+        return;
+      }
+      if (k === 'ArrowDown' || k === 'ArrowUp' || key === 'j' || key === 'k') {
+        const pendientes = s.incidencias.filter((i) => !i.estado || i.estado === 'PENDIENTE');
+        if (!pendientes.length) return;
+        e.preventDefault();
+        const actual = pendientes.findIndex((i) => s.punto?.incidencia && String(i.id) === String(s.punto.incidencia.id));
+        const paso = k === 'ArrowDown' || key === 'j' ? 1 : -1;
+        const sig = pendientes[(actual + paso + pendientes.length) % pendientes.length];
+        elegirPunto({ lat: sig.lat, lng: sig.lon, incidencia: sig });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // Las funciones leen el estado por atajosRef; se registra una sola vez.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const guardarManual = async () => {
     if (!manual.issi || !manual.titulo.trim() || !manual.ordenado_por.trim() || !borrador.length) {
       avisar('Completa móvil, título, quién ordena y al menos una parada en el mapa.', 'error');
@@ -424,9 +573,13 @@ const CentroDespacho = () => {
     { key: 'resumen', label: 'Resumen', icon: PiChartBar, show: true },
     { key: 'rutas', label: 'Rutas', icon: PiPath, show: puede.patrullaje || puede.manual || puede.despacho },
     { key: 'despacho', label: 'Despacho', icon: PiSiren, show: puede.despacho, contador: abiertos.length },
+    { key: 'unidades', label: 'Unidades', icon: PiListBullets, show: true },
+    { key: 'alertas', label: 'Alertas', icon: PiBellSimple, show: true, contador: alertas.activas.length },
     { key: 'manual', label: 'Ruta manual', icon: PiPencilSimpleLine, show: puede.manual },
   ].filter((t) => t.show);
   const camaras = sugerencia?.camaras?.rows ?? [];
+  const despachoPorRecurso = new Map(abiertos.map((d) => [`${d.resource_type}:${d.unit_issi}`, d]));
+  const unidadSelObj = unidadSel ? [...moviles, ...aPie].find((u) => claveUnidad(u) === unidadSel) ?? null : null;
 
   return (
     <div className="cdp-page">
@@ -438,6 +591,8 @@ const CentroDespacho = () => {
           onMapClick={onMapClick} onSelectPlan={seleccionarPlan}
           onSelectIncidencia={(i) => elegirPunto({ lat: i.lat, lng: i.lon, incidencia: i })}
           cursorCruz={modoMapa !== 'ninguno'} encuadre={encuadre} oscuro={dark}
+          unidadSel={unidadSel} unidadSelObj={unidadSelObj} onSelectUnidad={(u) => seleccionarUnidad(u, false)}
+          recorrido={recorrido} puntoBusqueda={puntoBusqueda}
         />
         <BarraMapa capas={capas} setCapas={setCapas} />
         {modoMapa !== 'ninguno' && (
@@ -447,7 +602,27 @@ const CentroDespacho = () => {
             <button onClick={() => setModoMapa('ninguno')}>Terminar</button>
           </div>
         )}
+        {puntoBusqueda && modoMapa === 'ninguno' && (
+          <div className="cdp-banner">
+            <PiCrosshair size={16} />
+            {puntoBusqueda.nombre.split(',').slice(0, 2).join(',')}
+            {puede.asignar && <button onClick={() => { const p = puntoBusqueda; setPuntoBusqueda(null); elegirPunto({ lat: p.lat, lng: p.lng, referencia: p.nombre.split(',').slice(0, 3).join(',') }); }}>Despachar aquí</button>}
+            <button onClick={() => setPuntoBusqueda(null)}>Quitar</button>
+          </div>
+        )}
         {aviso && <div className={`cdp-aviso ${aviso.tipo}`} role="status">{aviso.texto}</div>}
+        {unidadSelObj && (
+          <TarjetaUnidad
+            u={unidadSelObj} despacho={despachoPorRecurso.get(unidadSel)} plan={unidadSelObj.tipo === 'MOVIL' ? planes.find((p) => p.unit_issi === unidadSelObj.issi) : null}
+            puede={puede} hayPunto={!!punto} recorridoActivo={recorrido?.key === unidadSel} cargandoRecorrido={ocupado === `rec-${unidadSel}`}
+            onEnviar={() => enviarUnidadSel(unidadSelObj)} onRecorrido={() => verRecorrido(unidadSelObj)}
+            onServicio={(fuera, motivo) => cambiarServicio(unidadSelObj, fuera, motivo)}
+            onCentrar={() => setEncuadre([[unidadSelObj.lat, unidadSelObj.lng]])}
+            onCerrar={() => { setUnidadSel(null); setRecorrido(null); }}
+            onVerDespacho={(d) => { cambiarTab('despacho'); setEncuadre([[d.lat, d.lng]]); }}
+          />
+        )}
+        {verAtajos && <AyudaAtajos onCerrar={() => setVerAtajos(false)} />}
       </div>
 
       <aside className="cdp-panel">
@@ -456,10 +631,15 @@ const CentroDespacho = () => {
             <h2>Despacho y Patrullaje</h2>
             <span className="cdp-sub">GPS de radios, bodycams y motor predictivo</span>
           </div>
-          <button className="cdp-icon-btn" title="Actualizar todo" aria-label="Actualizar todo"
-            onClick={() => { cargarEstado(); cargarMoviles(); cargarPlanes(); cargarZonas(); cargarIncidencias(); cargarDespachos(); }}>
-            <PiArrowClockwise size={17} />
-          </button>
+          <div className="cdp-head-acc">
+            <button className="cdp-icon-btn" title="Atajos de teclado (?)" aria-label="Atajos de teclado" onClick={() => setVerAtajos((v) => !v)}>
+              <PiKeyboard size={17} />
+            </button>
+            <button className="cdp-icon-btn" title="Actualizar todo" aria-label="Actualizar todo"
+              onClick={() => { cargarEstado(); cargarMoviles(); cargarPlanes(); cargarZonas(); cargarIncidencias(); cargarDespachos(); cargarAlertas(); if (aPieCargado.current) cargarAPie(); }}>
+              <PiArrowClockwise size={17} />
+            </button>
+          </div>
         </header>
 
         <div className="cdp-turno">
@@ -468,6 +648,13 @@ const CentroDespacho = () => {
           </select>
           <input aria-label="Fecha" type="date" value={fecha} onChange={(e) => { setFecha(e.target.value); setPlanSel(null); setCobertura(null); }} />
         </div>
+
+        <Buscador
+          moviles={moviles} aPie={aPie} incidencias={incidencias} inputRef={buscadorRef} buscarDireccion={api.buscarDireccion}
+          onUnidad={(u) => seleccionarUnidad(u)}
+          onIncidencia={(i) => elegirPunto({ lat: i.lat, lng: i.lon, incidencia: i })}
+          onDireccion={elegirDireccion} onNecesitaAPie={cargarAPie}
+        />
 
         <nav className="cdp-tabs">
           {tabs.map(({ key, label, icon: TabIcon, contador }) => (
@@ -731,6 +918,17 @@ const CentroDespacho = () => {
                 )}
               </div>
             </section>
+          )}
+
+          {tab === 'unidades' && (
+            <TableroUnidades
+              moviles={moviles} aPie={aPie} despachoPorRecurso={despachoPorRecurso} planes={planes} unidadSel={unidadSel}
+              onSelect={(u) => seleccionarUnidad(u)} onNecesitaAPie={cargarAPie} cargandoAPie={cargandoAPie}
+            />
+          )}
+
+          {tab === 'alertas' && (
+            <PanelAlertas alertas={alertas} ahora={ahora} puede={puede.cerrar || puede.anular} onAtender={atenderAlerta} onVer={verAlerta} />
           )}
 
           {tab === 'manual' && (
