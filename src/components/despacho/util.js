@@ -83,3 +83,11 @@ export const fmtCrono = (s) => {
 
 // Segundos desde una fecha ISO hasta `ahora` (ms)
 export const segDesde = (iso, ahora = Date.now()) => (iso ? Math.max(0, Math.round((ahora - new Date(iso).getTime()) / 1000)) : null);
+
+// Distancia en metros entre dos puntos (haversine), para nombrar paradas por la zona de riesgo más cercana
+export const distanciaM = (lat1, lng1, lat2, lng2) => {
+  const R = 6371000, r = Math.PI / 180;
+  const dLat = (lat2 - lat1) * r, dLng = (lng2 - lng1) * r;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+};

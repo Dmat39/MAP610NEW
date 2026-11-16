@@ -47,6 +47,24 @@ export const verificarTurno = (fecha, turno, desdeTurno) =>
 // ─── Unidades, recorrido, fuera de servicio y alertas (fase 3) ─────────────
 export const obtenerAPie = () => req('patrullaje/a-pie');
 export const obtenerRecorrido = (tipo, id, horas = 2) => req(`patrullaje/recursos/${tipo}/${encodeURIComponent(id)}/recorrido?horas=${horas}`);
+export const obtenerRecorridoRango = (tipo, id, desde, hasta) =>
+  req(`patrullaje/recursos/${tipo}/${encodeURIComponent(id)}/recorrido?${qs({ desde, hasta })}`);
+
+// ─── Supervisión y reportes (fase 4) ────────────────────────────────────────
+export const obtenerCobertura = (fecha, turno) => req(`patrullaje/cobertura?${qs({ fecha, turno })}`);
+export const obtenerIndicadores = (fecha, turno) => req(`despacho/indicadores?${qs({ fecha, turno })}`);
+export const obtenerBitacora = (horas = 24, incidencia) => req(`despacho/bitacora?${qs({ horas, incidencia })}`);
+
+// Dirección aproximada de un punto (para nombrar paradas). Nominatim, uso ocasional.
+export const direccionDe = async (lat, lng) => {
+  const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=17&accept-language=es`, { headers: { Accept: 'application/json' } });
+  if (!res.ok) return null;
+  const d = await res.json();
+  const a = d.address ?? {};
+  const via = a.road || a.pedestrian || a.footway || a.neighbourhood || a.suburb;
+  const num = a.house_number ? ` ${a.house_number}` : '';
+  return via ? `${via}${num}${a.suburb && a.suburb !== via ? `, ${a.suburb}` : ''}` : d.display_name?.split(',').slice(0, 2).join(',') ?? null;
+};
 export const marcarServicio = (tipo, id, body) => req(`patrullaje/recursos/${tipo}/${encodeURIComponent(id)}/servicio`, { method: 'PATCH', body });
 export const obtenerAlertas = (horas = 24) => req(`patrullaje/alertas?horas=${horas}`);
 export const atenderAlerta = (id) => req(`patrullaje/alertas/${id}/atender`, { method: 'PATCH' });
